@@ -63,6 +63,7 @@ build CMakeFiles/TTM.dir/src/application.c.obj: C_COMPILER__TTM_unscanned_ C$:/T
 # Link the executable TTM.exe
 
 build TTM.exe: C_EXECUTABLE_LINKER__TTM_ CMakeFiles/TTM.dir/src/main.c.obj CMakeFiles/TTM.dir/src/application.c.obj
+  LINK_FLAGS = -mwindows
   LINK_LIBRARIES = -lglfw3  -lglew32  -lopengl32  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\TTM.dir
   POST_BUILD = cd .
