@@ -11,6 +11,10 @@ add_executable(TTM
 	src/application.c
 )
 
+set_target_properties(TTM PROPERTIES
+	WIN32_EXECUTABLE TRUE
+)
+
 #Для линкус нужно модифицировать путь, т.к. opengl32 нет в ОС
 target_link_libraries(TTM
 	glfw3
