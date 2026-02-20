@@ -1,3 +1,7 @@
 # ninja log v6
-2	63	7930364870647140	CMakeFiles/myapp.dir/src/main.c.obj	47ae7ccf81e55d99
+18	114	7932594114191406	CMakeFiles/TTM.dir/src/application.c.obj	8a5f34ff3ae65293
+1	119	7932596403774172	build.ninja	653b7279e2a49187
+22	77	7932593628061788	CMakeFiles/TTM.dir/src/main.c.obj	41c46c5ffe8ed5bd
 65	185	7930364871267584	myapp.exe	590d1a4186c8c7d4
+2	63	7930364870647140	CMakeFiles/myapp.dir/src/main.c.obj	47ae7ccf81e55d99
+12	95	7932596436429670	TTM.exe	6cb0dd4614dd3ddc

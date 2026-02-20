@@ -1,6 +1,9 @@
-#include <stdio.h>
+#include "application.h"
 
 int main(void){
-    printf("CMake");
-    return 0;
+    application_init(800,600, "Prototype");
+
+    while(1){
+        application_update();
+    }
 }
