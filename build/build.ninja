@@ -44,13 +44,15 @@ cmake_ninja_workdir = C$:/TTM/build/
 
 build cmake_object_order_depends_target_TTM: phony || .
 
-build CMakeFiles/TTM.dir/src/main.c.obj: C_COMPILER__TTM_unscanned_ C$:/TTM/src/main.c || cmake_object_order_depends_target_TTM
-  DEP_FILE = CMakeFiles\TTM.dir\src\main.c.obj.d
+build CMakeFiles/TTM.dir/src/application.c.obj: C_COMPILER__TTM_unscanned_ C$:/TTM/src/application.c || cmake_object_order_depends_target_TTM
+  DEP_FILE = CMakeFiles\TTM.dir\src\application.c.obj.d
+  INCLUDES = -IC:/TTM/third_party/include
   OBJECT_DIR = CMakeFiles\TTM.dir
   OBJECT_FILE_DIR = CMakeFiles\TTM.dir\src
 
-build CMakeFiles/TTM.dir/src/application.c.obj: C_COMPILER__TTM_unscanned_ C$:/TTM/src/application.c || cmake_object_order_depends_target_TTM
-  DEP_FILE = CMakeFiles\TTM.dir\src\application.c.obj.d
+build CMakeFiles/TTM.dir/src/main.c.obj: C_COMPILER__TTM_unscanned_ C$:/TTM/src/main.c || cmake_object_order_depends_target_TTM
+  DEP_FILE = CMakeFiles\TTM.dir\src\main.c.obj.d
+  INCLUDES = -IC:/TTM/third_party/include
   OBJECT_DIR = CMakeFiles\TTM.dir
   OBJECT_FILE_DIR = CMakeFiles\TTM.dir\src
 
@@ -62,9 +64,10 @@ build CMakeFiles/TTM.dir/src/application.c.obj: C_COMPILER__TTM_unscanned_ C$:/T
 #############################################
 # Link the executable TTM.exe
 
-build TTM.exe: C_EXECUTABLE_LINKER__TTM_ CMakeFiles/TTM.dir/src/main.c.obj CMakeFiles/TTM.dir/src/application.c.obj
+build TTM.exe: C_EXECUTABLE_LINKER__TTM_ CMakeFiles/TTM.dir/src/application.c.obj CMakeFiles/TTM.dir/src/main.c.obj
   LINK_FLAGS = -mwindows
-  LINK_LIBRARIES = -lglfw3  -lglew32  -lopengl32  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  LINK_LIBRARIES = -lglew32  -Wl,-Bstatic  -lglfw3dll  -Wl,-Bdynamic  -lopengl32  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  LINK_PATH = -LC:/TTM/third_party/lib
   OBJECT_DIR = CMakeFiles\TTM.dir
   POST_BUILD = cd .
   PRE_LINK = cd .

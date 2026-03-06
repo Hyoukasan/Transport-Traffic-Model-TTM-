@@ -6,10 +6,12 @@ cmake_minimum_required(VERSION 3.31.2)
 
 project(Transport_Traffic_Model_TTM C)
 
-add_executable(TTM
-	src/main.c
-	src/application.c
-)
+include_directories(${PROJECT_SOURCE_DIR}/third_party/include)
+link_directories(${PROJECT_SOURCE_DIR}/third_party/lib)
+
+file(GLOB SOURCES "src/*.c")
+
+add_executable(TTM ${SOURCES})
 
 set_target_properties(TTM PROPERTIES
 	WIN32_EXECUTABLE TRUE
@@ -17,7 +19,7 @@ set_target_properties(TTM PROPERTIES
 
 #Для линкус нужно модифицировать путь, т.к. opengl32 нет в ОС
 target_link_libraries(TTM
-	glfw3
-	glew32
+	libglew32.dll.a
+	libglfw3dll.a
 	opengl32
 )
