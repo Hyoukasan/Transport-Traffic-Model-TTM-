@@ -1,8 +1,9 @@
 #include "application.h"
 
 int main(void){
-    if(!application_init(1280, 720, "Transport Traffic Model")){
-        return 1;
+
+    if(application_init(1280, 720, "Transport Traffic Model")){
+        return 0;
     }
 
     while(application_is_running()){
