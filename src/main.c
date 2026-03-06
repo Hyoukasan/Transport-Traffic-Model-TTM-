@@ -1,9 +1,16 @@
 #include "application.h"
 
 int main(void){
-    application_init(800,600, "TTM");
+    if(!application_init(1280, 720, "Transport Traffic Model")){
+        return 1;
+    }
 
-    while(1){
+    while(application_is_running()){
         application_update();
     }
+
+    application_shutdown();
+
+    return 0;
 }
+

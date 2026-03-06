@@ -1,7 +1,5 @@
-// edited, turn this file in
-
-#ifndef _car_h
-#define _car_h
+#ifndef CAR_H
+#define CAR_H
 
 #include <stdlib.h>
 #include <stdbool.h>
