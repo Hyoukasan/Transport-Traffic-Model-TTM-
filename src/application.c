@@ -4,8 +4,12 @@
 #include <stdio.h>
 
 #include "application.h"
+#include "menu.h"
 
 static GLFWwindow* window = NULL;
+
+static AppState app_state = APP_STATE_MAIN_MENU;
+static Menu* menu = {0};
 
 int application_init(int width, int height, const char *title){
 
