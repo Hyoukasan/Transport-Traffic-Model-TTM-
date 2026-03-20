@@ -1,7 +1,0 @@
-# ninja log v6
-6	58	7945191850028593	CMakeFiles/TTM.dir/src/menu.c.obj	98dd369c84f2231e
-107	188	7945199035253325	TTM.exe	a79455adc3415f15
-6	75	7945195544775872	CMakeFiles/TTM.dir/src/main.c.obj	7ca3f68e481ba2cd
-12	107	7945199034297822	CMakeFiles/TTM.dir/src/application.c.obj	5836678deb8fa3a8
-4	64	7945209017946704	CMakeFiles/TTM.dir/src/main.c.obj	7ca3f68e481ba2cd
-65	157	7945209018554061	TTM.exe	a79455adc3415f15

@@ -1,3 +1,0 @@
-C:/TTM/build/CMakeFiles/TTM.dir
-C:/TTM/build/CMakeFiles/edit_cache.dir
-C:/TTM/build/CMakeFiles/rebuild_cache.dir
