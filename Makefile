@@ -12,7 +12,10 @@ BUILD_DIR = build
 SRCS = $(wildcard src/*.c)
 OBJECTS = $(SRCS:src/%.c=$(BUILD_DIR)/%.o)
 
-all: $(TARGET)
+all: $(BUILD_DIR) $(TARGET)
+
+$(BUILD_DIR):
+	@mkdir -p $(BUILD_DIR)
 
 $(TARGET): $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
@@ -21,4 +24,4 @@ $(BUILD_DIR)/%.o: src/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -rf $(TARGET) $(OBJECTS)
+	rm -rf $(TARGET) $(BUILD_DIR)

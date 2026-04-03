@@ -1,8 +1,13 @@
 #include "application.h"
+#include <stdio.h>
 
 int main(void){
+    FILE *test = fopen("test_start.txt", "w");
+    fprintf(test, "Program started\n");
+    fflush(test);
+    fclose(test);
 
-    if(application_init(1280, 720, "Transport Traffic Model")){
+    if(application_init("Transport Traffic Model")){
         return 0;
     }
 

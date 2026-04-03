@@ -1,0 +1,27 @@
+Screen resolution: 1920x1080
+Graph created
+  Grid size: 36x19 chunks
+  Chunk size: 50
+Road generator created
+
+Road network info:
+  Total nodes: 8
+  Total edges: 4
+
+Nodes:
+  Node 0: grid(0,12) pixel(75,675) roads=1
+  Node 1: grid(35,12) pixel(1825,675) roads=1
+  Node 2: grid(0,3) pixel(75,225) roads=1
+  Node 3: grid(35,3) pixel(1825,225) roads=1
+  Node 4: grid(27,0) pixel(1425,75) roads=1
+  Node 5: grid(27,18) pixel(1425,975) roads=1
+  Node 6: grid(28,0) pixel(1475,75) roads=1
+  Node 7: grid(28,18) pixel(1475,975) roads=1
+
+Edges:
+  Edge 0: 0->1 type=H length=35
+  Edge 1: 2->3 type=H length=35
+  Edge 2: 4->5 type=V length=18
+  Edge 3: 6->7 type=V length=18
+
+Application initialized successfully!
