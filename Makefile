@@ -7,7 +7,19 @@ OPT = -O2
 CFLAGS = -Wall -Wextra -Ithird_party/include -g $(OPT)
 LDFLAGS = -Lthird_party/lib
 LIBS = -lglfw3 -lglew32 -lopengl32
-TARGET = TTM.exe
+
+# Detect OS
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+    LIBS = -lglfw -lGLEW -lGL
+    LDFLAGS =
+endif
+ifeq ($(UNAME_S),Darwin)
+    LIBS = -lglfw -lGLEW -framework OpenGL
+    LDFLAGS =
+endif
+
+TARGET = TTM
 BUILD_DIR = build
 SRCS = $(wildcard src/*.c)
 OBJECTS = $(SRCS:src/%.c=$(BUILD_DIR)/%.o)
@@ -25,3 +37,5 @@ $(BUILD_DIR)/%.o: src/%.c
 
 clean:
 	rm -rf $(TARGET) $(BUILD_DIR)
+
+.PHONY: all clean

@@ -9,14 +9,14 @@ Road network info:
   Total edges: 4
 
 Nodes:
-  Node 0: grid(0,12) pixel(75,675) roads=1
-  Node 1: grid(35,12) pixel(1825,675) roads=1
-  Node 2: grid(0,3) pixel(75,225) roads=1
-  Node 3: grid(35,3) pixel(1825,225) roads=1
-  Node 4: grid(27,0) pixel(1425,75) roads=1
-  Node 5: grid(27,18) pixel(1425,975) roads=1
-  Node 6: grid(28,0) pixel(1475,75) roads=1
-  Node 7: grid(28,18) pixel(1475,975) roads=1
+  Node 0: grid(0,8) pixel(75,475) roads=1
+  Node 1: grid(35,8) pixel(1825,475) roads=1
+  Node 2: grid(0,1) pixel(75,125) roads=1
+  Node 3: grid(35,1) pixel(1825,125) roads=1
+  Node 4: grid(17,0) pixel(925,75) roads=1
+  Node 5: grid(17,18) pixel(925,975) roads=1
+  Node 6: grid(33,0) pixel(1725,75) roads=1
+  Node 7: grid(33,18) pixel(1725,975) roads=1
 
 Edges:
   Edge 0: 0->1 type=H length=35

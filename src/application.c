@@ -31,6 +31,13 @@ int application_init(const char *title){
     int screen_width = mode->width;
     int screen_height = mode->height;
     
+    // Для Linux можно добавить fallback на фиксированный размер
+    if (screen_width == 0 || screen_height == 0) {
+        screen_width = 1920;
+        screen_height = 1080;
+        printf("Warning: Could not get monitor resolution, using 1920x1080\n");
+    }
+    
     if (logfile) fprintf(logfile, "Screen resolution: %dx%d\n", screen_width, screen_height);
     printf("Screen resolution: %dx%d\n", screen_width, screen_height);
 
@@ -50,6 +57,19 @@ int application_init(const char *title){
         if (logfile) { fprintf(logfile, "GLEW initialization failed!\n"); fclose(logfile); }
         glfwTerminate();
         return 1;
+    }
+
+    // Проверка версии OpenGL
+    printf("OpenGL Version: %s\n", glGetString(GL_VERSION));
+    printf("GLSL Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    printf("Renderer: %s\n", glGetString(GL_RENDERER));
+    printf("Vendor: %s\n", glGetString(GL_VENDOR));
+
+    if (logfile) {
+        fprintf(logfile, "OpenGL Version: %s\n", glGetString(GL_VERSION));
+        fprintf(logfile, "GLSL Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+        fprintf(logfile, "Renderer: %s\n", glGetString(GL_RENDERER));
+        fprintf(logfile, "Vendor: %s\n", glGetString(GL_VENDOR));
     }
 
     // Инициализируем граф сетки дорог
