@@ -13,9 +13,9 @@ typedef struct {
     Point *points;
     int point_count;
     int max_points;
-    
-    int horizontal_roads;  // количество вертикальных дорог
-    int vertical_roads;    // количество горизонтальных дорог
+
+    int horizontal_roads;  // количество горизонтальных дорог
+    int vertical_roads;    // количество вертикальных дорог
 } RoadGenerator;
 
 // Создать генератор
@@ -24,7 +24,7 @@ RoadGenerator* road_gen_create(int num_roads);
 // Генерировать случайные координаты точек
 void road_gen_generate_points(RoadGenerator *gen, Graph *graph);
 
-// Построить дороги на основе точек (Манхэттенское расстояние)
+// Построить сегменты дорог на основе точек
 void road_gen_build_roads(RoadGenerator *gen, Graph *graph);
 
 // Освободить генератор

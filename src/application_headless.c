@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "application_headless.h"
 #include "graph.h"
@@ -23,39 +24,44 @@ int application_init_headless(void) {
            screen_width, screen_height, chunk_size);
 
     graph = graph_create(screen_width, screen_height, chunk_size, padding);
+    if (!graph) {
+        fprintf(stderr, "Headless: failed to create graph\n");
+        return 1;
+    }
 
     printf("Grid size: %dx%d chunks\n", graph->grid_width, graph->grid_height);
 
+    srand((unsigned int)time(NULL));
+
     // Генерируем дороги
-    int num_roads = 4;
+    int min_roads = 2;
+    int max_roads = graph->grid_width / 2 + graph->grid_height / 2;
+    if (max_roads < min_roads) {
+        max_roads = min_roads;
+    }
+    int num_roads = min_roads + rand() % (max_roads - min_roads + 1);
     printf("Generating %d roads...\n", num_roads);
 
     RoadGenerator* gen = road_gen_create(num_roads);
+    if (!gen) {
+        fprintf(stderr, "Headless: failed to create road generator\n");
+        graph_destroy(graph);
+        return 1;
+    }
     road_gen_generate_points(gen, graph);
     road_gen_build_roads(gen, graph);
     road_gen_destroy(gen);
 
     printf("Road network created:\n");
-    printf("  Nodes (intersections): %d\n", graph->node_count);
-    printf("  Edges (roads): %d\n", graph->edge_count);
+    printf("  Total roads: %d\n", graph->road_count);
 
-    // Выводим информацию о перекрестках
-    printf("\nIntersections:\n");
-    for (int i = 0; i < graph->node_count; i++) {
-        Node* node = &graph->nodes[i];
-        printf("  #%d: grid(%d,%d) pixel(%d,%d) roads=%d\n",
-               i, node->grid_x, node->grid_y,
-               node->pixel_x, node->pixel_y, node->road_count);
-    }
-
-    // Выводим информацию о дорогах
     printf("\nRoads:\n");
-    for (int i = 0; i < graph->edge_count; i++) {
-        Edge* edge = &graph->edges[i];
-        printf("  #%d: %d -> %d (%s, length=%d)\n",
-               i, edge->from, edge->to,
-               edge->type == ROAD_HORIZONTAL ? "horizontal" : "vertical",
-               edge->length);
+    for (int i = 0; i < graph->road_count; i++) {
+        RoadSegment *road = &graph->roads[i];
+        printf("  #%d: (%d,%d)->(%d,%d) type=%s speed=%.1f lanes=%d accident=%s\n",
+               i, road->x1, road->y1, road->x2, road->y2,
+               road->type == ROAD_HORIZONTAL ? "horizontal" : road->type == ROAD_VERTICAL ? "vertical" : "diagonal",
+               road->speed_limit, road->lanes, road->accident ? "yes" : "no");
     }
 
     printf("\nHeadless initialization complete!\n");
@@ -75,11 +81,10 @@ void application_update_headless(void) {
     printf("Simulation step %d\n", simulation_step);
 
     // Здесь будет логика движения машин
-    // Пока просто выводим статистику
+    // Покачто только статистика
 
     if (simulation_step % 10 == 0) {
-        printf("  Network status: %d intersections, %d roads\n",
-               graph->node_count, graph->edge_count);
+        printf("  Network status: %d roads\n", graph->road_count);
     }
 
     // Имитация задержки

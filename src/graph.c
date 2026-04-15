@@ -1,156 +1,97 @@
 #include "graph.h"
 #include <stdlib.h>
-#include <string.h>
+#include <stdio.h>
 
 #define INITIAL_CAPACITY 50
 
+static bool graph_expand_roads(Graph *g) {
+    if (!g) {
+        return false;
+    }
+
+    int new_max = g->max_roads * 2;
+    RoadSegment *new_roads = realloc(g->roads, sizeof(RoadSegment) * new_max);
+    if (!new_roads) {
+        fprintf(stderr, "graph_expand_roads: failed to allocate expanded road array\n");
+        return false;
+    }
+
+    g->roads = new_roads;
+    g->max_roads = new_max;
+    return true;
+}
+
 Graph* graph_create(int window_width, int window_height, int chunk_size, int padding) {
-    Graph *g = (Graph*)malloc(sizeof(Graph));
-    
+    Graph *g = malloc(sizeof(Graph));
+    if (!g) {
+        fprintf(stderr, "graph_create: failed to allocate Graph\n");
+        return NULL;
+    }
+
     g->window_width = window_width;
     g->window_height = window_height;
     g->chunk_size = chunk_size;
     g->padding = padding;
-    
-    // Вычисляем размер сетки с учетом отступов
+
     g->grid_width = (window_width / chunk_size) - (2 * padding);
     g->grid_height = (window_height / chunk_size) - (2 * padding);
-    
-    g->node_count = 0;
-    g->max_nodes = INITIAL_CAPACITY;
-    g->nodes = (Node*)malloc(sizeof(Node) * g->max_nodes);
-    
-    g->edge_count = 0;
-    g->max_edges = INITIAL_CAPACITY;
-    g->edges = (Edge*)malloc(sizeof(Edge) * g->max_edges);
-    
-    g->adjacency = (int**)malloc(sizeof(int*) * g->max_nodes);
-    g->adjacency_size = (int*)malloc(sizeof(int) * g->max_nodes);
-    
-    for (int i = 0; i < g->max_nodes; i++) {
-        g->adjacency[i] = (int*)malloc(sizeof(int) * g->max_nodes);
-        g->adjacency_size[i] = 0;
+    if (g->grid_width <= 0) {
+        g->grid_width = 1;
     }
-    
+    if (g->grid_height <= 0) {
+        g->grid_height = 1;
+    }
+
+    g->road_count = 0;
+    g->max_roads = INITIAL_CAPACITY;
+    g->roads = malloc(sizeof(RoadSegment) * g->max_roads);
+    if (!g->roads) {
+        fprintf(stderr, "graph_create: failed to allocate roads array\n");
+        free(g);
+        return NULL;
+    }
+
     return g;
 }
 
-int graph_add_node(Graph *g, int grid_x, int grid_y) {
-    // Проверяем границы сетки
-    if (grid_x < 0 || grid_x >= g->grid_width || grid_y < 0 || grid_y >= g->grid_height) {
+int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, float speed_limit) {
+    if (!g) {
+        fprintf(stderr, "graph_add_road: graph is NULL\n");
         return -1;
     }
-    
-    // Пересчитываем в пиксели (с учетом парддинга)
-    int pixel_x = (grid_x + g->padding) * g->chunk_size + g->chunk_size / 2;
-    int pixel_y = (grid_y + g->padding) * g->chunk_size + g->chunk_size / 2;
-    
-    // Расширяем массив если нужно
-    if (g->node_count >= g->max_nodes) {
-        g->max_nodes *= 2;
-        g->nodes = (Node*)realloc(g->nodes, sizeof(Node) * g->max_nodes);
-        
-        g->adjacency = (int**)realloc(g->adjacency, sizeof(int*) * g->max_nodes);
-        g->adjacency_size = (int*)realloc(g->adjacency_size, sizeof(int) * g->max_nodes);
-        
-        for (int i = g->node_count; i < g->max_nodes; i++) {
-            g->adjacency[i] = (int*)malloc(sizeof(int) * g->max_nodes);
-            g->adjacency_size[i] = 0;
-        }
-    }
-    
-    Node *node = &g->nodes[g->node_count];
-    node->id = g->node_count;
-    node->grid_x = grid_x;
-    node->grid_y = grid_y;
-    node->pixel_x = pixel_x;
-    node->pixel_y = pixel_y;
-    node->road_count = 0;
-    
-    return g->node_count++;
-}
 
-int graph_get_or_create_node(Graph *g, int grid_x, int grid_y) {
-    // Ищем существующий узел
-    for (int i = 0; i < g->node_count; i++) {
-        if (g->nodes[i].grid_x == grid_x && g->nodes[i].grid_y == grid_y) {
-            return i;
-        }
+    if (x1 < 0 || x1 >= g->grid_width || x2 < 0 || x2 >= g->grid_width ||
+        y1 < 0 || y1 >= g->grid_height || y2 < 0 || y2 >= g->grid_height) {
+        fprintf(stderr, "graph_add_road: invalid road bounds (%d,%d)-(%d,%d)\n", x1, y1, x2, y2);
+        return -1;
     }
-    
-    // Если не найден, создаем новый
-    return graph_add_node(g, grid_x, grid_y);
-}
 
-void graph_add_edge(Graph *g, int from, int to, RoadType type) {
-    if (from < 0 || from >= g->node_count || to < 0 || to >= g->node_count) {
-        return;
-    }
-    
-    // Расширяем массив если нужно
-    if (g->edge_count >= g->max_edges) {
-        g->max_edges *= 2;
-        g->edges = (Edge*)realloc(g->edges, sizeof(Edge) * g->max_edges);
-    }
-    
-    Edge *edge = &g->edges[g->edge_count];
-    edge->from = from;
-    edge->to = to;
-    edge->type = type;
-    
-    // Вычисляем длину дороги
-    if (type == ROAD_HORIZONTAL) {
-        edge->length = abs(g->nodes[to].grid_x - g->nodes[from].grid_x);
-    } else {
-        edge->length = abs(g->nodes[to].grid_y - g->nodes[from].grid_y);
-    }
-    
-    // Распределяем чанки на этой дороге
-    edge->chunks = (int*)malloc(sizeof(int) * (edge->length + 1));
-    
-    if (type == ROAD_HORIZONTAL) {
-        int start = g->nodes[from].grid_x < g->nodes[to].grid_x ? g->nodes[from].grid_x : g->nodes[to].grid_x;
-        for (int i = 0; i <= edge->length; i++) {
-            edge->chunks[i] = start + i;
-        }
-    } else {
-        int start = g->nodes[from].grid_y < g->nodes[to].grid_y ? g->nodes[from].grid_y : g->nodes[to].grid_y;
-        for (int i = 0; i <= edge->length; i++) {
-            edge->chunks[i] = start + i;
+    if (g->road_count >= g->max_roads) {
+        if (!graph_expand_roads(g)) {
+            return -1;
         }
     }
-    
-    // Добавляем в список смежности
-    g->adjacency[from][g->adjacency_size[from]++] = to;
-    g->adjacency[to][g->adjacency_size[to]++] = from;
-    
-    // Увеличиваем счетчик дорог на узлах
-    g->nodes[from].road_count++;
-    g->nodes[to].road_count++;
-    
-    g->edge_count++;
-}
 
-int graph_count_roads_at_node(Graph *g, int node_id) {
-    if (node_id < 0 || node_id >= g->node_count) {
-        return 0;
-    }
-    return g->nodes[node_id].road_count;
+    RoadSegment *road = &g->roads[g->road_count];
+    road->id = g->road_count;
+    road->x1 = x1;
+    road->y1 = y1;
+    road->x2 = x2;
+    road->y2 = y2;
+    road->type = type;
+    road->length = abs(x2 - x1) + abs(y2 - y1) + 1;
+    road->speed_limit = speed_limit;
+    road->accident = false;
+    road->lanes = 1;
+
+    return g->road_count++;
 }
 
 void graph_destroy(Graph *g) {
-    if (!g) return;
-    
-    for (int i = 0; i < g->max_nodes; i++) {
-        free(g->adjacency[i]);
+    if (!g) {
+        return;
     }
-    free(g->adjacency);
-    free(g->adjacency_size);
-    
-    for (int i = 0; i < g->edge_count; i++) {
-        free(g->edges[i].chunks);
-    }
-    free(g->edges);
-    free(g->nodes);
+
+    free(g->roads);
     free(g);
 }

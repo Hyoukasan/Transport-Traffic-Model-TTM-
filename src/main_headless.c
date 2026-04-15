@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "application_headless.h"
 
 int main(void) {
