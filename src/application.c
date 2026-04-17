@@ -166,8 +166,6 @@ int application_init(const char *title){
     printf("  Road segments: %d\n", graph->road_count);
     printf("  Cars: %d\n", car_count);
     printf("  Window: %dx%d\n", screen_width, screen_height);
-
-    menu_init(&menu);
     
     // Инициализируем рендерер
     renderer_init();
@@ -197,6 +195,8 @@ void application_update(void){
 
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    menu_render(&menu);
     
     if (graph != NULL) {
         double time_now = glfwGetTime();
