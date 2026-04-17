@@ -1,4 +1,8 @@
 #include "renderer.h"
+#include "menu.h"
+#include "graph.h"
+#include "car.h"
+
 #include <GL/glew.h>
 #include <stdlib.h>
 #include <stdio.h>

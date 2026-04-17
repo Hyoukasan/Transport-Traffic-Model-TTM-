@@ -3,8 +3,7 @@
 
 #include <stdbool.h>
 
-typedef struct Graph Graph;
-
+struct Graph;
 
 typedef enum {
     CAR_STATE_NORMAL,

@@ -1,8 +1,8 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include "graph.h"
-#include "car.h"
+struct Graph;
+struct Car;
 
 // Инициализация рендерера
 void renderer_init(void);

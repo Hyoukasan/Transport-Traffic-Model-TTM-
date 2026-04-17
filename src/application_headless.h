@@ -2,7 +2,8 @@
 #define APPLICATION_HEADLESS_H
 
 #include <stdbool.h>
-#include "graph.h"
+
+typedef struct Graph Graph;
 
 // Headless version for systems without graphics
 int application_init_headless(void);
