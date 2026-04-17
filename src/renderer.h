@@ -3,9 +3,13 @@
 
 typedef struct Graph Graph;
 typedef struct Car Car;
+typedef struct Menu Menu_t;
 
 // Инициализация рендерера
 void renderer_init(void);
+
+
+void menu_render(Menu_t* menu);
 
 // Рисование всех сегментов дорог
 void renderer_draw_roads(Graph *graph);

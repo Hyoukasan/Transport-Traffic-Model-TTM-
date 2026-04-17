@@ -10,7 +10,8 @@ typedef enum {
 } AppState;
 
 typedef struct {
-    unsigned int x, y, width, height;
+    int x, y, width, height;
+    unsigned int texture;
 
     bool selected;
     bool pressed;
@@ -19,6 +20,9 @@ typedef struct {
 } MenuButton_t;
 
 typedef struct Menu {
+    int x, y, width, height;
+    unsigned int texture;
+
     AppState current_state;
     MenuButton_t buttons[5];
     int button_count;
@@ -27,6 +31,5 @@ typedef struct Menu {
 
 void menu_init(Menu_t* menu);
 void menu_update(Menu_t* menu, int mx, int my, bool click);
-void menu_render(Menu_t* menu);
 
-#endif
+#endif  
