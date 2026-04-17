@@ -119,7 +119,7 @@ void renderer_draw_grid(Graph *graph) {
     free(vertices);
 }
 
-void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
+void renderer_draw_cars(struct Graph *graph, struct Car *cars, int car_count) {
     if (!graph || !cars || car_count <= 0) {
         return;
     }

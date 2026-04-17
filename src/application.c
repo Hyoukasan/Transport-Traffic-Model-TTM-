@@ -7,6 +7,7 @@
 #include <time.h>
 
 #include "application.h"
+#include "graph.h"
 #include "car.h"
 #include "road_generator.h"
 #include "menu.h"

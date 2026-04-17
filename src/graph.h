@@ -22,7 +22,7 @@ typedef struct {
     int lanes;
 } RoadSegment;
 
-typedef struct {
+typedef struct Graph {
     RoadSegment *roads;
     int road_count;
     int max_roads;

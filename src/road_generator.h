@@ -1,7 +1,7 @@
 #ifndef ROAD_GENERATOR_H
 #define ROAD_GENERATOR_H
 
-#include "graph.h"
+struct Graph;
 
 typedef struct {
     int x;
@@ -22,10 +22,10 @@ typedef struct {
 RoadGenerator* road_gen_create(int num_roads);
 
 // Генерировать случайные координаты точек
-void road_gen_generate_points(RoadGenerator *gen, Graph *graph);
+void road_gen_generate_points(RoadGenerator *gen, struct Graph *graph);
 
 // Построить сегменты дорог на основе точек
-void road_gen_build_roads(RoadGenerator *gen, Graph *graph);
+void road_gen_build_roads(RoadGenerator *gen, struct Graph *graph);
 
 // Освободить генератор
 void road_gen_destroy(RoadGenerator *gen);
