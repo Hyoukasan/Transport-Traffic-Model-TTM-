@@ -10,7 +10,7 @@ RoadGenerator* road_gen_create(int num_roads) {
     }
 
     RoadGenerator *gen = malloc(sizeof(RoadGenerator));
-    if (!gen) {
+    if (gen == NULL) {
         fprintf(stderr, "road_gen_create: failed to allocate RoadGenerator\n");
         return NULL;
     }
@@ -18,7 +18,7 @@ RoadGenerator* road_gen_create(int num_roads) {
     gen->point_count = num_roads;
     gen->max_points = num_roads;
     gen->points = malloc(sizeof(Point) * num_roads);
-    if (!gen->points) {
+    if (gen->points == NULL) {
         fprintf(stderr, "road_gen_create: failed to allocate points\n");
         free(gen);
         return NULL;
@@ -31,7 +31,7 @@ RoadGenerator* road_gen_create(int num_roads) {
 }
 
 void road_gen_generate_points(RoadGenerator *gen, Graph *graph) {
-    if (!gen || !graph || gen->point_count == 0) {
+    if (gen == NULL || graph == NULL || gen->point_count == 0) {
         return;
     }
 
@@ -55,7 +55,7 @@ void road_gen_generate_points(RoadGenerator *gen, Graph *graph) {
 }
 
 void road_gen_build_roads(RoadGenerator *gen, Graph *graph) {
-    if (!gen || !graph) {
+    if (gen == NULL || graph == NULL) {
         return;
     }
 
@@ -86,7 +86,9 @@ void road_gen_build_roads(RoadGenerator *gen, Graph *graph) {
 }
 
 void road_gen_destroy(RoadGenerator *gen) {
-    if (!gen) return;
+    if (gen == NULL) {
+        return;
+    }
     
     free(gen->points);
     free(gen);
