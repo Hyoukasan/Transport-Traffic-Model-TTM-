@@ -2,7 +2,9 @@
 #define CAR_H
 
 #include <stdbool.h>
-#include "graph.h"
+
+typedef struct Graph Graph;
+
 
 typedef enum {
     CAR_STATE_NORMAL,

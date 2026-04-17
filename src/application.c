@@ -8,7 +8,6 @@
 
 #include "application.h"
 #include "car.h"
-#include "graph.h"
 #include "road_generator.h"
 #include "menu.h"
 #include "renderer.h"
@@ -77,6 +76,8 @@ int application_init(const char *title){
         fprintf(logfile, "Renderer: %s\n", glGetString(GL_RENDERER));
         fprintf(logfile, "Vendor: %s\n", glGetString(GL_VENDOR));
     }
+
+    menu_init(&menu);
 
     // Инициализируем граф сетки дорог
     int chunk_size = 50;  // размер одного чанка в пикселях

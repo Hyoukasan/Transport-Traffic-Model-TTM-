@@ -30,7 +30,7 @@ void car_init(Car *car, int id, int road_id, float desired_speed, float length, 
 }
 
 void car_set_texture(Car *car, unsigned int texture, float width, float height) {
-    if (!car) {
+    if (car == NULL) {
         return;
     }
 
@@ -40,13 +40,13 @@ void car_set_texture(Car *car, unsigned int texture, float width, float height) 
 }
 
 unsigned int car_load_texture(const char *path, int *out_width, int *out_height) {
-    if (!path) {
+    if (path == NULL) {
         return 0;
     }
 
     int width, height, channels;
     unsigned char *pixels = stbi_load(path, &width, &height, &channels, 4);
-    if (!pixels) {
+    if (pixels == NULL) {
         fprintf(stderr, "car_load_texture: failed to load image '%s'\n", path);
         return 0;
     }
@@ -75,7 +75,7 @@ unsigned int car_load_texture(const char *path, int *out_width, int *out_height)
 }
 
 void car_update(Car *car, const Graph *graph, float dt) {
-    if (!car || !graph || car->road_id < 0 || car->road_id >= graph->road_count) {
+    if (car == NULL || graph == NULL || car->road_id < 0 || car->road_id >= graph->road_count) {
         return;
     }
 
@@ -114,7 +114,7 @@ void car_update(Car *car, const Graph *graph, float dt) {
 }
 
 void car_destroy(Car *car) {
-    if (!car) {
+    if (car == NULL) {
         return;
     }
 

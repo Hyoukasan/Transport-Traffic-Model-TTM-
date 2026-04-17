@@ -40,7 +40,9 @@ static bool state_pop(AppState* current_state) {
     return true;
 }
 
-void set_buttons(MenuButton_t* button)
+void set_buttons(MenuButton_t* button) {
+    
+}
 
 static void menu_load_state(Menu_t *menu, AppState app_state) {
     if (menu == NULL) {
@@ -49,16 +51,9 @@ static void menu_load_state(Menu_t *menu, AppState app_state) {
     
     switch(app_state){
         case APP_STATE_MAIN_MENU:
-            menu->buttons[0] = (MenuButton_t){20, 40, 130, 55,};
-            menu->buttons[1] = (MenuButton_t){};
-            menu->buttons[2] = (MenuButton_t){};
-            menu->buttons[3] = (MenuButton_tn){}:
             menu->button_count = 2;
             break;
         case APP_STATE_RUNNING_SIMULATION:
-            menu->buttons[0] = (MenuButton_t){};
-            menu->buttons[1] = (MenuButton_t){};
-            menu->button_count = 2;
             break;
         case APP_STATE_INFO:
             break;
@@ -77,9 +72,9 @@ void menu_update(Menu_t* menu, int mx, int my, bool click){
     for(int i = 0; i < menu->button_count; i++) {
         MenuButton_t *current_button = &menu->buttons[i];
         
-        if(click && mx <= current_button->x && my == current_button->y) {
-            state_push(menu->current_state);
-        }
+//        if(click && mx <= current_button->x && my == current_button->y) {
+//            state_push(menu->current_state);
+//        }
     }
 }
 
