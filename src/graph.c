@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #define INITIAL_CAPACITY 50
+#define INITIAL_INTERSECTION_CAPACITY 16
 
 static bool graph_expand_roads(Graph *g) {
     if (!g) {
@@ -51,7 +52,52 @@ Graph* graph_create(int window_width, int window_height, int chunk_size, int pad
         return NULL;
     }
 
+    g->intersection_count = 0;
+    g->max_intersections = INITIAL_INTERSECTION_CAPACITY;
+    g->intersections = malloc(sizeof(GridPoint) * g->max_intersections);
+    if (!g->intersections) {
+        fprintf(stderr, "graph_create: failed to allocate intersections array\n");
+        free(g->roads);
+        free(g);
+        return NULL;
+    }
+
     return g;
+}
+
+static bool point_in_range(int value, int a, int b) {
+    if (a <= b) {
+        return value >= a && value <= b;
+    }
+    return value >= b && value <= a;
+}
+
+static bool graph_add_intersection(Graph *g, int x, int y) {
+    if (!g) {
+        return false;
+    }
+
+    for (int i = 0; i < g->intersection_count; i++) {
+        if (g->intersections[i].x == x && g->intersections[i].y == y) {
+            return true;
+        }
+    }
+
+    if (g->intersection_count >= g->max_intersections) {
+        int new_max = g->max_intersections * 2;
+        GridPoint *new_points = realloc(g->intersections, sizeof(GridPoint) * new_max);
+        if (!new_points) {
+            fprintf(stderr, "graph_add_intersection: failed to allocate expanded intersections array\n");
+            return false;
+        }
+        g->intersections = new_points;
+        g->max_intersections = new_max;
+    }
+
+    g->intersections[g->intersection_count].x = x;
+    g->intersections[g->intersection_count].y = y;
+    g->intersection_count++;
+    return true;
 }
 
 int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, float speed_limit) {
@@ -87,11 +133,40 @@ int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, floa
     return g->road_count++;
 }
 
+void graph_build_intersections(Graph *g) {
+    if (!g || g->road_count < 2) {
+        return;
+    }
+
+    g->intersection_count = 0;
+
+    for (int i = 0; i < g->road_count; i++) {
+        const RoadSegment *road_a = &g->roads[i];
+        for (int j = i + 1; j < g->road_count; j++) {
+            const RoadSegment *road_b = &g->roads[j];
+            if (road_a->type == ROAD_HORIZONTAL && road_b->type == ROAD_VERTICAL) {
+                int x = road_b->x1;
+                int y = road_a->y1;
+                if (point_in_range(x, road_a->x1, road_a->x2) && point_in_range(y, road_b->y1, road_b->y2)) {
+                    graph_add_intersection(g, x, y);
+                }
+            } else if (road_a->type == ROAD_VERTICAL && road_b->type == ROAD_HORIZONTAL) {
+                int x = road_a->x1;
+                int y = road_b->y1;
+                if (point_in_range(x, road_b->x1, road_b->x2) && point_in_range(y, road_a->y1, road_a->y2)) {
+                    graph_add_intersection(g, x, y);
+                }
+            }
+        }
+    }
+}
+
 void graph_destroy(Graph *g) {
     if (!g) {
         return;
     }
 
+    free(g->intersections);
     free(g->roads);
     free(g);
 }

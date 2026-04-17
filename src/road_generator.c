@@ -1,4 +1,5 @@
 #include "road_generator.h"
+#include "graph.h"
 #include <stdlib.h>
 #include <stdio.h>
 

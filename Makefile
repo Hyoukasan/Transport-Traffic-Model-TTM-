@@ -21,7 +21,7 @@ endif
 
 TARGET = TTM
 BUILD_DIR = build
-SRCS = src/application.c src/car.c src/graph.c src/main.c src/menu.c src/renderer.c src/road_generator.c src/texture.c
+SRCS = src/application.c src/car.c src/graph.c src/graph_adj.c src/main.c src/menu.c src/renderer.c src/road_generator.c src/texture.c
 OBJECTS = $(SRCS:src/%.c=$(BUILD_DIR)/%.o)
 
 all: $(BUILD_DIR) $(TARGET)

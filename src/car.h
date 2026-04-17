@@ -21,6 +21,10 @@ typedef struct Car{
     float length;         // длина машины в логических единицах
     float offset;         // смещение для полосы
     int lane;             // номер полосы
+    bool at_intersection; // находится ли машина в зоне пересечения
+    int last_turn_x;
+    int last_turn_y;
+    float angle;          // угол поворота для рендера
     CarState state;
     unsigned int texture; // OpenGL texture id
     float tex_width;

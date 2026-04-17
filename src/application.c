@@ -120,10 +120,12 @@ int application_init(const char *title){
     
     road_gen_generate_points(gen, graph);
     road_gen_build_roads(gen, graph);
+    graph_build_intersections(graph);
     
     if (logfile) {
         fprintf(logfile, "\nRoad network info:\n");
         fprintf(logfile, "  Total roads: %d\n", graph->road_count);
+        fprintf(logfile, "  Intersections: %d\n", graph->intersection_count);
         fprintf(logfile, "\nRoads:\n");
         for (int i = 0; i < graph->road_count; i++) {
             RoadSegment *road = &graph->roads[i];
@@ -149,9 +151,9 @@ int application_init(const char *title){
         if (car_file) {
             fclose(car_file);
             int tex_w = 0, tex_h = 0;
-            unsigned int car_texture = car_load_texture("car.png", &tex_w, &tex_h);
+            unsigned int car_texture = car_load_texture("car.png", &tex_h, &tex_w);
             if (car_texture != 0) {
-                car_set_texture(&cars[0], car_texture, (float)tex_w, (float)tex_h);
+                car_set_texture(&cars[0], car_texture, (float)tex_h, (float)tex_w);
             }
         }
     }
@@ -169,6 +171,7 @@ int application_init(const char *title){
     
     // Инициализируем рендерер
     renderer_init();
+    renderer_upload_graph(graph);
     
     if (logfile) {
         fprintf(logfile, "\nApplication initialized successfully!\n");

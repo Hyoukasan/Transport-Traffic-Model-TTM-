@@ -6,8 +6,14 @@
 #include <GL/glew.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 static GLuint VAO = 0, VBO = 0;
+static GLuint gridVAO = 0, gridVBO = 0;
+static GLuint nodeVAO = 0, nodeVBO = 0;
+static int roadVertexCount = 0;
+static int nodeVertexCount = 0;
+static GLuint carVAO = 0, carVBO = 0;
 
 static float grid_to_normalized_x(const Graph *graph, int grid_x) {
     float pixel = (grid_x + graph->padding) * graph->chunk_size + graph->chunk_size * 0.5f;
@@ -29,47 +35,109 @@ void renderer_init(void) {
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+
+    glGenVertexArrays(1, &gridVAO);
+    glGenBuffers(1, &gridVBO);
+    glBindVertexArray(gridVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, gridVBO);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    glGenVertexArrays(1, &nodeVAO);
+    glGenBuffers(1, &nodeVBO);
+    glBindVertexArray(nodeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, nodeVBO);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    glGenVertexArrays(1, &carVAO);
+    glGenBuffers(1, &carVBO);
+    glBindVertexArray(carVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, carVBO);
+
+    float carVertices[4 * 4] = {
+        -0.5f, -0.5f, 0.0f, 0.0f,
+         0.5f, -0.5f, 1.0f, 0.0f,
+         0.5f,  0.5f, 1.0f, 1.0f,
+        -0.5f,  0.5f, 0.0f, 1.0f
+    };
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(carVertices), carVertices, GL_STATIC_DRAW);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glVertexPointer(2, GL_FLOAT, 4 * sizeof(float), (void*)0);
+    glTexCoordPointer(2, GL_FLOAT, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }
 
-static float pixel_to_normalized_x(const Graph *graph, int px) {
-    return (2.0f * px / graph->window_width) - 1.0f;
-}
+void renderer_upload_graph(Graph *graph) {
+    if (!graph) {
+        return;
+    }
 
-static float pixel_to_normalized_y(const Graph *graph, int py) {
-    return 1.0f - (2.0f * py / graph->window_height);
+    if (graph->road_count > 0) {
+        roadVertexCount = graph->road_count * 2;
+        float *vertices = malloc(roadVertexCount * 2 * sizeof(float));
+        if (!vertices) {
+            fprintf(stderr, "renderer_upload_graph: failed to allocate road vertices buffer\n");
+            return;
+        }
+
+        for (int i = 0; i < graph->road_count; i++) {
+            RoadSegment *road = &graph->roads[i];
+            float x1 = grid_to_normalized_x(graph, road->x1);
+            float y1 = grid_to_normalized_y(graph, road->y1);
+            float x2 = grid_to_normalized_x(graph, road->x2);
+            float y2 = grid_to_normalized_y(graph, road->y2);
+            vertices[i * 4 + 0] = x1;
+            vertices[i * 4 + 1] = y1;
+            vertices[i * 4 + 2] = x2;
+            vertices[i * 4 + 3] = y2;
+        }
+
+        glBindVertexArray(VAO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, roadVertexCount * 2 * sizeof(float), vertices, GL_STATIC_DRAW);
+        glBindVertexArray(0);
+        free(vertices);
+    }
+
+    if (graph->intersection_count > 0) {
+        nodeVertexCount = graph->intersection_count;
+        float *vertices = malloc(nodeVertexCount * 2 * sizeof(float));
+        if (!vertices) {
+            fprintf(stderr, "renderer_upload_graph: failed to allocate node vertices buffer\n");
+            return;
+        }
+
+        int index = 0;
+        for (int i = 0; i < graph->intersection_count; i++) {
+            vertices[index++] = grid_to_normalized_x(graph, graph->intersections[i].x);
+            vertices[index++] = grid_to_normalized_y(graph, graph->intersections[i].y);
+        }
+
+        glBindVertexArray(nodeVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, nodeVBO);
+        glBufferData(GL_ARRAY_BUFFER, nodeVertexCount * 2 * sizeof(float), vertices, GL_STATIC_DRAW);
+        glBindVertexArray(0);
+        free(vertices);
+    }
 }
 
 void renderer_draw_roads(Graph *graph) {
-    if (!graph || graph->road_count == 0) {
+    (void)graph;
+    if (roadVertexCount == 0) {
         return;
     }
 
-    float *vertices = malloc(graph->road_count * 4 * sizeof(float));
-    if (!vertices) {
-        fprintf(stderr, "renderer_draw_roads: failed to allocate vertices buffer\n");
-        return;
-    }
-
-    for (int i = 0; i < graph->road_count; i++) {
-        RoadSegment *road = &graph->roads[i];
-        float x1 = grid_to_normalized_x(graph, road->x1);
-        float y1 = grid_to_normalized_y(graph, road->y1);
-        float x2 = grid_to_normalized_x(graph, road->x2);
-        float y2 = grid_to_normalized_y(graph, road->y2);
-
-        vertices[i * 4 + 0] = x1;
-        vertices[i * 4 + 1] = y1;
-        vertices[i * 4 + 2] = x2;
-        vertices[i * 4 + 3] = y2;
-    }
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, graph->road_count * 4 * sizeof(float), vertices, GL_DYNAMIC_DRAW);
     glBindVertexArray(VAO);
-    glDrawArrays(GL_LINES, 0, graph->road_count * 2);
+    glDrawArrays(GL_LINES, 0, roadVertexCount);
     glBindVertexArray(0);
-
-    free(vertices);
 }
 
 void renderer_draw_grid(Graph *graph) {
@@ -85,135 +153,118 @@ void renderer_draw_grid(Graph *graph) {
     }
 
     int index = 0;
-    int left = graph->padding * graph->chunk_size;
-    int right = left + graph->grid_width * graph->chunk_size;
-    int top = graph->padding * graph->chunk_size;
-    int bottom = top + graph->grid_height * graph->chunk_size;
+    int left = graph->padding;
+    int right = graph->padding + graph->grid_width;
+    int top = graph->padding;
+    int bottom = graph->padding + graph->grid_height;
 
     // vertical lines
     for (int x = 0; x <= graph->grid_width; x++) {
-        int px = left + x * graph->chunk_size;
-        vertices[index++] = pixel_to_normalized_x(graph, px);
-        vertices[index++] = pixel_to_normalized_y(graph, top);
-        vertices[index++] = pixel_to_normalized_x(graph, px);
-        vertices[index++] = pixel_to_normalized_y(graph, bottom);
+        vertices[index++] = grid_to_normalized_x(graph, left + x);
+        vertices[index++] = grid_to_normalized_y(graph, top);
+        vertices[index++] = grid_to_normalized_x(graph, left + x);
+        vertices[index++] = grid_to_normalized_y(graph, bottom);
     }
 
     // horizontal lines
     for (int y = 0; y <= graph->grid_height; y++) {
-        int py = top + y * graph->chunk_size;
-        vertices[index++] = pixel_to_normalized_x(graph, left);
-        vertices[index++] = pixel_to_normalized_y(graph, py);
-        vertices[index++] = pixel_to_normalized_x(graph, right);
-        vertices[index++] = pixel_to_normalized_y(graph, py);
+        vertices[index++] = grid_to_normalized_x(graph, left);
+        vertices[index++] = grid_to_normalized_y(graph, top + y);
+        vertices[index++] = grid_to_normalized_x(graph, right);
+        vertices[index++] = grid_to_normalized_y(graph, top + y);
     }
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindVertexArray(gridVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, gridVBO);
     glBufferData(GL_ARRAY_BUFFER, total_lines * 4 * sizeof(float), vertices, GL_DYNAMIC_DRAW);
-    glBindVertexArray(VAO);
     glLineWidth(1.0f);
     glDrawArrays(GL_LINES, 0, total_lines * 2);
     glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glLineWidth(1.0f);
 
     free(vertices);
 }
 
-void renderer_draw_cars(struct Graph *graph, struct Car *cars, int car_count) {
+void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
     if (!graph || !cars || car_count <= 0) {
         return;
     }
 
-    glBindVertexArray(0);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBindVertexArray(carVAO);
 
     for (int i = 0; i < car_count; i++) {
         Car *car = &cars[i];
         if (car->road_id < 0 || car->road_id >= graph->road_count) {
             continue;
         }
-        RoadSegment *road = &graph->roads[car->road_id];
 
+        RoadSegment *road = &graph->roads[car->road_id];
         float x1 = grid_to_normalized_x(graph, road->x1);
         float y1 = grid_to_normalized_y(graph, road->y1);
         float x2 = grid_to_normalized_x(graph, road->x2);
         float y2 = grid_to_normalized_y(graph, road->y2);
-
         float cx = x1 + (x2 - x1) * car->position;
         float cy = y1 + (y2 - y1) * car->position;
 
-        float half_width = 0.03f;
-        float half_height = 0.02f;
+        float scale_x = 0.06f;
+        float scale_y = 0.04f;
         if (road->type == ROAD_VERTICAL) {
-            half_width = 0.02f;
-            half_height = 0.04f;
+            scale_x = 0.04f;
+            scale_y = 0.06f;
         }
 
         if (car->texture != 0) {
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, car->texture);
-            glColor3f(1.0f, 1.0f, 1.0f);
-            
-            glBegin(GL_QUADS);
-            glTexCoord2f(0.0f, 0.0f); glVertex2f(cx - half_width, cy - half_height);
-            glTexCoord2f(1.0f, 0.0f); glVertex2f(cx + half_width, cy - half_height);
-            glTexCoord2f(1.0f, 1.0f); glVertex2f(cx + half_width, cy + half_height);
-            glTexCoord2f(0.0f, 1.0f); glVertex2f(cx - half_width, cy + half_height);
-            glEnd();
-
-            glBindTexture(GL_TEXTURE_2D, 0);
-            glDisable(GL_TEXTURE_2D);
         } else {
             glDisable(GL_TEXTURE_2D);
-            glColor3f(car->color[0], car->color[1], car->color[2]);
-            
-            glBegin(GL_QUADS);
-            glVertex2f(cx - half_width, cy - half_height);
-            glVertex2f(cx + half_width, cy - half_height);
-            glVertex2f(cx + half_width, cy + half_height);
-            glVertex2f(cx - half_width, cy + half_height);
-            glEnd();
         }
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glTranslatef(cx, cy, 0.0f);
+        glRotatef(car->angle, 0.0f, 0.0f, 1.0f);
+        glScalef(scale_x, scale_y, 1.0f);
+        glColor3f(car->color[0], car->color[1], car->color[2]);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glPopMatrix();
+
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
+    glBindVertexArray(0);
     glDisable(GL_BLEND);
-    glBindVertexArray(VAO);
 }
 
 void renderer_draw_nodes(Graph *graph) {
-    if (!graph || graph->road_count == 0) {
+    (void)graph;
+    if (nodeVertexCount == 0) {
         return;
     }
 
-    int point_count = graph->road_count * 2;
-    float *vertices = malloc(point_count * 2 * sizeof(float));
-    if (!vertices) {
-        fprintf(stderr, "renderer_draw_nodes: failed to allocate vertices buffer\n");
-        return;
-    }
-
-    int index = 0;
-    for (int i = 0; i < graph->road_count; i++) {
-        RoadSegment *road = &graph->roads[i];
-        vertices[index++] = grid_to_normalized_x(graph, road->x1);
-        vertices[index++] = grid_to_normalized_y(graph, road->y1);
-        vertices[index++] = grid_to_normalized_x(graph, road->x2);
-        vertices[index++] = grid_to_normalized_y(graph, road->y2);
-    }
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, point_count * 2 * sizeof(float), vertices, GL_DYNAMIC_DRAW);
-    glPointSize(8.0f);
-    glBindVertexArray(VAO);
-    glDrawArrays(GL_POINTS, 0, point_count);
-    glPointSize(1.0f);
+    glPointSize(10.0f);
+    glBindVertexArray(nodeVAO);
+    glDrawArrays(GL_POINTS, 0, nodeVertexCount);
     glBindVertexArray(0);
-
-    free(vertices);
+    glPointSize(1.0f);
 }
 
 void renderer_shutdown(void) {
+    if (carVAO != 0) {
+        glDeleteVertexArrays(1, &carVAO);
+        glDeleteBuffers(1, &carVBO);
+    }
+    if (nodeVAO != 0) {
+        glDeleteVertexArrays(1, &nodeVAO);
+        glDeleteBuffers(1, &nodeVBO);
+    }
+    if (gridVAO != 0) {
+        glDeleteVertexArrays(1, &gridVAO);
+        glDeleteBuffers(1, &gridVBO);
+    }
     if (VAO != 0) {
         glDeleteVertexArrays(1, &VAO);
         glDeleteBuffers(1, &VBO);

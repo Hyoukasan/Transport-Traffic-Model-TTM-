@@ -1,23 +1,26 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-struct Graph;
-struct Car;
+typedef struct Graph Graph;
+typedef struct Car Car;
 
 // Инициализация рендерера
 void renderer_init(void);
 
 // Рисование всех сегментов дорог
-void renderer_draw_roads(struct Graph *graph);
+void renderer_draw_roads(Graph *graph);
 
 // Рисование вспомогательной сетки
-void renderer_draw_grid(struct Graph *graph);
+void renderer_draw_grid(Graph *graph);
+
+// Загружает дороги и узлы в GPU один раз
+void renderer_upload_graph(Graph *graph);
 
 // Рисование узлов/концов сегментов
-void renderer_draw_nodes(struct Graph *graph);
+void renderer_draw_nodes(Graph *graph);
 
 // Рисование машин на дорогах
-void renderer_draw_cars(struct Graph *graph, struct Car *cars, int car_count);
+void renderer_draw_cars(Graph *graph, Car *cars, int car_count);
 
 // Очистка рендерера
 void renderer_shutdown(void);

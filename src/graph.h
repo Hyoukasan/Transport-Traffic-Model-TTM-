@@ -22,10 +22,19 @@ typedef struct {
     int lanes;
 } RoadSegment;
 
+typedef struct {
+    int x;
+    int y;
+} GridPoint;
+
 typedef struct Graph {
     RoadSegment *roads;
     int road_count;
     int max_roads;
+
+    GridPoint *intersections;
+    int intersection_count;
+    int max_intersections;
 
     int grid_width;
     int grid_height;
@@ -38,6 +47,7 @@ typedef struct Graph {
 
 Graph* graph_create(int window_width, int window_height, int chunk_size, int padding);
 int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, float speed_limit);
+void graph_build_intersections(Graph *g);
 void graph_destroy(Graph *g);
 
 #endif

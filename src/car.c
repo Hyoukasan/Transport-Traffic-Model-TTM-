@@ -1,13 +1,43 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <GL/glew.h>
 
 #include "car.h"
 #include "graph.h"
+#include "texture.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+static bool point_in_range(int value, int a, int b) {
+    if (a <= b) {
+        return value >= a && value <= b;
+    }
+    return value >= b && value <= a;
+}
+
+static float calculate_road_fraction(const RoadSegment *road, int x, int y) {
+    if (!road) {
+        return 0.0f;
+    }
+
+    if (road->type == ROAD_HORIZONTAL) {
+        int span = abs(road->x2 - road->x1);
+        if (span == 0) {
+            return 0.0f;
+        }
+        return (float)abs(x - road->x1) / (float)span;
+    }
+
+    if (road->type == ROAD_VERTICAL) {
+        int span = abs(road->y2 - road->y1);
+        if (span == 0) {
+            return 0.0f;
+        }
+        return (float)abs(y - road->y1) / (float)span;
+    }
+
+    return 0.0f;
+}
 
 void car_init(Car *car, int id, int road_id, float desired_speed, float length, int lane, float offset) {
     if (car == NULL) {
@@ -22,6 +52,10 @@ void car_init(Car *car, int id, int road_id, float desired_speed, float length, 
     car->length = length;
     car->offset = offset;
     car->lane = lane;
+    car->at_intersection = false;
+    car->last_turn_x = -1;
+    car->last_turn_y = -1;
+    car->angle = 0.0f;
     car->state = CAR_STATE_NORMAL;
     car->texture = 0;
     car->tex_width = 0.0f;
@@ -42,38 +76,7 @@ void car_set_texture(Car *car, unsigned int texture, float width, float height) 
 }
 
 unsigned int car_load_texture(const char *path, int *out_width, int *out_height) {
-    if (path == NULL) {
-        return 0;
-    }
-
-    int width, height, channels;
-    unsigned char *pixels = stbi_load(path, &width, &height, &channels, 4);
-    if (pixels == NULL) {
-        fprintf(stderr, "car_load_texture: failed to load image '%s'\n", path);
-        return 0;
-    }
-
-    GLuint texture_id;
-    glGenTextures(1, &texture_id);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    stbi_image_free(pixels);
-
-    if (out_width) {
-        *out_width = width;
-    }
-    if (out_height) {
-        *out_height = height;
-    }
-
-    return (unsigned int)texture_id;
+    return texture_load(path, out_width, out_height);
 }
 
 void car_update(Car *car, const Graph *graph, float dt) {
@@ -112,6 +115,81 @@ void car_update(Car *car, const Graph *graph, float dt) {
     car->position += car->speed * dt / segment_length;
     if (car->position > 1.0f) {
         car->position = 1.0f;
+    }
+
+    car->at_intersection = false;
+    float base_angle = (road->type == ROAD_VERTICAL) ? 90.0f : 0.0f;
+    car->angle = base_angle;
+
+    for (int i = 0; i < graph->intersection_count; i++) {
+        int ix = graph->intersections[i].x;
+        int iy = graph->intersections[i].y;
+        if (!point_in_range(ix, road->x1, road->x2) && road->type == ROAD_HORIZONTAL) continue;
+        if (!point_in_range(iy, road->y1, road->y2) && road->type == ROAD_VERTICAL) continue;
+        if (road->type == ROAD_HORIZONTAL && iy != road->y1) continue;
+        if (road->type == ROAD_VERTICAL && ix != road->x1) continue;
+
+        float intersection_fraction = calculate_road_fraction(road, ix, iy);
+        if (intersection_fraction < 0.0f || intersection_fraction > 1.0f) {
+            continue;
+        }
+
+        if (car->position < intersection_fraction - 0.04f || car->position > intersection_fraction + 0.04f) {
+            continue;
+        }
+
+        if (car->last_turn_x == ix && car->last_turn_y == iy) {
+            car->at_intersection = true;
+            break;
+        }
+
+        int crossing_road_id = -1;
+        for (int r = 0; r < graph->road_count; r++) {
+            if (r == car->road_id) {
+                continue;
+            }
+            const RoadSegment *other = &graph->roads[r];
+            if (other->type == ROAD_HORIZONTAL && ix >= other->x1 && ix <= other->x2 && iy == other->y1) {
+                if (road->type == ROAD_VERTICAL) {
+                    crossing_road_id = r;
+                    break;
+                }
+            } else if (other->type == ROAD_VERTICAL && iy >= other->y1 && iy <= other->y2 && ix == other->x1) {
+                if (road->type == ROAD_HORIZONTAL) {
+                    crossing_road_id = r;
+                    break;
+                }
+            }
+        }
+
+        if (crossing_road_id >= 0) {
+            const RoadSegment *new_road = &graph->roads[crossing_road_id];
+            float new_position = 0.0f;
+            if (new_road->type == ROAD_HORIZONTAL) {
+                int span = abs(new_road->x2 - new_road->x1);
+                new_position = span > 0 ? (float)abs(ix - new_road->x1) / (float)span : 0.0f;
+                car->angle = 0.0f;
+            } else {
+                int span = abs(new_road->y2 - new_road->y1);
+                new_position = span > 0 ? (float)abs(iy - new_road->y1) / (float)span : 0.0f;
+                car->angle = 90.0f;
+            }
+
+            car->road_id = crossing_road_id;
+            car->position = new_position + 0.02f;
+            if (car->position > 1.0f) {
+                car->position = 1.0f;
+            }
+            car->at_intersection = true;
+            car->last_turn_x = ix;
+            car->last_turn_y = iy;
+            break;
+        }
+    }
+
+    if (!car->at_intersection) {
+        car->last_turn_x = -1;
+        car->last_turn_y = -1;
     }
 }
 
