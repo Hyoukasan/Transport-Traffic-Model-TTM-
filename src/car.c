@@ -1,14 +1,16 @@
-#include "car.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <GL/glew.h>
 
+#include "car.h"
+#include "graph.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 void car_init(Car *car, int id, int road_id, float desired_speed, float length, int lane, float offset) {
-    if (!car) {
+    if (car == NULL) {
         return;
     }
 
