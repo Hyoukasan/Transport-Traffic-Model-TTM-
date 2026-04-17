@@ -8,7 +8,6 @@ typedef struct Menu Menu_t;
 // Инициализация рендерера
 void renderer_init(void);
 
-
 void menu_render(Menu_t* menu);
 
 // Рисование всех сегментов дорог

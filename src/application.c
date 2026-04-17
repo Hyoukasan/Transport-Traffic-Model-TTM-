@@ -198,7 +198,7 @@ void application_update(void){
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     
-    if (graph) {
+    if (graph != NULL) {
         double time_now = glfwGetTime();
         float dt = (float)(time_now - last_frame_time);
         if (dt <= 0.0f) {
