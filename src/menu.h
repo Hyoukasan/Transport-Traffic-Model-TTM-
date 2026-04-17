@@ -1,39 +1,32 @@
 #ifndef MENU_H
 #define MENU_H
 
-#include <stdbool.h>
-
 typedef enum {
     APP_STATE_MAIN_MENU,
-    APP_STATE_SIMULATION_CONFIG,
-    APP_STATE_SETTINGS_MENU,
     APP_STATE_RUNNING_SIMULATION,
+    APP_STATE_SIMULATION_CONFIG,
+    APP_STATE_INFO,
     APP_STATE_EXIT
 } AppState;
 
 typedef struct {
-    unsigned int x;
-    unsigned int y;
-    unsigned int width;
-    unsigned int height;
-
-    const char* text;
+    unsigned int x, y, width, height;
 
     bool selected;
     bool pressed;
 
     AppState target_state;
-} Button;
+} MenuButton_t;
 
-typedef struct Menu{
+typedef struct Menu {
     AppState current_state;
-    Button buttons[5];
+    MenuButton_t buttons[5];
     int button_count;
     int selected_index;
-} Menu;
+} Menu_t;
 
-void menu_init(Menu* menu);
-void menu_update(Menu* menu, int mx, int my, bool click);
-void menu_render(Menu* menu);
+void menu_init(Menu_t* menu);
+void menu_update(Menu_t* menu, int mx, int my, bool click);
+void menu_render(Menu_t* menu);
 
 #endif

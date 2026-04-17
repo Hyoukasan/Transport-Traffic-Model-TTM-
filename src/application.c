@@ -15,7 +15,7 @@
 
 static GLFWwindow* window = NULL;
 static AppState app_state = APP_STATE_MAIN_MENU;
-static Menu menu = {0};
+static Menu_t menu = {0};
 static int prev_lmb = GLFW_RELEASE;
 static Graph* graph = NULL;
 static Car cars[8];
@@ -188,9 +188,7 @@ void application_update(void){
     bool click = (lmb == GLFW_PRESS && prev_lmb == GLFW_RELEASE);
     prev_lmb = lmb;
 
-    if(app_state == APP_STATE_MAIN_MENU || app_state == APP_STATE_SETTINGS_MENU){
-        menu_update(&menu, (int)mx, (int)my, click);
-    }
+    menu_update(&menu, (int)mx, (int)my, click);
 
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
