@@ -46,7 +46,7 @@ Graph* graph_create(int window_width, int window_height, int chunk_size, int pad
     g->road_count = 0;
     g->max_roads = INITIAL_CAPACITY;
     g->roads = malloc(sizeof(RoadSegment) * g->max_roads);
-    if (!g->roads) {
+    if (g->roads == NULL) {
         fprintf(stderr, "graph_create: failed to allocate roads array\n");
         free(g);
         return NULL;
@@ -55,7 +55,7 @@ Graph* graph_create(int window_width, int window_height, int chunk_size, int pad
     g->intersection_count = 0;
     g->max_intersections = INITIAL_INTERSECTION_CAPACITY;
     g->intersections = malloc(sizeof(GridPoint) * g->max_intersections);
-    if (!g->intersections) {
+    if (g->intersections == NULL) {
         fprintf(stderr, "graph_create: failed to allocate intersections array\n");
         free(g->roads);
         free(g);
@@ -73,7 +73,7 @@ static bool point_in_range(int value, int a, int b) {
 }
 
 static bool graph_add_intersection(Graph *g, int x, int y) {
-    if (!g) {
+    if (g == NULL) {
         return false;
     }
 
@@ -86,7 +86,7 @@ static bool graph_add_intersection(Graph *g, int x, int y) {
     if (g->intersection_count >= g->max_intersections) {
         int new_max = g->max_intersections * 2;
         GridPoint *new_points = realloc(g->intersections, sizeof(GridPoint) * new_max);
-        if (!new_points) {
+        if (new_points == NULL) {
             fprintf(stderr, "graph_add_intersection: failed to allocate expanded intersections array\n");
             return false;
         }
@@ -101,7 +101,7 @@ static bool graph_add_intersection(Graph *g, int x, int y) {
 }
 
 int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, float speed_limit) {
-    if (!g) {
+    if (g == NULL) {
         fprintf(stderr, "graph_add_road: graph is NULL\n");
         return -1;
     }
@@ -134,7 +134,7 @@ int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, floa
 }
 
 void graph_build_intersections(Graph *g) {
-    if (!g || g->road_count < 2) {
+    if (g == NULL || g->road_count < 2) {
         return;
     }
 
@@ -162,7 +162,7 @@ void graph_build_intersections(Graph *g) {
 }
 
 void graph_destroy(Graph *g) {
-    if (!g) {
+    if (g == NULL) {
         return;
     }
 
