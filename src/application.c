@@ -48,7 +48,7 @@ int application_init(const char *title){
     printf("Screen resolution: %dx%d\n", screen_width, screen_height);
 
     window = glfwCreateWindow(screen_width, screen_height, title, glfwGetPrimaryMonitor(), NULL);
-    if (!window){
+    if (window == NULL){
         fprintf(stderr, "Window initialization failed!\n");
         if (logfile) { fprintf(logfile, "Window initialization failed!\n"); fclose(logfile); }
         glfwTerminate();
@@ -84,7 +84,7 @@ int application_init(const char *title){
     int chunk_size = 50;  // размер одного чанка в пикселях
     int padding = 1;      // отступ от края в чанках
     graph = graph_create(screen_width, screen_height, chunk_size, padding);
-    if (!graph) {
+    if (graph == NULL) {
         fprintf(stderr, "Failed to create road graph\n");
         if (logfile) { fprintf(logfile, "Failed to create road graph\n"); fclose(logfile); }
         glfwTerminate();
@@ -108,7 +108,7 @@ int application_init(const char *title){
     int num_roads = min_roads + rand() % (max_roads - min_roads + 1);
     printf("Generating %d roads...\n", num_roads);
     RoadGenerator* gen = road_gen_create(num_roads);
-    if (!gen) {
+    if (gen == NULL) {
         fprintf(stderr, "Failed to create road generator\n");
         if (logfile) { fprintf(logfile, "Failed to create road generator\n"); fclose(logfile); }
         graph_destroy(graph);

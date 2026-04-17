@@ -5,7 +5,7 @@
 
 static AdjEdge* adjedge_create(int to, float weight) {
     AdjEdge *edge = malloc(sizeof(AdjEdge));
-    if (!edge) {
+    if (edge == NULL) {
         return NULL;
     }
     edge->to = to;
@@ -20,13 +20,13 @@ AdjGraph* adjgraph_create(int node_count) {
     }
 
     AdjGraph *graph = malloc(sizeof(AdjGraph));
-    if (!graph) {
+    if (graph == NULL) {
         return NULL;
     }
 
     graph->node_count = node_count;
     graph->edges = calloc(node_count, sizeof(AdjEdge*));
-    if (!graph->edges) {
+    if (graph->edges == NULL) {
         free(graph);
         return NULL;
     }
@@ -35,13 +35,13 @@ AdjGraph* adjgraph_create(int node_count) {
 }
 
 void adjgraph_destroy(AdjGraph *graph) {
-    if (!graph) {
+    if (graph == NULL) {
         return;
     }
 
     for (int i = 0; i < graph->node_count; i++) {
         AdjEdge *edge = graph->edges[i];
-        while (edge) {
+        while (edge != NULL) {
             AdjEdge *next = edge->next;
             free(edge);
             edge = next;

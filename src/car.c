@@ -16,7 +16,7 @@ static bool point_in_range(int value, int a, int b) {
 }
 
 static float calculate_road_fraction(const RoadSegment *road, int x, int y) {
-    if (!road) {
+    if (road == NULL) {
         return 0.0f;
     }
 
@@ -124,10 +124,19 @@ void car_update(Car *car, const Graph *graph, float dt) {
     for (int i = 0; i < graph->intersection_count; i++) {
         int ix = graph->intersections[i].x;
         int iy = graph->intersections[i].y;
-        if (!point_in_range(ix, road->x1, road->x2) && road->type == ROAD_HORIZONTAL) continue;
-        if (!point_in_range(iy, road->y1, road->y2) && road->type == ROAD_VERTICAL) continue;
-        if (road->type == ROAD_HORIZONTAL && iy != road->y1) continue;
-        if (road->type == ROAD_VERTICAL && ix != road->x1) continue;
+        
+        if (!point_in_range(ix, road->x1, road->x2) && road->type == ROAD_HORIZONTAL) {
+            continue;
+        }
+        if (!point_in_range(iy, road->y1, road->y2) && road->type == ROAD_VERTICAL) {
+            continue;
+        }
+        if (road->type == ROAD_HORIZONTAL && iy != road->y1) {
+            continue;
+        }
+        if (road->type == ROAD_VERTICAL && ix != road->x1) {
+            continue;
+        }
 
         float intersection_fraction = calculate_road_fraction(road, ix, iy);
         if (intersection_fraction < 0.0f || intersection_fraction > 1.0f) {

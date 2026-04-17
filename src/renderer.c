@@ -111,14 +111,14 @@ void menu_render(Menu_t *menu) {
 }
 
 void renderer_upload_graph(Graph *graph) {
-    if (!graph) {
+    if (graph == NULL) {
         return;
     }
 
     if (graph->road_count > 0) {
         roadVertexCount = graph->road_count * 2;
         float *vertices = malloc(roadVertexCount * 2 * sizeof(float));
-        if (!vertices) {
+        if (vertices == NULL) {
             fprintf(stderr, "renderer_upload_graph: failed to allocate road vertices buffer\n");
             return;
         }
@@ -145,7 +145,7 @@ void renderer_upload_graph(Graph *graph) {
     if (graph->intersection_count > 0) {
         nodeVertexCount = graph->intersection_count;
         float *vertices = malloc(nodeVertexCount * 2 * sizeof(float));
-        if (!vertices) {
+        if (vertices == NULL) {
             fprintf(stderr, "renderer_upload_graph: failed to allocate node vertices buffer\n");
             return;
         }
@@ -176,13 +176,13 @@ void renderer_draw_roads(Graph *graph) {
 }
 
 void renderer_draw_grid(Graph *graph) {
-    if (!graph || graph->grid_width <= 0 || graph->grid_height <= 0) {
+    if (graph == NULL || graph->grid_width <= 0 || graph->grid_height <= 0) {
         return;
     }
 
     int total_lines = graph->grid_width + graph->grid_height + 2;
     float *vertices = malloc(total_lines * 4 * sizeof(float));
-    if (!vertices) {
+    if (vertices == NULL) {
         fprintf(stderr, "renderer_draw_grid: failed to allocate vertices buffer\n");
         return;
     }
@@ -222,7 +222,7 @@ void renderer_draw_grid(Graph *graph) {
 }
 
 void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
-    if (!graph || !cars || car_count <= 0) {
+    if (graph == NULL || !cars || car_count <= 0) {
         return;
     }
 
