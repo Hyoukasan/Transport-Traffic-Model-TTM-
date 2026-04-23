@@ -27,6 +27,15 @@ TrafficManager* traffic_manager_init(TrafficManager* manager, const TrafficConfi
     manager->accidents = (AccidentDTP*)malloc((size_t)manager->accident_count * sizeof(AccidentDTP));
     if(manager->accidents == NULL) {
         fprintf(stderr, "Accidents initialization failed!\n");
+        free(manager->cars);
+        return NULL;
+    }
+
+    manager->graph = graph_create(1920, 1080, 50, 1);
+    if(manager->graph == NULL) {
+        fprintf(stderr, "Graph initialization failed!\n");
+        free(manager->cars);
+        free(manager->accidents);
         return NULL;
     }
 
