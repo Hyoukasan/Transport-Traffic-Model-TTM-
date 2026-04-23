@@ -16,7 +16,7 @@
 static GLFWwindow* window = NULL;
 static Menu_t menu = {0};
 static InputState input = {0};
-static TrafficManager tm = {0};
+static TrafficManager manager = {0};
 
 static AppState app_state = APP_STATE_MAIN_MENU;
 static double last_frame_time = 0.0;
@@ -53,20 +53,12 @@ int application_init(const char *title){
     }
 
     menu_init(&menu);
+    input_init(&input);
+    renderer_init();
 
-    TrafficConfig congif = {
-        .scenario = SCENARIO_HIGHWAY,
-        .lane_count = 2,
-        .max_cars = 100
-    };
-
-    if (traffic_manager_init(&manager, &congif) != 0) {
+    if (traffic_manager_init(&manager, &config) != 0) {
         return 1;
     }
-
-    srand((unsigned int)time(NULL));
-
-    renderer_init();
     
     last_frame_time = glfwGetTime();
     return 0;
@@ -77,36 +69,53 @@ bool application_is_running(void){
 }
 
 void application_update(void){
-    double mx, my;
-    glfwGetCursorPos(window, &mx, &my);
+    input_update(window, &input);
 
-    int lmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-    bool click = (lmb == GLFW_PRESS && prev_lmb == GLFW_RELEASE);
-    prev_lmb = lmb;
-
-    menu_update(&menu, (int)mx, (int)my, click);
+    double now = glfwGetTime();
+    float dt = (float)(now - last_frame_time);
+    if (dt <= 0.0f) dt = 1.0f / 60.0f;
+    last_frame_time = now;
 
     glClearColor(0.2f, 0.7f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    menu_render(&menu);
+    switch (app_state){
+        case APP_STATE_MAIN_MENU:
+            menu_update(&menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
 
-    glfwSwapBuffers(window);
-    glfwPollEvents();
+            if(menu.current_state == APP_STATE_SIMULATION_CONFIG) {
+                app_state = APP_STATE_SIMULATION_CONFIG;
+            } else if(menu.current_state == APP_STATE_INFO) {
+                app_state = APP_STATE_INFO;
+            } else if(menu.current_state == APP_STATE_EXIT) {
+                app_state = APP_STATE_EXIT;
+            } else if(menu.current_state == APP_STATE_RUNNING_SIMULATION) {
+                app_state = APP_STATE_RUNNING_SIMULATION;
+            }
+
+            break;
+
+        case APP_STATE_RUNNING_SIMULATION:
+            TrafficConfig config = {
+                .scenario = SCENARIO_HIGHWAY,
+                .lane_count = 2,
+                .max_cars = 100
+            };
+
+            if(traffic_manager_init(&manager, &config) == 0) {
+                renderer_upload_graph(manager.graph);
+            } else {
+                menu.current_state = APP_STATE_MAIN_MENU;
+            }
+        
+        default:
+            break;
+    }
+
 }
 
 void application_shutdown(void){
-    for (int i = 0; i < car_count; i++) {
-        car_destroy(&cars[i]);
-    }
+    traffic_manager_clear(&manager);
     renderer_shutdown();
-
-    if (graph) {
-        graph_destroy(graph);
-    }
     glfwTerminate();
-}
-
-Graph* application_get_graph(void){
-    return graph;
 }
