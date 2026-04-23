@@ -24,6 +24,10 @@ void menu_init(Menu_t *menu){
     menu->selected_index = -1;
 
     menu->texture = texture_load("Data/textures/menu_background.png", NULL, NULL);
+
+    if (menu->texture == 0) {
+        printf("Warning: menu_background.png not loaded, using fallback color.\n");
+    }
 }
 
 static bool state_push(AppState current_state) {

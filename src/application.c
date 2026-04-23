@@ -1,4 +1,4 @@
-#include <GL/glew.h> 
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 #include <stdio.h>
@@ -7,8 +7,6 @@
 #include <time.h>
 
 #include "application.h"
-#include "graph.h"
-#include "car.h"
 #include "road_generator.h"
 #include "menu.h"
 #include "renderer.h"
@@ -23,120 +21,67 @@ static int car_count = 0;
 static double last_frame_time = 0.0;
 
 int application_init(const char *title){
-    // Создаем лог-файл для отладки
-    FILE *logfile = fopen("debug_log.txt", "w");
-    
     if (!glfwInit()){
         fprintf(stderr, "GLFW initialization failed!\n");
-        if (logfile) { fprintf(logfile, "GLFW initialization failed!\n"); fclose(logfile); }
         return 1;
     }
 
-    // Получаем размеры главного монитора
     const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
     int screen_width = mode->width;
     int screen_height = mode->height;
-    
-    // Для Linux можно добавить fallback на фиксированный размер
+
     if (screen_width == 0 || screen_height == 0) {
         screen_width = 1920;
         screen_height = 1080;
-        printf("Warning: Could not get monitor resolution, using 1920x1080\n");
     }
-    
-    if (logfile) fprintf(logfile, "Screen resolution: %dx%d\n", screen_width, screen_height);
-    printf("Screen resolution: %dx%d\n", screen_width, screen_height);
 
     window = glfwCreateWindow(screen_width, screen_height, title, glfwGetPrimaryMonitor(), NULL);
     if (window == NULL){
         fprintf(stderr, "Window initialization failed!\n");
-        if (logfile) { fprintf(logfile, "Window initialization failed!\n"); fclose(logfile); }
         glfwTerminate();
         return 1;
     }
 
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
-    
+
     if(glewInit() != GLEW_OK){
         fprintf(stderr, "GLEW initialization failed!\n");
-        if (logfile) { fprintf(logfile, "GLEW initialization failed!\n"); fclose(logfile); }
         glfwTerminate();
         return 1;
     }
 
-    // Проверка версии OpenGL
-    printf("OpenGL Version: %s\n", glGetString(GL_VERSION));
-    printf("GLSL Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-    printf("Renderer: %s\n", glGetString(GL_RENDERER));
-    printf("Vendor: %s\n", glGetString(GL_VENDOR));
-
-    if (logfile) {
-        fprintf(logfile, "OpenGL Version: %s\n", glGetString(GL_VERSION));
-        fprintf(logfile, "GLSL Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-        fprintf(logfile, "Renderer: %s\n", glGetString(GL_RENDERER));
-        fprintf(logfile, "Vendor: %s\n", glGetString(GL_VENDOR));
-    }
-
     menu_init(&menu);
 
-    // Инициализируем граф сетки дорог
-    int chunk_size = 50;  // размер одного чанка в пикселях
-    int padding = 1;      // отступ от края в чанках
+    int chunk_size = 50;
+    int padding = 1;
     graph = graph_create(screen_width, screen_height, chunk_size, padding);
     if (graph == NULL) {
         fprintf(stderr, "Failed to create road graph\n");
-        if (logfile) { fprintf(logfile, "Failed to create road graph\n"); fclose(logfile); }
         glfwTerminate();
         return 1;
     }
 
     srand((unsigned int)time(NULL));
-    
-    if (logfile) {
-        fprintf(logfile, "Graph created\n");
-        fprintf(logfile, "  Grid size: %dx%d chunks\n", graph->grid_width, graph->grid_height);
-        fprintf(logfile, "  Chunk size: %d\n", chunk_size);
-    }
-    
-    // Генерируем и строим дороги
+
     int min_roads = 2;
     int max_roads = graph->grid_width / 2 + graph->grid_height / 2;
     if (max_roads < min_roads) {
         max_roads = min_roads;
     }
     int num_roads = min_roads + rand() % (max_roads - min_roads + 1);
-    printf("Generating %d roads...\n", num_roads);
+
     RoadGenerator* gen = road_gen_create(num_roads);
     if (gen == NULL) {
         fprintf(stderr, "Failed to create road generator\n");
-        if (logfile) { fprintf(logfile, "Failed to create road generator\n"); fclose(logfile); }
         graph_destroy(graph);
         glfwTerminate();
         return 1;
     }
 
-    if (logfile) fprintf(logfile, "Road generator created\n");
-    
     road_gen_generate_points(gen, graph);
     road_gen_build_roads(gen, graph);
     graph_build_intersections(graph);
-    
-    if (logfile) {
-        fprintf(logfile, "\nRoad network info:\n");
-        fprintf(logfile, "  Total roads: %d\n", graph->road_count);
-        fprintf(logfile, "  Intersections: %d\n", graph->intersection_count);
-        fprintf(logfile, "\nRoads:\n");
-        for (int i = 0; i < graph->road_count; i++) {
-            RoadSegment *road = &graph->roads[i];
-            fprintf(logfile, "  Road %d: (%d,%d)->(%d,%d) type=%s speed=%.1f lanes=%d accident=%s\n",
-                   i, road->x1, road->y1, road->x2, road->y2,
-                   road->type == ROAD_HORIZONTAL ? "H" : road->type == ROAD_VERTICAL ? "V" : "D",
-                   road->speed_limit, road->lanes, road->accident ? "yes" : "no");
-        }
-        fflush(logfile);
-    }
-    
     road_gen_destroy(gen);
 
     if (graph->road_count > 0) {
@@ -160,21 +105,8 @@ int application_init(const char *title){
 
     last_frame_time = glfwGetTime();
 
-    printf("\nGrid info:\n");
-    printf("  Grid size: %dx%d chunks\n", graph->grid_width, graph->grid_height);
-    printf("  Chunk size: %dpx\n", chunk_size);
-    printf("  Road segments: %d\n", graph->road_count);
-    printf("  Cars: %d\n", car_count);
-    printf("  Window: %dx%d\n", screen_width, screen_height);
-    
-    // Инициализируем рендерер
     renderer_init();
     renderer_upload_graph(graph);
-    
-    if (logfile) {
-        fprintf(logfile, "\nApplication initialized successfully!\n");
-        fclose(logfile);
-    }
 
     return 0;
 }
@@ -186,18 +118,18 @@ bool application_is_running(void){
 void application_update(void){
     double mx, my;
     glfwGetCursorPos(window, &mx, &my);
-    
+
     int lmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
     bool click = (lmb == GLFW_PRESS && prev_lmb == GLFW_RELEASE);
     prev_lmb = lmb;
 
     menu_update(&menu, (int)mx, (int)my, click);
 
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClearColor(0.2f, 0.7f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     menu_render(&menu);
-    
+
     if (graph != NULL) {
         double time_now = glfwGetTime();
         float dt = (float)(time_now - last_frame_time);
@@ -210,22 +142,18 @@ void application_update(void){
             car_update(&cars[i], graph, dt);
         }
 
-        // Draw grid background to make сетку видимой
         glColor3f(0.35f, 0.35f, 0.35f);
         renderer_draw_grid(graph);
 
-        // Set color for roads (white)
         glColor3f(1.0f, 1.0f, 1.0f);
         renderer_draw_roads(graph);
 
-        // Draw cars on roads
         renderer_draw_cars(graph, cars, car_count);
 
-        // Set color for nodes (red)
         glColor3f(1.0f, 0.0f, 0.0f);
         renderer_draw_nodes(graph);
     }
-    
+
     glfwSwapBuffers(window);
     glfwPollEvents();
 }
@@ -235,7 +163,7 @@ void application_shutdown(void){
         car_destroy(&cars[i]);
     }
     renderer_shutdown();
-    
+
     if (graph) {
         graph_destroy(graph);
     }

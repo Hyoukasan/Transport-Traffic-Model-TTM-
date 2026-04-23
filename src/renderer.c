@@ -80,34 +80,26 @@ void menu_render(Menu_t *menu) {
         return;
     }
 
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, menu->texture);
-    glColor3f(1.0f, 1.0f, 1.0f);
-
-    glBegin(GL_QUADS);
-    glTexCoord2f(0.0f, 0.0f); glVertex2f(menu->x, menu->y);
-    glTexCoord2f(1.0f, 0.0f); glVertex2f(menu->x + menu->width, menu->y);
-    glTexCoord2f(1.0f, 1.0f); glVertex2f(menu->x + menu->width, menu->y + menu->height);
-    glTexCoord2f(0.0f, 1.0f); glVertex2f(menu->x, menu->y + menu->height);
-    glEnd();
-
-    for (int i = 0; i < menu->button_count; i++) {
-        MenuButton_t *b = &menu->buttons[i];
-        if (b->texture == 0) {
-            continue;
-        }
-
-        glBindTexture(GL_TEXTURE_2D, b->texture);
-        glBegin(GL_QUADS);
-        glTexCoord2f(0.0f, 0.0f); glVertex2f(b->x, b->y);
-        glTexCoord2f(1.0f, 0.0f); glVertex2f(b->x + b->width, b->y);
-        glTexCoord2f(1.0f, 1.0f); glVertex2f(b->x + b->width, b->y + b->height);
-        glTexCoord2f(0.0f, 1.0f); glVertex2f(b->x, b->y + b->height);
-        glEnd();
-    }
-
-    glBindTexture(GL_TEXTURE_2D, 0);
+    // Отключаем текстуры и смешивание для чистого теста
     glDisable(GL_TEXTURE_2D);
+    glDisable(GL_BLEND);
+    
+    // Устанавливаем цвет
+    glColor3f(1.0f, 0.0f, 0.0f);
+    
+    // Рисуем квадрат по размерам меню
+    glBegin(GL_QUADS);
+    glVertex2f(menu->x, menu->y);
+    glVertex2f(menu->x + menu->width, menu->y);
+    glVertex2f(menu->x + menu->width, menu->y + menu->height);
+    glVertex2f(menu->x, menu->y + menu->height);
+    glEnd();
+    
+    // Проверяем ошибки OpenGL
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) {
+        printf("OpenGL error: %d\n", err);
+    }
 }
 
 void renderer_upload_graph(Graph *graph) {
