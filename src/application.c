@@ -68,8 +68,10 @@ void application_update(void){
     input_update(window, &input);
 
     double now = glfwGetTime();
-    float dt = (float)(now - last_frame_time);
-    if (dt <= 0.0f) dt = 1.0f / 60.0f;
+    float frame = (float)(now - last_frame_time);
+    if (frame <= 0.0f) {
+        frame = 1.0f / 60.0f;
+    }
     last_frame_time = now;
 
     glClearColor(0.2f, 0.7f, 0.2f, 1.0f);
@@ -113,7 +115,7 @@ void application_update(void){
                 break;
             }
 
-            traffic_manager_update(&manager, dt);
+            traffic_manager_update(&manager, frame);
 
             glColor3f(0.35f, 0.35f, 0.35f);
             renderer_draw_grid(manager.graph);
@@ -142,7 +144,7 @@ void application_update(void){
         default:
             break;
     }
-    
+
     glfwSwapBuffers(window);
     glfwPollEvents();
 }
