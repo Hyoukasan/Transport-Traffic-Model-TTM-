@@ -16,7 +16,7 @@ void menu_init(Menu_t *menu){
     menu->y = 320;
     menu->width = 400;
     menu->height = 500;
-    menu->current_state = APP_STATE_MAIN_MENU;
+    menu->current_state = MENU_STATE_MAIN_MENU;
     menu->button_count = 4;
     menu->selected_index = -1;
 
@@ -38,13 +38,13 @@ static void set_button(MenuButton_t *button, int x, int y, int w, int h, unsigne
     button->target_state = target_state;
 }
 
-static void menu_load_state(Menu_t *menu, AppState app_state) {
+static void menu_load_state(Menu_t *menu, MenuState app_state) {
     if (menu == NULL) {
         return;
     }
     
     switch(app_state){
-        case APP_STATE_MAIN_MENU:
+        case MENU_STATE_MAIN_MENU:
         set_button(&menu->buttons[0], 150, 220, 220, 60, texture_load("Data/textures/start.png", NULL, NULL), APP_STATE_RUNNING_SIMULATION);
         set_button(&menu->buttons[1], 150, 290, 220, 60, texture_load("Data/textures/load.png", NULL, NULL), APP_STATE_SIMULATION_CONFIG);
         set_button(&menu->buttons[2], 150, 360, 220, 60, texture_load("Data/textures/about.png", NULL, NULL), APP_STATE_INFO);

@@ -63,7 +63,7 @@ int application_init(const char *title){
 }
 
 bool application_is_running(void){
-    return !glfwWindowShouldClose(window) && app.target_state != APP_STATE_CLOSED;
+    return !glfwWindowShouldClose(window) && app.current_state != APP_STATE_CLOSED;
 }
 
 void application_update(void){
@@ -130,7 +130,7 @@ void application_update(void){
             break;
         
         case MENU_STATE_EXIT:
-            
+            app.current_state = APP_STATE_CLOSED;
             break;
 
         default:
