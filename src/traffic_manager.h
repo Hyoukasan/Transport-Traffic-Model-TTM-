@@ -47,6 +47,6 @@ typedef struct {
     int          next_car_id;
 } TrafficManager;
 
-TrafficManager* traffic_manager_init(TrafficManager* name_space, const TrafficConfig* config);
+TrafficManager* traffic_manager_init(TrafficManager* manager, const TrafficConfig* config);
 
 #endif
