@@ -11,11 +11,14 @@
 #include "traffic_config.h"
 #include "menu.h"
 #include "renderer.h"
+#include "input.h"
 
 static GLFWwindow* window = NULL;
 static Menu_t menu = {0};
-static TrafficManager manager = {0};
-static int prev_lmb = GLFW_RELEASE;
+static InputState input = {0};
+static TrafficManager tm = {0};
+
+static AppState app_state = APP_STATE_MAIN_MENU;
 static double last_frame_time = 0.0;
 
 int application_init(const char *title){
