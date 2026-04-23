@@ -8,11 +8,9 @@
 #include "graph.h"
 #include "renderer.h"
 
-
-
 int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
     if(manager == NULL || config == NULL) {
-        fprintf(stderr, "Config undefined!\n");
+        fprintf(stderr, "Failed!\n");
         return -1;
     }
 
