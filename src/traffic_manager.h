@@ -3,8 +3,9 @@
 
 #include <stdbool.h>
 
-#include "car.h"
-#include "graph.h"
+struct Car;
+struct Graph;
+struct TrafficConfig;
 
 typedef enum {
     LIGHT_RED,
@@ -21,11 +22,11 @@ typedef struct {
 } TrafficLight;
 
 typedef struct {
-    int road_id;
+    int   road_id;
     float position;
-    int lane;
+    int   lane;
     float clear_timer;
-    bool active;
+    bool  active;
 } AccidentDTP;
 
 typedef struct TrafficManager {
@@ -41,10 +42,12 @@ typedef struct TrafficManager {
     int accident_count;
     int max_accidents;
 
-    const Graph *graph;
+    Graph *graph;
 
     float time;
     int next_car_id;
 } TrafficManager;
+
+TrafficManager* traffic_manager_init(TrafficManager* name_space, const TrafficConfig* config);
 
 #endif
