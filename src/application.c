@@ -55,10 +55,6 @@ int application_init(const char *title){
     menu_init(&menu);
     input_init(&input);
     renderer_init();
-
-    if (traffic_manager_init(&manager, &config) != 0) {
-        return 1;
-    }
     
     last_frame_time = glfwGetTime();
     return 0;
@@ -89,13 +85,13 @@ void application_update(void){
                 app_state = APP_STATE_INFO;
             } else if(menu.current_state == APP_STATE_EXIT) {
                 app_state = APP_STATE_EXIT;
-            } else if(menu.current_state == APP_STATE_RUNNING_SIMULATION) {
-                app_state = APP_STATE_RUNNING_SIMULATION;
+            } else if(menu.current_state == APP_STATE_CREATE_SIMULATION) {
+                app_state = APP_STATE_CREATE_SIMULATION;
             }
 
             break;
 
-        case APP_STATE_RUNNING_SIMULATION:
+        case APP_STATE_CREATE_SIMULATION:
             TrafficConfig config = {
                 .scenario = SCENARIO_HIGHWAY,
                 .lane_count = 2,
@@ -104,14 +100,51 @@ void application_update(void){
 
             if(traffic_manager_init(&manager, &config) == 0) {
                 renderer_upload_graph(manager.graph);
+                menu.current_state = APP_STATE_RUNNING_SIMULATION;
             } else {
                 menu.current_state = APP_STATE_MAIN_MENU;
             }
+
+            break;
         
+        case APP_STATE_RUNNING_SIMULATION:
+            if (input.key_esc_click) {
+                app_state = APP_STATE_SIMULATION_PAUSE; 
+                break;
+            }
+
+            traffic_manager_update(&manager, dt);
+
+            glColor3f(0.35f, 0.35f, 0.35f);
+            renderer_draw_grid(manager.graph);
+
+            glColor3f(1.0f, 1.0f, 1.0f);
+            renderer_draw_roads(manager.graph);
+
+            renderer_draw_cars(manager.graph, manager.cars, manager.car_count);
+
+            glColor3f(1.0f, 0.0f, 0.0f);
+            renderer_draw_nodes(manager.graph);
+            break;
+
+        case APP_STATE_INFO:
+            if (input.key_esc_click) {
+                app_state = APP_STATE_MAIN_MENU;
+            }
+
+            menu_render(&menu);
+            break;
+        
+        case APP_STATE_EXIT:
+            
+            break;
+
         default:
             break;
     }
-
+    
+    glfwSwapBuffers(window);
+    glfwPollEvents();
 }
 
 void application_shutdown(void){
