@@ -9,7 +9,7 @@ typedef enum {
     SCENARIO_MULTI_INTERSECTION
 } ScenarioType;
 
-typedef struct {
+typedef struct TrafficConfig {
     ScenarioType scenario;  
 
     int lane_count;            

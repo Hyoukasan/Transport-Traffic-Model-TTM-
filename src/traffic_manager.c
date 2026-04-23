@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "traffic_manager.h"
 #include "traffic_config.h"
@@ -10,7 +11,7 @@
 
 int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
     if(manager == NULL || config == NULL) {
-        fprintf(stderr, "Failed!\n");
+        fprintf(stderr, "Invalid args!\n");
         return -1;
     }
 

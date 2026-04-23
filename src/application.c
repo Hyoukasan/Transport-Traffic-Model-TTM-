@@ -53,60 +53,12 @@ int application_init(const char *title){
 
     menu_init(&menu);
 
-    int chunk_size = 50;
-    int padding = 1;
-    graph = graph_create(screen_width, screen_height, chunk_size, padding);
-    if (graph == NULL) {
-        fprintf(stderr, "Failed to create road graph\n");
-        glfwTerminate();
-        return 1;
-    }
-
     srand((unsigned int)time(NULL));
-
-    int min_roads = 2;
-    int max_roads = graph->grid_width / 2 + graph->grid_height / 2;
-    if (max_roads < min_roads) {
-        max_roads = min_roads;
-    }
-    int num_roads = min_roads + rand() % (max_roads - min_roads + 1);
-
-    RoadGenerator* gen = road_gen_create(num_roads);
-    if (gen == NULL) {
-        fprintf(stderr, "Failed to create road generator\n");
-        graph_destroy(graph);
-        glfwTerminate();
-        return 1;
-    }
-
-    road_gen_generate_points(gen, graph);
-    road_gen_build_roads(gen, graph);
-    graph_build_intersections(graph);
-    road_gen_destroy(gen);
-
-    if (graph->road_count > 0) {
-        car_init(&cars[0], 0, 0, 0.8f, 1.0f, 0, 0.0f);
-        car_init(&cars[1], 1, graph->road_count > 1 ? 1 : 0, 0.6f, 1.0f, 0, 0.0f);
-        cars[1].color[0] = 0.2f;
-        cars[1].color[1] = 0.4f;
-        cars[1].color[2] = 0.9f;
-        car_count = graph->road_count > 1 ? 2 : 1;
-
-        FILE *car_file = fopen("car.png", "rb");
-        if (car_file) {
-            fclose(car_file);
-            int tex_w = 0, tex_h = 0;
-            unsigned int car_texture = car_load_texture("car.png", &tex_h, &tex_w);
-            if (car_texture != 0) {
-                car_set_texture(&cars[0], car_texture, (float)tex_h, (float)tex_w);
-            }
-        }
-    }
 
     last_frame_time = glfwGetTime();
 
     renderer_init();
-    renderer_upload_graph(graph);
+    
 
     return 0;
 }
