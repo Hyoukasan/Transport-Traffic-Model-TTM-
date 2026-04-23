@@ -14,6 +14,13 @@ int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
         return -1;
     }
 
+    memset(manager, 0, sizeof(*manager));
+
+    if (config->max_cars <= 0) {
+        fprintf(stderr, "Count cars must be > 0\n");
+        return -1;
+    }
+
     manager->max_cars = config->max_cars;
     manager->cars = (Car*)calloc((size_t)manager->max_cars, sizeof(Car));
     if(manager->cars == NULL) {

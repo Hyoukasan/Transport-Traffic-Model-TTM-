@@ -29,25 +29,29 @@ typedef struct {
 } AccidentDTP;
 
 typedef struct {
-    Car          *cars;
-    int          car_count;
-    int          max_cars;
+    struct Car          *cars;
+    int                 car_count;
+    int                 max_cars;
 
-    TrafficLight *lights;
-    int           light_count;
-    int           max_lights;
+    TrafficLight        *lights;
+    int                 light_count;
+    int                 max_lights;
 
-    AccidentDTP *accidents;
-    int          accident_count;
-    int          max_accidents;
+    AccidentDTP         *accidents;
+    int                 accident_count;
+    int                 max_accidents;
 
-    Graph       *graph;
+    struct Graph       *graph;
 
-    float        time;
-    int          next_car_id;
+    float               time;
+    int                 next_car_id;
 } TrafficManager;
 
 int traffic_manager_init(TrafficManager* manager, const struct TrafficConfig* config);
 void traffic_manager_clear(TrafficManager *manager);
+int traffic_manager_update(TrafficManager *manager, float dt);
+int traffic_manager_add_accident(TrafficManager *manager, int road_id, int lane, float position, float clear_time);
+const struct Graph *traffic_manager_get_graph(const TrafficManager *manager);
+const struct Car *traffic_manager_get_cars(const TrafficManager *manager, int *out_count);
 
 #endif
