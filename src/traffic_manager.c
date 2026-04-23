@@ -39,5 +39,11 @@ TrafficManager* traffic_manager_init(TrafficManager* manager, const TrafficConfi
         return NULL;
     }
 
+    manager->car_count = 0;
+    manager->accident_count = 0;
+    manager->light_count = 0;
+    manager->time = 0.0f;
+    manager->next_car_id = 0; 
+
     return manager;
 }
