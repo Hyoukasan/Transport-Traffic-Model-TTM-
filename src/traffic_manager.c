@@ -11,41 +11,31 @@
 
 
 int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
-    if(config == NULL) {
+    if(manager == NULL || config == NULL) {
         fprintf(stderr, "Config undefined!\n");
-        return -1;
-    }
-    
-    
-    manager = (TrafficManager*)calloc(1,sizeof(TrafficManager));
-    if(manager == NULL) {
-        fprintf(stderr, "Manager initialization failed!\n");
         return -1;
     }
 
     manager->max_cars = config->max_cars;
-    manager->cars = (Car*)malloc((size_t)manager->max_cars * sizeof(Car));
+    manager->cars = (Car*)calloc((size_t)manager->max_cars, sizeof(Car));
     if(manager->cars == NULL) {
         fprintf(stderr, "Cars initialization failed!\n");
-        free(manager);
+        traffic_manager_clear(manager);
         return -1;
     }
     
-    manager->accident_count = 16;
-    manager->accidents = (AccidentDTP*)malloc((size_t)manager->accident_count * sizeof(AccidentDTP));
+    manager->max_accidents = 16;
+    manager->accidents = (AccidentDTP*)calloc((size_t)manager->max_accidents, sizeof(AccidentDTP));
     if(manager->accidents == NULL) {
         fprintf(stderr, "Accidents initialization failed!\n");
-        free(manager->cars);
-        free(manager);
+        traffic_manager_clear(manager);
         return -1;
     }
 
     manager->graph = graph_create(1920, 1080, 50, 1);
     if(manager->graph == NULL) {
         fprintf(stderr, "Graph initialization failed!\n");
-        free(manager->cars);
-        free(manager->accidents);
-        free(manager);
+        traffic_manager_clear(manager);
         return -1;
     }
 
@@ -57,3 +47,36 @@ int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
 
     return 0;
 }
+
+void traffic_manager_clear(TrafficManager *manager) {
+    if (manager == NULL) {
+        return;
+    }
+
+    if (manager->graph != NULL) {
+        graph_destroy(manager->graph);
+        manager->graph = NULL;
+    }
+
+    free(manager->cars);
+    manager->cars = NULL;
+
+    free(manager->lights);
+    manager->lights = NULL;
+
+    free(manager->accidents);
+    manager->accidents = NULL;
+
+    manager->car_count = 0;
+    manager->max_cars = 0;
+    manager->light_count = 0;
+    manager->max_lights = 0;
+    manager->accident_count = 0;
+    manager->max_accidents = 0;
+    manager->time = 0.0f;
+    manager->next_car_id = 0;
+}
+
+
+
+
