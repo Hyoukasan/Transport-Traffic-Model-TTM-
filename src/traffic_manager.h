@@ -28,7 +28,7 @@ typedef struct {
     bool  active;
 } AccidentDTP;
 
-typedef struct TrafficManager {
+typedef struct {
     Car          *cars;
     int          car_count;
     int          max_cars;
