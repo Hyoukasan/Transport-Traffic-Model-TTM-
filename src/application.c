@@ -81,6 +81,11 @@ void application_update(void){
         case APP_STATE_MAIN_MENU:
             menu_update(&menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
 
+            if(input.key_esc_click) {
+                app_state = APP_STATE_EXIT;
+                break;
+            }
+
             if(menu.current_state == APP_STATE_SIMULATION_CONFIG) {
                 app_state = APP_STATE_SIMULATION_CONFIG;
             } else if(menu.current_state == APP_STATE_INFO) {
@@ -94,6 +99,11 @@ void application_update(void){
             break;
 
         case APP_STATE_CREATE_SIMULATION:
+            if(input.key_esc_click) {
+                app_state = APP_STATE_EXIT;
+                break;
+            }
+
             TrafficConfig config = {
                 .scenario = SCENARIO_HIGHWAY,
                 .lane_count = 2,
