@@ -7,17 +7,15 @@
 #include <time.h>
 
 #include "application.h"
-#include "road_generator.h"
+#include "traffic_manager.h"
+#include "traffic_config.h"
 #include "menu.h"
 #include "renderer.h"
 
 static GLFWwindow* window = NULL;
-static AppState app_state = APP_STATE_MAIN_MENU;
 static Menu_t menu = {0};
+static TrafficManager manager = {0};
 static int prev_lmb = GLFW_RELEASE;
-static Graph* graph = NULL;
-static Car cars[8];
-static int car_count = 0;
 static double last_frame_time = 0.0;
 
 int application_init(const char *title){
