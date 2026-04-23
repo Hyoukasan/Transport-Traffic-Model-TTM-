@@ -14,11 +14,10 @@ typedef enum {
 } LightState;
 
 typedef struct {
-    int intersection_x;
-    int intersection_y;
-    LightState state_horizontal;
-    LightState state_vertical;
-    float timer;
+    int        intersection_x;
+    int        intersection_y;
+    LightState state_light;
+    float      timer;
 } TrafficLight;
 
 typedef struct {
@@ -30,22 +29,22 @@ typedef struct {
 } AccidentDTP;
 
 typedef struct TrafficManager {
-    Car *cars;
-    int car_count;
-    int max_cars;
+    Car          *cars;
+    int          car_count;
+    int          max_cars;
 
     TrafficLight *lights;
-    int light_count;
-    int max_lights;
+    int           light_count;
+    int           max_lights;
 
     AccidentDTP *accidents;
-    int accident_count;
-    int max_accidents;
+    int          accident_count;
+    int          max_accidents;
 
-    Graph *graph;
+    Graph       *graph;
 
-    float time;
-    int next_car_id;
+    float        time;
+    int          next_car_id;
 } TrafficManager;
 
 TrafficManager* traffic_manager_init(TrafficManager* name_space, const TrafficConfig* config);
