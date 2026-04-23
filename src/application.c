@@ -51,13 +51,21 @@ int application_init(const char *title){
 
     menu_init(&menu);
 
-    srand((unsigned int)time(NULL));
+    TrafficConfig congif = {
+        .scenario = SCENARIO_HIGHWAY,
+        .lane_count = 2,
+        .max_cars = 100
+    };
 
-    last_frame_time = glfwGetTime();
+    if (traffic_manager_init(&manager, &congif) != 0) {
+        return 1;
+    }
+
+    srand((unsigned int)time(NULL));
 
     renderer_init();
     
-
+    last_frame_time = glfwGetTime();
     return 0;
 }
 
@@ -79,30 +87,6 @@ void application_update(void){
     glClear(GL_COLOR_BUFFER_BIT);
 
     menu_render(&menu);
-
-    if (graph != NULL) {
-        double time_now = glfwGetTime();
-        float dt = (float)(time_now - last_frame_time);
-        if (dt <= 0.0f) {
-            dt = 1.0f / 60.0f;
-        }
-        last_frame_time = time_now;
-
-        for (int i = 0; i < car_count; i++) {
-            car_update(&cars[i], graph, dt);
-        }
-
-        glColor3f(0.35f, 0.35f, 0.35f);
-        renderer_draw_grid(graph);
-
-        glColor3f(1.0f, 1.0f, 1.0f);
-        renderer_draw_roads(graph);
-
-        renderer_draw_cars(graph, cars, car_count);
-
-        glColor3f(1.0f, 0.0f, 0.0f);
-        renderer_draw_nodes(graph);
-    }
 
     glfwSwapBuffers(window);
     glfwPollEvents();
