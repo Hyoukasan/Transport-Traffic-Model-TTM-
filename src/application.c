@@ -7,18 +7,20 @@
 #include <time.h>
 
 #include "application.h"
+#include "app_manager.h"
 #include "traffic_manager.h"
 #include "traffic_config.h"
 #include "menu.h"
 #include "renderer.h"
 #include "input.h"
 
+static AppManager app = {0};
 static GLFWwindow* window = NULL;
 static Menu_t menu = {0};
 static InputState input = {0};
 static TrafficManager manager = {0};
 
-static AppState app_state = APP_STATE_MAIN_MENU;
+
 static double last_frame_time = 0.0;
 
 int application_init(const char *title){
@@ -61,7 +63,7 @@ int application_init(const char *title){
 }
 
 bool application_is_running(void){
-    return !glfwWindowShouldClose(window) && app_state != APP_STATE_EXIT;
+    return !glfwWindowShouldClose(window) && app.target_state != APP_STATE_CLOSED;
 }
 
 void application_update(void){
@@ -77,30 +79,30 @@ void application_update(void){
     glClearColor(0.2f, 0.7f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    switch (app_state){
-        case APP_STATE_MAIN_MENU:
+    switch(menu.current_state) {
+        case MENU_STATE_MAIN_MENU:
             menu_update(&menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
 
             if(input.key_esc_click) {
-                app_state = APP_STATE_EXIT;
+                app.current_state = APP_STATE_CLOSED;
                 break;
             }
 
-            if(menu.current_state == APP_STATE_SIMULATION_CONFIG) {
-                app_state = APP_STATE_SIMULATION_CONFIG;
-            } else if(menu.current_state == APP_STATE_INFO) {
-                app_state = APP_STATE_INFO;
-            } else if(menu.current_state == APP_STATE_EXIT) {
-                app_state = APP_STATE_EXIT;
-            } else if(menu.current_state == APP_STATE_CREATE_SIMULATION) {
-                app_state = APP_STATE_CREATE_SIMULATION;
+            if(menu.current_state == MENU_STATE_SIMULATION_CONFIG) {
+                menu.current_state = MENU_STATE_SIMULATION_CONFIG;
+            } else if(menu.current_state == MENU_STATE_INFO) {
+                menu.current_state = MENU_STATE_INFO;
+            } else if(menu.current_state == MENU_STATE_EXIT) {
+                menu.current_state = MENU_STATE_EXIT;
+            } else if(menu.current_state == MENU_STATE_CREATE_SIMULATION) {
+                menu.current_state = MENU_STATE_CREATE_SIMULATION;
             }
 
             break;
 
-        case APP_STATE_CREATE_SIMULATION:
+        case MENU_STATE_CREATE_SIMULATION:
             if(input.key_esc_click) {
-                app_state = APP_STATE_EXIT;
+                app_state = MENU_STATE_EXIT;
                 break;
             }
 
@@ -112,16 +114,34 @@ void application_update(void){
 
             if(traffic_manager_init(&manager, &config) == 0) {
                 renderer_upload_graph(manager.graph);
-                menu.current_state = APP_STATE_RUNNING_SIMULATION;
+                menu.current_state = MENU_STATE_RUNNING_SIMULATION;
             } else {
-                menu.current_state = APP_STATE_MAIN_MENU;
+                menu.current_state = MENUP_STATE_MAIN_MENU;
             }
 
             break;
+
+        case MENU_STATE_INFO:
+            if (input.key_esc_click) {
+                app_state = MENU_STATE_MAIN_MENU;
+            }
+
+            menu_render(&menu);
+            break;
         
+        case MENU_STATE_EXIT:
+            
+            break;
+
+        default:
+            break;
+    }
+
+    switch(app.current_state) {
         case APP_STATE_RUNNING_SIMULATION:
             if (input.key_esc_click) {
-                app_state = APP_STATE_SIMULATION_PAUSE; 
+                app_state = MENU_STATE_SIMULATION_PAUSE;
+                menu.current_state = MENU_STATE_SIMULATION_PAUSE;
                 break;
             }
 
@@ -138,21 +158,14 @@ void application_update(void){
             glColor3f(1.0f, 0.0f, 0.0f);
             renderer_draw_nodes(manager.graph);
             break;
-
-        case APP_STATE_INFO:
-            if (input.key_esc_click) {
-                app_state = APP_STATE_MAIN_MENU;
-            }
-
-            menu_render(&menu);
+        case APP_STATE_CLOSED:
             break;
-        
-        case APP_STATE_EXIT:
-            
+
+        case APP_STATE_SIMULATION_PAUSE:
             break;
 
         default:
-            break;
+            break
     }
 
     glfwSwapBuffers(window);

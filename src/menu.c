@@ -5,9 +5,6 @@
 #include "menu.h"
 #include "texture.h"
 
-#define MAX_HISTORY 10
-
-static AppState state_stack[MAX_HISTORY];
 static uint8_t stack_size = 0;
 
 void menu_init(Menu_t *menu){
@@ -28,27 +25,6 @@ void menu_init(Menu_t *menu){
     if (menu->texture == 0) {
         printf("Warning: menu_background.png not loaded, using fallback color.\n");
     }
-}
-
-static bool state_push(AppState current_state) {
-    if(stack_size >= MAX_HISTORY) {
-        return false;
-    }
-
-    state_stack[stack_size++] = current_state;
-
-    return true;
-}
-
-static bool state_pop(AppState* current_state) {
-    if(stack_size == 0) {
-        return false;
-    }
-
-    stack_size--;
-    *current_state = state_stack[stack_size];
-
-    return true;
 }
 
 static void set_button(MenuButton_t *button, int x, int y, int w, int h, unsigned int texture, AppState target_state) {
