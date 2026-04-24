@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "geometry.h"
 #include "menu.h"
 #include "graph.h"
 #include "car.h"

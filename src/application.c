@@ -20,7 +20,6 @@ static Menu_t menu = {0};
 static InputState input = {0};
 static TrafficManager manager = {0};
 
-
 static double last_frame_time = 0.0;
 
 int application_init(const char *title){
@@ -102,7 +101,7 @@ void application_update(void){
 
         case MENU_STATE_CREATE_SIMULATION:
             if(input.key_esc_click) {
-                app_state = MENU_STATE_EXIT;
+                menu.current_state = MENU_STATE_EXIT;
                 break;
             }
 
@@ -114,16 +113,16 @@ void application_update(void){
 
             if(traffic_manager_init(&manager, &config) == 0) {
                 renderer_upload_graph(manager.graph);
-                menu.current_state = MENU_STATE_RUNNING_SIMULATION;
+                app.current_state = APP_STATE_RUNNING_SIMULATION;
             } else {
-                menu.current_state = MENUP_STATE_MAIN_MENU;
+                menu.current_state = MENU_STATE_MAIN_MENU;
             }
 
             break;
 
         case MENU_STATE_INFO:
             if (input.key_esc_click) {
-                app_state = MENU_STATE_MAIN_MENU;
+                menu.current_state = MENU_STATE_MAIN_MENU;
             }
 
             menu_render(&menu);
@@ -140,7 +139,6 @@ void application_update(void){
     switch(app.current_state) {
         case APP_STATE_RUNNING_SIMULATION:
             if (input.key_esc_click) {
-                app_state = MENU_STATE_SIMULATION_PAUSE;
                 menu.current_state = MENU_STATE_SIMULATION_PAUSE;
                 break;
             }
@@ -165,7 +163,7 @@ void application_update(void){
             break;
 
         default:
-            break
+            break;
     }
 
     glfwSwapBuffers(window);
