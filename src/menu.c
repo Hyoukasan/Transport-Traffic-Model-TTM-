@@ -20,8 +20,9 @@ void menu_init(Menu_t *menu){
     menu->button_count = 4;
     menu->selected_index = -1;
 
-    menu->texture = texture_load("Data/textures/menu_background.png", NULL, NULL);
+    menu_load_state(menu, menu->current_state); 
 
+    menu->texture = texture_load("Data/textures/menu_background.png", NULL, NULL);
     if (menu->texture == 0) {
         printf("Warning: menu_background.png not loaded, using fallback color.\n");
     }
@@ -69,6 +70,10 @@ void menu_update(Menu_t *menu, int mx, int my, bool click) {
         return;
     }
 
+    if (menu->current_state != MENU_STATE_MAIN_MENU) {
+        return;
+    }
+
     for (int i = 0; i < menu->button_count; i++) {
         MenuButton_t *button = &menu->buttons[i];
 
@@ -76,8 +81,10 @@ void menu_update(Menu_t *menu, int mx, int my, bool click) {
             mx >= button->x && mx <= button->x + button->width &&
             my >= button->y && my <= button->y + button->height;
 
+        button->selected = inside;
+
         if (click && inside) {
-            state_push(button->target_state);
+            menu->current_state = button->target_state;
             break;
         }
     }
