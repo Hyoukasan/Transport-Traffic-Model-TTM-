@@ -10,6 +10,9 @@ typedef enum {
 
 typedef struct AppManager{
     AppState current_state;
+    
+    int screen_width;
+    int screen_height;
 }AppManager;
 
 

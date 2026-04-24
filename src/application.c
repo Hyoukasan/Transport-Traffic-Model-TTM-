@@ -29,15 +29,15 @@ int application_init(const char *title){
     }
 
     const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-    int screen_width = mode->width;
-    int screen_height = mode->height;
+    app.screen_width        = mode->width;
+    app.screen_height       = mode->height;
 
-    if (screen_width == 0 || screen_height == 0) {
-        screen_width = 1920;
-        screen_height = 1080;
+    if (app.screen_width == 0 || app.screen_height == 0) {
+        app.screen_width  = 1920;
+        app.screen_height = 1080;
     }
 
-    window = glfwCreateWindow(screen_width, screen_height, title, glfwGetPrimaryMonitor(), NULL);
+    window = glfwCreateWindow(app.screen_width, app.screen_height, title, glfwGetPrimaryMonitor(), NULL);
     if (window == NULL){
         fprintf(stderr, "Window initialization failed!\n");
         glfwTerminate();
@@ -87,7 +87,7 @@ void application_update(void){
                 menu.current_state = MENU_STATE_EXIT;
                 break;
             } else {
-                menu_render(&menu);
+                menu_render(&menu, app.screen_width, app.screen_height);
             }
 
             break;
@@ -123,7 +123,7 @@ void application_update(void){
                 menu.current_state = MENU_STATE_MAIN_MENU;
                 break;
             } else {
-                menu_render(&menu);
+                menu_render(&menu, app.screen_width, app.screen_height);
             }
 
             break;

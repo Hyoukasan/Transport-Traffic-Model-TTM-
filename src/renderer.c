@@ -66,27 +66,16 @@ void renderer_init(void) {
     glBindVertexArray(0);
 }
 
-void menu_render(Menu_t *menu) {
+void menu_render(Menu_t* menu, int screen_width, int screen_height) {
     if (menu == NULL) {
         return;
     }
 
-    // Отключаем текстуры и смешивание для чистого теста
-    glDisable(GL_TEXTURE_2D);
-    glDisable(GL_BLEND);
-    
-    // Устанавливаем цвет
-    glColor3f(1.0f, 0.0f, 0.0f);
-    
-    // Рисуем квадрат по размерам меню
-    glBegin(GL_QUADS);
-    glVertex2f(menu->x, menu->y);
-    glVertex2f(menu->x + menu->width, menu->y);
-    glVertex2f(menu->x + menu->width, menu->y + menu->height);
-    glVertex2f(menu->x, menu->y + menu->height);
-    glEnd();
-    
-    // Проверяем ошибки OpenGL
+    float left   = pixel_to_normalized_x(menu->x, screen_width);
+    float right  = pixel_to_normalized_x(menu->x + menu->width, screen_width);
+    float top    = pixel_to_normalized_y(menu->y, screen_height);
+    float bottom = pixel_to_normalized_y(menu->y + menu->height, screen_height);
+
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
         printf("OpenGL error: %d\n", err);
