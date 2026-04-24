@@ -28,7 +28,7 @@ void menu_init(Menu_t *menu, int screen_width, int screen_height){
         printf("Warning: background.png not loaded.\n");
     }
 
-    menu->texture = texture_load("Data/textures/new_background.png", NULL, NULL);
+    menu->texture = texture_load("Data/textures/background_menu.png", NULL, NULL);
     if (menu->texture == 0) {
         printf("Warning: new_background.png not loaded, using fallback color.\n");
     }
