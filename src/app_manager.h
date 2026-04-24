@@ -8,7 +8,7 @@ typedef enum {
 } AppState;
 
 typedef struct AppManager{
-    AppState target_state;
+    AppState current_state;
 }AppManager;
 
 
