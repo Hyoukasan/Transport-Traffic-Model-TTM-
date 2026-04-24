@@ -114,10 +114,14 @@ void application_update(void){
             if(traffic_manager_init(&manager, &config) == 0) {
                 renderer_upload_graph(manager.graph);
                 app.current_state = APP_STATE_RUNNING_SIMULATION;
+                menu.current_state = MENU_STATE_RUNNING_SIMULATION;
             } else {
                 menu.current_state = MENU_STATE_MAIN_MENU;
             }
 
+            break;
+
+        case MENU_STATE_RUNNING_SIMULATION:
             break;
 
         case MENU_STATE_INFO:
@@ -140,6 +144,7 @@ void application_update(void){
         case APP_STATE_RUNNING_SIMULATION:
             if (input.key_esc_click) {
                 menu.current_state = MENU_STATE_SIMULATION_PAUSE;
+                app.current_state = APP_STATE_SIMULATION_PAUSE;
                 break;
             }
 
@@ -157,6 +162,11 @@ void application_update(void){
             renderer_draw_nodes(manager.graph);
             break;
         case APP_STATE_CLOSED:
+            if(input.key_esc_click) {
+                menu.current_state = MENU_STATE_RUNNING_SIMULATION;
+                app.current_state = APP_STATE_RUNNING_SIMULATION;
+                break;
+            }
             break;
 
         case APP_STATE_SIMULATION_PAUSE:
