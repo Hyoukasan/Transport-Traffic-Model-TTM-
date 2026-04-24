@@ -7,8 +7,6 @@
 
 static void menu_load_state(Menu_t *menu, MenuState app_state);
 
-static uint8_t stack_size = 0;
-
 void menu_init(Menu_t *menu){
     if (menu == NULL) {
         return;
