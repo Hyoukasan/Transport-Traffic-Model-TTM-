@@ -81,20 +81,11 @@ void application_update(void){
     switch(menu.current_state) {
         case MENU_STATE_MAIN_MENU:
             menu_update(&menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
+            menu_render(&menu);
 
             if(input.key_esc_click) {
                 app.current_state = APP_STATE_CLOSED;
                 break;
-            }
-
-            if(menu.current_state == MENU_STATE_SIMULATION_CONFIG) {
-                menu.current_state = MENU_STATE_SIMULATION_CONFIG;
-            } else if(menu.current_state == MENU_STATE_INFO) {
-                menu.current_state = MENU_STATE_INFO;
-            } else if(menu.current_state == MENU_STATE_EXIT) {
-                menu.current_state = MENU_STATE_EXIT;
-            } else if(menu.current_state == MENU_STATE_CREATE_SIMULATION) {
-                menu.current_state = MENU_STATE_CREATE_SIMULATION;
             }
 
             break;
@@ -102,6 +93,7 @@ void application_update(void){
         case MENU_STATE_CREATE_SIMULATION:
             if(input.key_esc_click) {
                 menu.current_state = MENU_STATE_EXIT;
+                menu_render(&menu);
                 break;
             }
 
@@ -117,6 +109,7 @@ void application_update(void){
                 menu.current_state = MENU_STATE_RUNNING_SIMULATION;
             } else {
                 menu.current_state = MENU_STATE_MAIN_MENU;
+                menu_render(&menu);
             }
 
             break;
@@ -127,6 +120,8 @@ void application_update(void){
         case MENU_STATE_INFO:
             if (input.key_esc_click) {
                 menu.current_state = MENU_STATE_MAIN_MENU;
+                menu_render(&menu);
+                break;
             }
 
             menu_render(&menu);
