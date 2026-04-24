@@ -80,7 +80,7 @@ void application_update(void){
     }
     last_frame_time = now;
 
-    glClearColor(0.2f, 0.7f, 0.2f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     switch(menu.current_state) {

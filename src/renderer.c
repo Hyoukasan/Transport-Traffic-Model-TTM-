@@ -72,18 +72,19 @@ void renderer_draw_background(unsigned int texture) {
     }
 
     glEnable(GL_BLEND);
+    glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texture);
     glBegin(GL_QUADS);
-    glTexCoord2f(0, 1);
+    glTexCoord2f(0, 0);
     glVertex2f(-1.0f, 1.0f);
 
-    glTexCoord2f(1, 1);
+    glTexCoord2f(1, 0);
     glVertex2f(1.0f, 1.0f);
 
-    glTexCoord2f(1, 0);
+    glTexCoord2f(1, 1);
     glVertex2f(1.0f, -1.0f);
 
-    glTexCoord2f(0, 0);
+    glTexCoord2f(0, 1);
     glVertex2f(-1.0f, -1.0f);
     glEnd();
 
@@ -95,6 +96,8 @@ void menu_render(Menu_t* menu, int screen_width, int screen_height) {
     if (menu == NULL) {
         return;
     }
+
+    renderer_draw_background(menu->background_texture);
 
     float left   = pixel_to_normalized_x(menu->x, screen_width);
     float right  = pixel_to_normalized_x(menu->x + menu->width, screen_width);
