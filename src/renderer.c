@@ -108,10 +108,10 @@ void renderer_upload_graph(Graph *graph) {
 
         for (int i = 0; i < graph->road_count; i++) {
             RoadSegment *road = &graph->roads[i];
-            float x1 = grid_to_normalized_x(graph, road->x1);
-            float y1 = grid_to_normalized_y(graph, road->y1);
-            float x2 = grid_to_normalized_x(graph, road->x2);
-            float y2 = grid_to_normalized_y(graph, road->y2);
+            float x1 = grid_center_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
+            float y1 = grid_center_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
+            float x2 = grid_center_to_normalized_x(road->x2, graph->chunk_size, graph->padding, graph->window_width);
+            float y2 = grid_center_to_normalized_y(road->y2, graph->chunk_size, graph->padding, graph->window_height);
             vertices[i * 4 + 0] = x1;
             vertices[i * 4 + 1] = y1;
             vertices[i * 4 + 2] = x2;
@@ -135,8 +135,8 @@ void renderer_upload_graph(Graph *graph) {
 
         int index = 0;
         for (int i = 0; i < graph->intersection_count; i++) {
-            vertices[index++] = grid_to_normalized_x(graph, graph->intersections[i].x);
-            vertices[index++] = grid_to_normalized_y(graph, graph->intersections[i].y);
+            vertices[index++] = grid_center_to_normalized_x(graph->intersections[i].x, graph->chunk_size, graph->padding, graph->window_width);
+            vertices[index++] = grid_center_to_normalized_y(graph->intersections[i].y, graph->chunk_size, graph->padding, graph->window_height);
         }
 
         glBindVertexArray(nodeVAO);
@@ -171,25 +171,20 @@ void renderer_draw_grid(Graph *graph) {
     }
 
     int index = 0;
-    int left = graph->padding;
-    int right = graph->padding + graph->grid_width;
-    int top = graph->padding;
-    int bottom = graph->padding + graph->grid_height;
-
     // vertical lines
     for (int x = 0; x <= graph->grid_width; x++) {
-        vertices[index++] = grid_to_normalized_x(graph, left + x);
-        vertices[index++] = grid_to_normalized_y(graph, top);
-        vertices[index++] = grid_to_normalized_x(graph, left + x);
-        vertices[index++] = grid_to_normalized_y(graph, bottom);
+        vertices[index++] = grid_edge_to_normalized_x(x, graph->chunk_size, graph->padding, graph->window_width);
+        vertices[index++] = grid_edge_to_normalized_y(0, graph->chunk_size, graph->padding, graph->window_height);
+        vertices[index++] = grid_edge_to_normalized_x(x, graph->chunk_size, graph->padding, graph->window_width);
+        vertices[index++] = grid_edge_to_normalized_y(graph->grid_height, graph->chunk_size, graph->padding, graph->window_height);
     }
 
     // horizontal lines
     for (int y = 0; y <= graph->grid_height; y++) {
-        vertices[index++] = grid_to_normalized_x(graph, left);
-        vertices[index++] = grid_to_normalized_y(graph, top + y);
-        vertices[index++] = grid_to_normalized_x(graph, right);
-        vertices[index++] = grid_to_normalized_y(graph, top + y);
+        vertices[index++] = grid_edge_to_normalized_x(0, graph->chunk_size, graph->padding, graph->window_width);
+        vertices[index++] = grid_edge_to_normalized_y(y, graph->chunk_size, graph->padding, graph->window_height);
+        vertices[index++] = grid_edge_to_normalized_x(graph->grid_width, graph->chunk_size, graph->padding, graph->window_width);
+        vertices[index++] = grid_edge_to_normalized_y(y, graph->chunk_size, graph->padding, graph->window_height);
     }
 
     glBindVertexArray(gridVAO);
@@ -220,10 +215,10 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
         }
 
         RoadSegment *road = &graph->roads[car->road_id];
-        float x1 = grid_to_normalized_x(graph, road->x1);
-        float y1 = grid_to_normalized_y(graph, road->y1);
-        float x2 = grid_to_normalized_x(graph, road->x2);
-        float y2 = grid_to_normalized_y(graph, road->y2);
+        float x1 = grid_center_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
+        float y1 = grid_center_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
+        float x2 = grid_center_to_normalized_x(road->x2, graph->chunk_size, graph->padding, graph->window_width);
+        float y2 = grid_center_to_normalized_y(road->y2, graph->chunk_size, graph->padding, graph->window_height);
         float cx = x1 + (x2 - x1) * car->position;
         float cy = y1 + (y2 - y1) * car->position;
 
