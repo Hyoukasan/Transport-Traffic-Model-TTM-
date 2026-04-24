@@ -12,8 +12,8 @@ void menu_init(Menu_t *menu, int screen_width, int screen_height){
         return;
     }   
     
-    menu->width = 258;
-    menu->height = 540;    
+    menu->width = 420;
+    menu->height = 820;    
     menu->x = (screen_width - menu->width) / 2;
     menu->y = (screen_height - menu->height) / 2;
     
@@ -47,10 +47,10 @@ static void menu_load_state(Menu_t *menu, MenuState app_state) {
     
     switch(app_state){
         case MENU_STATE_MAIN_MENU:
-        set_button(&menu->buttons[0], 150, 220, 220, 60, texture_load("Data/textures/start.png", NULL, NULL), MENU_STATE_CREATE_SIMULATION);
-        set_button(&menu->buttons[1], 150, 290, 220, 60, texture_load("Data/textures/load.png", NULL, NULL), MENU_STATE_SIMULATION_CONFIG);
-        set_button(&menu->buttons[2], 150, 360, 220, 60, texture_load("Data/textures/about.png", NULL, NULL), MENU_STATE_INFO);
-        set_button(&menu->buttons[3], 150, 430, 220, 60, texture_load("Data/textures/exit.png", NULL, NULL), MENU_STATE_EXIT);
+            set_button(&menu->buttons[0], 150, 220, 135, 60, texture_load("Data/textures/start.png", NULL, NULL), MENU_STATE_CREATE_SIMULATION);
+            set_button(&menu->buttons[1], 150, 290, 135, 60, texture_load("Data/textures/load.png", NULL, NULL), MENU_STATE_SIMULATION_CONFIG);
+            set_button(&menu->buttons[2], 150, 360, 135, 60, texture_load("Data/textures/about.png", NULL, NULL), MENU_STATE_INFO);
+            set_button(&menu->buttons[3], 150, 430, 135, 60, texture_load("Data/textures/exit.png", NULL, NULL), MENU_STATE_EXIT);
             menu->button_count = 4;
             break;
         case MENU_STATE_CREATE_SIMULATION:
