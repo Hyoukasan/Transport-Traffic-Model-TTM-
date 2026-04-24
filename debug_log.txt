@@ -1,0 +1,20 @@
+Screen resolution: 1920x1080
+OpenGL Version: 4.6.0 - Build 31.0.101.4255
+GLSL Version: 4.60 - Build 31.0.101.4255
+Renderer: Intel(R) UHD Graphics
+Vendor: Intel
+Graph created
+  Grid size: 36x19 chunks
+  Chunk size: 50
+Road generator created
+
+Road network info:
+  Total roads: 3
+  Intersections: 2
+
+Roads:
+  Road 0: (0,3)->(35,3) type=H speed=0.8 lanes=1 accident=no
+  Road 1: (30,0)->(30,18) type=V speed=1.1 lanes=1 accident=no
+  Road 2: (17,0)->(17,18) type=V speed=1.1 lanes=1 accident=no
+
+Application initialized successfully!

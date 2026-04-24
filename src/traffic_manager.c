@@ -7,7 +7,6 @@
 #include "traffic_config.h"
 #include "car.h"
 #include "graph.h"
-#include "renderer.h"
 
 int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
     if(manager == NULL || config == NULL) {
@@ -38,7 +37,7 @@ int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
         return -1;
     }
 
-    manager->graph = graph_create(1920, 1080, 50, 1);
+    manager->graph = graph_create(1920, 1080, 50, 0);
     if(manager->graph == NULL) {
         fprintf(stderr, "Graph initialization failed!\n");
         traffic_manager_clear(manager);
@@ -59,11 +58,17 @@ void traffic_manager_clear(TrafficManager *manager) {
         return;
     }
 
-    if (manager->graph != NULL) {
+    if(manager->graph != NULL) {
         graph_destroy(manager->graph);
         manager->graph = NULL;
     }
 
+    if(manager->cars != NULL) {
+        for(size_t i = 0; i < manager->car_count; i++) {
+            car_destroy(manager->cars + i * sizeof(Car));
+        }
+    }
+    
     free(manager->cars);
     manager->cars = NULL;
 

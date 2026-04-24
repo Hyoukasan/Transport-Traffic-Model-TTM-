@@ -15,16 +15,6 @@ static int roadVertexCount = 0;
 static int nodeVertexCount = 0;
 static GLuint carVAO = 0, carVBO = 0;
 
-static float grid_to_normalized_x(const Graph *graph, int grid_x) {
-    float pixel = (grid_x + graph->padding) * graph->chunk_size + graph->chunk_size * 0.5f;
-    return (2.0f * pixel / graph->window_width) - 1.0f;
-}
-
-static float grid_to_normalized_y(const Graph *graph, int grid_y) {
-    float pixel = (grid_y + graph->padding) * graph->chunk_size + graph->chunk_size * 0.5f;
-    return 1.0f - (2.0f * pixel / graph->window_height);
-}
-
 void renderer_init(void) {
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
