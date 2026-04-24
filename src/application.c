@@ -162,14 +162,14 @@ void application_update(void){
             renderer_draw_nodes(manager.graph);
             break;
         case APP_STATE_CLOSED:
+            break;
+
+        case APP_STATE_SIMULATION_PAUSE:
             if(input.key_esc_click) {
                 menu.current_state = MENU_STATE_RUNNING_SIMULATION;
                 app.current_state = APP_STATE_RUNNING_SIMULATION;
                 break;
             }
-            break;
-
-        case APP_STATE_SIMULATION_PAUSE:
             break;
 
         default:
