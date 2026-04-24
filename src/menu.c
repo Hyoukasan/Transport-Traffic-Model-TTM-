@@ -12,8 +12,8 @@ void menu_init(Menu_t *menu, int screen_width, int screen_height){
         return;
     }   
     
-    menu->width = 400;
-    menu->height = 500;    
+    menu->width = 258;
+    menu->height = 540;    
     menu->x = (screen_width - menu->width) / 2;
     menu->y = (screen_height - menu->height) / 2;
     
