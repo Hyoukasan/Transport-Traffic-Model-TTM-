@@ -9,12 +9,14 @@ static ma_sound menu_music;
 static ma_sound simulation_music;
 static ma_sound click;
 
-int audio_init(void) {
+static AudioType audio = {0};
 
+int audio_init(void) {
+    return ma_engine_init(NULL, &engine) == MA_SUCCESS;
 }
 
 void audio_shutdown(void) {
-
+    ma_engine_uninit(&engine);
 }
 
 

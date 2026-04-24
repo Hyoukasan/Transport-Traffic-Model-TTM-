@@ -1,6 +1,12 @@
 #ifndef AUDIO_MANAGER_H
 #define AUDIO_MANAGER_H
 
+typedef enum {
+    AUDIO_MAIN_MENU,
+    AUDIO_SIMULATION,
+    AUDIO_CKICK
+} AudioType;
+
 int audio_init(void);
 void audio_shutdown(void);
 
