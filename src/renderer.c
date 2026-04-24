@@ -76,6 +76,29 @@ void menu_render(Menu_t* menu, int screen_width, int screen_height) {
     float top    = pixel_to_normalized_y(menu->y, screen_height);
     float bottom = pixel_to_normalized_y(menu->y + menu->height, screen_height);
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, menu->texture);
+
+    glBegin(GL_QUADS);
+    glTexCoord2f(0, 1);
+    glVertex2f(left, top);
+
+    glTexCoord2f(1, 1);
+    glVertex2f(right, top);
+
+    glTexCoord2f(1, 0);
+    glVertex2f(right, bottom);
+
+    glTexCoord2f(0, 0);
+    glVertex2f(left, bottom);
+    glEnd();
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_BLEND);
+
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
         printf("OpenGL error: %d\n", err);
