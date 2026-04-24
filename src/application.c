@@ -141,6 +141,9 @@ void application_update(void){
     }
 
     switch(app.current_state) {
+        case APP_STATE_IDLE:
+            break;
+
         case APP_STATE_RUNNING_SIMULATION:
             if (input.key_esc_click) {
                 menu.current_state = MENU_STATE_SIMULATION_PAUSE;
@@ -153,13 +156,13 @@ void application_update(void){
             glColor3f(0.35f, 0.35f, 0.35f);
             renderer_draw_grid(manager.graph);
 
-            glColor3f(1.0f, 1.0f, 1.0f);
-            renderer_draw_roads(manager.graph);
+//            glColor3f(1.0f, 1.0f, 1.0f);
+//            renderer_draw_roads(manager.graph);
 
-            renderer_draw_cars(manager.graph, manager.cars, manager.car_count);
+//            renderer_draw_cars(manager.graph, manager.cars, manager.car_count);
 
-            glColor3f(1.0f, 0.0f, 0.0f);
-            renderer_draw_nodes(manager.graph);
+//            glColor3f(1.0f, 0.0f, 0.0f);
+//            renderer_draw_nodes(manager.graph);
             break;
         case APP_STATE_CLOSED:
             break;
