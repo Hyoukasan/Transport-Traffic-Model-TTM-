@@ -34,7 +34,7 @@ typedef struct Menu {
     int selected_index;
 } Menu_t;
 
-void menu_init(Menu_t* menu);
+void menu_init(Menu_t* menu, int screen_width, int screen_height);
 void menu_update(Menu_t* menu, int mx, int my, bool click);
 
 #endif  

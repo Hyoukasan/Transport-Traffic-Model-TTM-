@@ -53,7 +53,7 @@ int application_init(const char *title){
         return 1;
     }
 
-    menu_init(&menu);
+    menu_init(&menu, app.screen_width, app.screen_height);
     input_init(&input);
     renderer_init();
     

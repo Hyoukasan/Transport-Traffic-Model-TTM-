@@ -7,15 +7,16 @@
 
 static void menu_load_state(Menu_t *menu, MenuState app_state);
 
-void menu_init(Menu_t *menu){
+void menu_init(Menu_t *menu, int screen_width, int screen_height){
     if (menu == NULL) {
         return;
     }   
     
-    menu->x = 150;
-    menu->y = 320;
     menu->width = 400;
-    menu->height = 500;
+    menu->height = 500;    
+    menu->x = (screen_width - menu->width) / 2;
+    menu->y = (screen_height - menu->height) / 2;
+    
     menu->current_state = MENU_STATE_MAIN_MENU;
     menu->button_count = 4;
     menu->selected_index = -1;
