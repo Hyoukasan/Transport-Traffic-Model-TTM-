@@ -1,9 +1,6 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#define MINIAUDIO_IMPLEMENTATION
-#include "miniaudio.h"
-
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -11,6 +8,7 @@
 
 #include "application.h"
 #include "app_manager.h"
+#include "audio_manager.h"
 #include "traffic_manager.h"
 #include "traffic_config.h"
 #include "menu.h"
@@ -59,6 +57,10 @@ int application_init(const char *title){
     menu_init(&menu, app.screen_width, app.screen_height);
     input_init(&input);
     renderer_init();
+
+    if (audio_init() != 0) {
+        audio_start_menu_music();
+    }      
     
     last_frame_time = glfwGetTime();
     return 0;
@@ -183,6 +185,7 @@ void application_update(void){
 }
 
 void application_shutdown(void){
+    audio_shutdown();
     traffic_manager_clear(&manager);
     renderer_shutdown();
     glfwTerminate();

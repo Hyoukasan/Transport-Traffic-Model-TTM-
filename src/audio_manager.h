@@ -1,11 +1,14 @@
 #ifndef AUDIO_MANAGER_H
 #define AUDIO_MANAGER_H
 
+typedef struct ma_engine ma_engine;
+typedef struct ma_sound ma_sound;
+
 typedef struct {
-    ma_engine engine;
-    ma_sound menu_music;
-    ma_sound simulation_music;
-    ma_sound click;
+    ma_engine *engine;
+    ma_sound  *menu_music;
+    ma_sound  *simulation_music;
+    ma_sound  *click;
 
     int initialized;
     int menu_music_loaded;

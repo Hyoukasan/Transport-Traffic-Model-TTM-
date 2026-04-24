@@ -66,6 +66,31 @@ void renderer_init(void) {
     glBindVertexArray(0);
 }
 
+void renderer_draw_background(unsigned int texture) {
+    if(texture == 0) {
+        return;
+    }
+
+    glEnable(GL_BLEND);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0, 1);
+    glVertex2f(-1.0f, 1.0f);
+
+    glTexCoord2f(1, 1);
+    glVertex2f(1.0f, 1.0f);
+
+    glTexCoord2f(1, 0);
+    glVertex2f(1.0f, -1.0f);
+
+    glTexCoord2f(0, 0);
+    glVertex2f(-1.0f, -1.0f);
+    glEnd();
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_TEXTURE_2D);
+}
+
 void menu_render(Menu_t* menu, int screen_width, int screen_height) {
     if (menu == NULL) {
         return;

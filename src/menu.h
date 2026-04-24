@@ -17,6 +17,7 @@ typedef enum {
 typedef struct {
     int x, y, width, height;
     unsigned int texture;
+    unsigned int background_texture;
 
     bool selected;
     bool pressed;
