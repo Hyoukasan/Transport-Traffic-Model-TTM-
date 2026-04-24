@@ -147,7 +147,7 @@ void application_update(void){
                 break;
             }
 
-            traffic_manager_update(&manager, frame);
+//            traffic_manager_update(&manager, frame);
 
             glColor3f(0.35f, 0.35f, 0.35f);
             renderer_draw_grid(manager.graph);
