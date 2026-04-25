@@ -92,18 +92,20 @@ void renderer_draw_background(unsigned int texture) {
     glDisable(GL_TEXTURE_2D);
 }
 
-void button_render(MenuButton_t* button, int screen_width, int screen_height) {
+void button_render(MenuButton_t* button, int offset_x, int offset_y, 
+    int screen_width, int screen_height) {
     if(button == NULL) {
         return;
     }
 
-    float left   = pixel_to_normalized_x(button->x, screen_width);
-    float right  = pixel_to_normalized_x(button->x + button->width, screen_width);
-    float top    = pixel_to_normalized_y(button->y, screen_height);
-    float bottom = pixel_to_normalized_y(button->y + button->height, screen_height);
+    int x = offset_x + button->x;
+    int y = offset_y + button->y;
 
-    glEnable(GL_BLEND);
-    glEnable(GL_TEXTURE_2D);
+    float left   = pixel_to_normalized_x(x, screen_width);
+    float right  = pixel_to_normalized_x(x + button->width, screen_width);
+    float top    = pixel_to_normalized_y(y, screen_height);
+    float bottom = pixel_to_normalized_y(y + button->height, screen_height);
+
     glBindTexture(GL_TEXTURE_2D, button->texture);
 
     glBegin(GL_QUADS);
@@ -121,8 +123,6 @@ void button_render(MenuButton_t* button, int screen_width, int screen_height) {
     glEnd();
 
     glBindTexture(GL_TEXTURE_2D, 0);
-    glDisable(GL_TEXTURE_2D);
-    glDisable(GL_BLEND);
 
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
@@ -160,6 +160,10 @@ void menu_render(Menu_t* menu, int screen_width, int screen_height) {
     glTexCoord2f(0, 0);
     glVertex2f(left, bottom);
     glEnd();
+
+    for (int i = 0; i < menu->button_count; i++) {
+        button_render(&menu->buttons[i], menu->x, menu->y, screen_width, screen_height);
+    }
 
     glBindTexture(GL_TEXTURE_2D, 0);
     glDisable(GL_TEXTURE_2D);
