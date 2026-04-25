@@ -18,9 +18,6 @@ typedef struct {
     int x, y, width, height;
     unsigned int texture;
 
-    bool selected;
-    bool pressed;
-
     MenuState target_state;
 } MenuButton_t;
 

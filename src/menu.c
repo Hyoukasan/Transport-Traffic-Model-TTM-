@@ -40,8 +40,6 @@ static void set_button(MenuButton_t *button, int x, int y, int w, int h, unsigne
     button->width = w;
     button->height = h;
     button->texture = texture;
-    button->selected = false;
-    button->pressed = false;
     button->target_state = target_state;
 }
 
@@ -86,8 +84,6 @@ void menu_update(Menu_t *menu, int mx, int my, bool click) {
         bool inside =
             mx >= button->x && mx <= button->x + button->width &&
             my >= button->y && my <= button->y + button->height;
-
-        button->selected = inside;
 
         if (click && inside) {
             menu->current_state = button->target_state;

@@ -92,6 +92,44 @@ void renderer_draw_background(unsigned int texture) {
     glDisable(GL_TEXTURE_2D);
 }
 
+void button_render(MenuButton_t* button, int screen_width, int screen_height) {
+    if(button == NULL) {
+        return;
+    }
+
+    float left   = pixel_to_normalized_x(button->x, screen_width);
+    float right  = pixel_to_normalized_x(button->x + button->width, screen_width);
+    float top    = pixel_to_normalized_y(button->y, screen_height);
+    float bottom = pixel_to_normalized_y(button->y + button->height, screen_height);
+
+    glEnable(GL_BLEND);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, button->texture);
+
+    glBegin(GL_QUADS);
+    glTexCoord2f(0, 0);
+    glVertex2f(left, bottom);
+
+    glTexCoord2f(1, 0);
+    glVertex2f(right, bottom);
+
+    glTexCoord2f(1, 1);
+    glVertex2f(right, top);
+
+    glTexCoord2f(0, 1);
+    glVertex2f(left, top);
+    glEnd();
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_BLEND);
+
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) {
+        printf("OpenGL error: %d\n", err);
+    }
+}
+
 void menu_render(Menu_t* menu, int screen_width, int screen_height) {
     if (menu == NULL) {
         return;
