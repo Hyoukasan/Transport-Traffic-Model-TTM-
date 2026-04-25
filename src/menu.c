@@ -5,23 +5,21 @@
 #include "menu.h"
 #include "texture.h"
 
-static void menu_load_state(Menu_t *menu, MenuState app_state);
+static void menu_load_state(Menu_t *menu);
 
 void menu_init(Menu_t *menu, int screen_width, int screen_height){
     if (menu == NULL) {
         return;
     }   
     
-    menu->width = 420;
+    menu->width  = 420;
     menu->height = 820;    
-    menu->x = (screen_width - menu->width) / 2;
-    menu->y = (screen_height - menu->height) / 2;
+    menu->x      = (screen_width - menu->width) / 2;
+    menu->y      = (screen_height - menu->height) / 2;
     
     menu->current_state = MENU_STATE_MAIN_MENU;
     menu->button_count = 4;
     menu->selected_index = -1;
-
-    menu_load_state(menu, menu->current_state); 
 
     menu->background_texture = texture_load("Data/textures/background.png", NULL, NULL);
     if(menu->background_texture == 0) {
@@ -32,29 +30,54 @@ void menu_init(Menu_t *menu, int screen_width, int screen_height){
     if (menu->texture == 0) {
         printf("Warning: new_background.png not loaded, using fallback color.\n");
     }
+
+    menu_load_state(menu); 
 }
 
-static void set_button(MenuButton_t *button, int x, int y, int w, int h, unsigned int texture, MenuState target_state) {
-    button->x = x;
-    button->y = y;
-    button->width = w;
-    button->height = h;
-    button->texture = texture;
-    button->target_state = target_state;
+static void bind_buttons(MenuButton_t *buttons, ButtonInfo *info, int count) {
+    for (int i = 0; i < count; i++) {
+        buttons[i].texture = texture_load(info[i].texture_path, NULL, NULL);
+        buttons[i].target_state = info[i].target_state;
+    }
 }
 
-static void menu_load_state(Menu_t *menu, MenuState app_state) {
+static void set_buttons(MenuButton_t* buttons, int button_count, int menu_width, int menu_height, int gap) {
+    if(buttons == NULL) {
+        return;
+    }
+
+    int button_width = 320;
+    int button_height = 60;
+
+    int total_height = button_count * button_height + (button_count - 1) * gap;
+    int start_y = (menu_height - total_height) / 2;
+
+    for (int i = 0; i < button_count; i++) {
+        buttons[i].width  = button_width;
+        buttons[i].height = button_height;
+        buttons[i].x = (menu_width - button_width) / 2;
+        buttons[i].y = start_y + i * (button_height + gap);
+    }
+
+}
+
+static void menu_load_state(Menu_t* menu) {
     if (menu == NULL) {
         return;
     }
     
-    switch(app_state){
+    switch(menu->current_state){
         case MENU_STATE_MAIN_MENU:
-            set_button(&menu->buttons[0], 150, 220, 135, 60, texture_load("Data/textures/start.png", NULL, NULL), MENU_STATE_CREATE_SIMULATION);
-            set_button(&menu->buttons[1], 150, 290, 135, 60, texture_load("Data/textures/load.png", NULL, NULL), MENU_STATE_SIMULATION_CONFIG);
-            set_button(&menu->buttons[2], 150, 360, 135, 60, texture_load("Data/textures/about.png", NULL, NULL), MENU_STATE_INFO);
-            set_button(&menu->buttons[3], 150, 430, 135, 60, texture_load("Data/textures/exit.png", NULL, NULL), MENU_STATE_EXIT);
+            ButtonInfo buttons_map[] = {
+                { "Data/textures/start.png",  MENU_STATE_CREATE_SIMULATION },
+                { "Data/textures/config.png", MENU_STATE_SIMULATION_CONFIG },
+                { "Data/textures/about.png",  MENU_STATE_INFO },
+                { "Data/textures/exit.png",   MENU_STATE_EXIT }
+            };
+
             menu->button_count = 4;
+            set_buttons(menu->buttons, menu->button_count, menu->width, menu->height, 10);
+            bind_buttons(menu->buttons, buttons_map, menu->button_count);
             break;
         case MENU_STATE_CREATE_SIMULATION:
             break;
@@ -65,11 +88,13 @@ static void menu_load_state(Menu_t *menu, MenuState app_state) {
         case MENU_STATE_EXIT:
             break;
 
-        default: break;
+        default:
+            menu->button_count = 0;
+            break;
     }   
 }
 
-void menu_update(Menu_t *menu, int mx, int my, bool click) {
+void menu_update(Menu_t* menu, int mx, int my, bool click) {
     if (menu == NULL) {
         return;
     }

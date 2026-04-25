@@ -15,6 +15,11 @@ typedef enum {
 } MenuState;
 
 typedef struct {
+    const char *texture_path;
+    MenuState target_state;
+} ButtonInfo;
+
+typedef struct {
     int x, y, width, height;
     unsigned int texture;
 
@@ -27,7 +32,7 @@ typedef struct Menu {
     unsigned int background_texture;
 
     MenuState current_state;
-    MenuButton_t buttons[5];
+    MenuButton_t buttons[4];
     int button_count;
     int selected_index;
 } Menu_t;
