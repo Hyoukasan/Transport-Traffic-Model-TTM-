@@ -2,12 +2,8 @@
 #include <stdio.h>
 
 int main(void){
-    FILE *test = fopen("test_start.txt", "w");
-    fprintf(test, "Program started\n");
-    fflush(test);
-    fclose(test);
-
     if(application_init("Transport Traffic Model")){
+        fprintf(stderr, "Application failed!\n");
         return 0;
     }
 
@@ -16,7 +12,6 @@ int main(void){
     }
 
     application_shutdown();
-
     return 0;
 }
 
