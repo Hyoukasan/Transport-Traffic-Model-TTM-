@@ -88,6 +88,20 @@ void traffic_manager_clear(TrafficManager *manager) {
     manager->next_car_id = 0;
 }
 
+int traffic_manager_update(TrafficManager *manager, float dt) {
+    if (manager == NULL || dt <= 0.0f) {
+        return -1;
+    }
+
+    // Update cars
+    for (int i = 0; i < manager->car_count; i++) {
+        car_update(&manager->cars[i], manager->graph, dt);
+    }
+
+    manager->time += dt;
+    return 0;
+}
+
 
 
 

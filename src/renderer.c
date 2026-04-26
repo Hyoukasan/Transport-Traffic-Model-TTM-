@@ -175,69 +175,76 @@ void menu_render(Menu_t* menu, int screen_width, int screen_height) {
     }
 }
 
-void renderer_upload_graph(Graph *graph) {
-    if (graph == NULL) {
-        return;
-    }
+// void renderer_upload_graph(Graph *graph) {
+//     if (graph == NULL) {
+//         return;
+//     }
 
-    if (graph->road_count > 0) {
-        roadVertexCount = graph->road_count * 2;
-        float *vertices = malloc(roadVertexCount * 2 * sizeof(float));
-        if (vertices == NULL) {
-            fprintf(stderr, "renderer_upload_graph: failed to allocate road vertices buffer\n");
-            return;
-        }
+//     if (graph->road_count > 0) {
+//         roadVertexCount = graph->road_count * 2;
+//         float *vertices = malloc(roadVertexCount * 2 * sizeof(float));
+//         if (vertices == NULL) {
+//             fprintf(stderr, "renderer_upload_graph: failed to allocate road vertices buffer\n");
+//             return;
+//         }
 
-        for (int i = 0; i < graph->road_count; i++) {
-            RoadSegment *road = &graph->roads[i];
-            float x1 = grid_center_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
-            float y1 = grid_center_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
-            float x2 = grid_center_to_normalized_x(road->x2, graph->chunk_size, graph->padding, graph->window_width);
-            float y2 = grid_center_to_normalized_y(road->y2, graph->chunk_size, graph->padding, graph->window_height);
-            vertices[i * 4 + 0] = x1;
-            vertices[i * 4 + 1] = y1;
-            vertices[i * 4 + 2] = x2;
-            vertices[i * 4 + 3] = y2;
-        }
+//         for (int i = 0; i < graph->road_count; i++) {
+//             RoadSegment *road = &graph->roads[i];
+//             float x1 = grid_center_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
+//             float y1 = grid_center_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
+//             float x2 = grid_center_to_normalized_x(road->x2, graph->chunk_size, graph->padding, graph->window_width);
+//             float y2 = grid_center_to_normalized_y(road->y2, graph->chunk_size, graph->padding, graph->window_height);
+//             vertices[i * 4 + 0] = x1;
+//             vertices[i * 4 + 1] = y1;
+//             vertices[i * 4 + 2] = x2;
+//             vertices[i * 4 + 3] = y2;
+//         }
 
-        glBindVertexArray(VAO);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, roadVertexCount * 2 * sizeof(float), vertices, GL_STATIC_DRAW);
-        glBindVertexArray(0);
-        free(vertices);
-    }
+//         glBindVertexArray(VAO);
+//         glBindBuffer(GL_ARRAY_BUFFER, VBO);
+//         glBufferData(GL_ARRAY_BUFFER, roadVertexCount * 2 * sizeof(float), vertices, GL_STATIC_DRAW);
+//         glBindVertexArray(0);
+//         free(vertices);
+//     }
 
-    if (graph->intersection_count > 0) {
-        nodeVertexCount = graph->intersection_count;
-        float *vertices = malloc(nodeVertexCount * 2 * sizeof(float));
-        if (vertices == NULL) {
-            fprintf(stderr, "renderer_upload_graph: failed to allocate node vertices buffer\n");
-            return;
-        }
+//     if (graph->intersection_count > 0) {
+//         nodeVertexCount = graph->intersection_count;
+//         float *vertices = malloc(nodeVertexCount * 2 * sizeof(float));
+//         if (vertices == NULL) {
+//             fprintf(stderr, "renderer_upload_graph: failed to allocate node vertices buffer\n");
+//             return;
+//         }
 
-        int index = 0;
-        for (int i = 0; i < graph->intersection_count; i++) {
-            vertices[index++] = grid_center_to_normalized_x(graph->intersections[i].x, graph->chunk_size, graph->padding, graph->window_width);
-            vertices[index++] = grid_center_to_normalized_y(graph->intersections[i].y, graph->chunk_size, graph->padding, graph->window_height);
-        }
+//         int index = 0;
+//         for (int i = 0; i < graph->intersection_count; i++) {
+//             vertices[index++] = grid_center_to_normalized_x(graph->intersections[i].x, graph->chunk_size, graph->padding, graph->window_width);
+//             vertices[index++] = grid_center_to_normalized_y(graph->intersections[i].y, graph->chunk_size, graph->padding, graph->window_height);
+//         }
 
-        glBindVertexArray(nodeVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, nodeVBO);
-        glBufferData(GL_ARRAY_BUFFER, nodeVertexCount * 2 * sizeof(float), vertices, GL_STATIC_DRAW);
-        glBindVertexArray(0);
-        free(vertices);
-    }
-}
+//         glBindVertexArray(nodeVAO);
+//         glBindBuffer(GL_ARRAY_BUFFER, nodeVBO);
+//         glBufferData(GL_ARRAY_BUFFER, nodeVertexCount * 2 * sizeof(float), vertices, GL_STATIC_DRAW);
+//         glBindVertexArray(0);
+//         free(vertices);
+//     }
+// }
 
 void renderer_draw_roads(Graph *graph) {
-    (void)graph;
-    if (roadVertexCount == 0) {
+    if (graph == NULL || graph->road_count <= 0) {
         return;
     }
 
-    glBindVertexArray(VAO);
-    glDrawArrays(GL_LINES, 0, roadVertexCount);
-    glBindVertexArray(0);
+    glBegin(GL_LINES);
+    for (int i = 0; i < graph->road_count; i++) {
+        RoadSegment *road = &graph->roads[i];
+        float x1 = grid_center_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
+        float y1 = grid_center_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
+        float x2 = grid_center_to_normalized_x(road->x2, graph->chunk_size, graph->padding, graph->window_width);
+        float y2 = grid_center_to_normalized_y(road->y2, graph->chunk_size, graph->padding, graph->window_height);
+        glVertex2f(x1, y1);
+        glVertex2f(x2, y2);
+    }
+    glEnd();
 }
 
 void renderer_draw_grid(Graph *graph) {
@@ -245,40 +252,25 @@ void renderer_draw_grid(Graph *graph) {
         return;
     }
 
-    int total_lines = graph->grid_width + graph->grid_height + 2;
-    float *vertices = malloc(total_lines * 4 * sizeof(float));
-    if (vertices == NULL) {
-        fprintf(stderr, "renderer_draw_grid: failed to allocate vertices buffer\n");
-        return;
-    }
-
-    int index = 0;
+    glBegin(GL_LINES);
     // vertical lines
     for (int x = 0; x <= graph->grid_width; x++) {
-        vertices[index++] = grid_edge_to_normalized_x(x, graph->chunk_size, graph->padding, graph->window_width);
-        vertices[index++] = grid_edge_to_normalized_y(0, graph->chunk_size, graph->padding, graph->window_height);
-        vertices[index++] = grid_edge_to_normalized_x(x, graph->chunk_size, graph->padding, graph->window_width);
-        vertices[index++] = grid_edge_to_normalized_y(graph->grid_height, graph->chunk_size, graph->padding, graph->window_height);
+        float xPos = grid_edge_to_normalized_x(x, graph->chunk_size, graph->padding, graph->window_width);
+        float y1 = grid_edge_to_normalized_y(0, graph->chunk_size, graph->padding, graph->window_height);
+        float y2 = grid_edge_to_normalized_y(graph->grid_height, graph->chunk_size, graph->padding, graph->window_height);
+        glVertex2f(xPos, y1);
+        glVertex2f(xPos, y2);
     }
 
     // horizontal lines
     for (int y = 0; y <= graph->grid_height; y++) {
-        vertices[index++] = grid_edge_to_normalized_x(0, graph->chunk_size, graph->padding, graph->window_width);
-        vertices[index++] = grid_edge_to_normalized_y(y, graph->chunk_size, graph->padding, graph->window_height);
-        vertices[index++] = grid_edge_to_normalized_x(graph->grid_width, graph->chunk_size, graph->padding, graph->window_width);
-        vertices[index++] = grid_edge_to_normalized_y(y, graph->chunk_size, graph->padding, graph->window_height);
+        float yPos = grid_edge_to_normalized_y(y, graph->chunk_size, graph->padding, graph->window_height);
+        float x1 = grid_edge_to_normalized_x(0, graph->chunk_size, graph->padding, graph->window_width);
+        float x2 = grid_edge_to_normalized_x(graph->grid_width, graph->chunk_size, graph->padding, graph->window_width);
+        glVertex2f(x1, yPos);
+        glVertex2f(x2, yPos);
     }
-
-    glBindVertexArray(gridVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, gridVBO);
-    glBufferData(GL_ARRAY_BUFFER, total_lines * 4 * sizeof(float), vertices, GL_DYNAMIC_DRAW);
-    glLineWidth(1.0f);
-    glDrawArrays(GL_LINES, 0, total_lines * 2);
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glLineWidth(1.0f);
-
-    free(vertices);
+    glEnd();
 }
 
 void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
@@ -335,16 +327,17 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
 }
 
 void renderer_draw_nodes(Graph *graph) {
-    (void)graph;
-    if (nodeVertexCount == 0) {
+    if (graph == NULL || graph->intersection_count <= 0) {
         return;
     }
 
-    glPointSize(10.0f);
-    glBindVertexArray(nodeVAO);
-    glDrawArrays(GL_POINTS, 0, nodeVertexCount);
-    glBindVertexArray(0);
-    glPointSize(1.0f);
+    glBegin(GL_POINTS);
+    for (int i = 0; i < graph->intersection_count; i++) {
+        float x = grid_center_to_normalized_x(graph->intersections[i].x, graph->chunk_size, graph->padding, graph->window_width);
+        float y = grid_center_to_normalized_y(graph->intersections[i].y, graph->chunk_size, graph->padding, graph->window_height);
+        glVertex2f(x, y);
+    }
+    glEnd();
 }
 
 void renderer_shutdown(void) {

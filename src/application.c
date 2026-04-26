@@ -110,7 +110,6 @@ void application_update(void){
             };
 
             if(traffic_manager_init(&manager, &config) == 0) {
-                renderer_upload_graph(manager.graph);
                 app.current_state = APP_STATE_RUNNING_SIMULATION;
                 menu.current_state = MENU_STATE_RUNNING_SIMULATION;
             } else {
@@ -152,18 +151,18 @@ void application_update(void){
                 break;
             }
 
-//            traffic_manager_update(&manager, frame);
+            traffic_manager_update(&manager, frame);
 
             glColor3f(0.35f, 0.35f, 0.35f);
             renderer_draw_grid(manager.graph);
 
-//            glColor3f(1.0f, 1.0f, 1.0f);
-//            renderer_draw_roads(manager.graph);
+           glColor3f(1.0f, 1.0f, 1.0f);
+           renderer_draw_roads(manager.graph);
 
-//            renderer_draw_cars(manager.graph, manager.cars, manager.car_count);
+           renderer_draw_cars(manager.graph, manager.cars, manager.car_count);
 
-//            glColor3f(1.0f, 0.0f, 0.0f);
-//            renderer_draw_nodes(manager.graph);
+           glColor3f(1.0f, 0.0f, 0.0f);
+           renderer_draw_nodes(manager.graph);
             break;
         case APP_STATE_CLOSED:
             break;

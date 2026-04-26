@@ -5,6 +5,8 @@
 
 struct Graph;
 
+#define MAX_CAR_PATH_NODES 16
+
 typedef enum {
     CAR_STATE_NORMAL,
     CAR_STATE_BRAKING,
@@ -24,7 +26,13 @@ typedef struct Car{
     bool at_intersection; // находится ли машина в зоне пересечения
     int last_turn_x;
     int last_turn_y;
+    int last_node_index;
+    int target_node;
+    int path_nodes[MAX_CAR_PATH_NODES];
+    int path_length;
+    int path_index;
     float angle;          // угол поворота для рендера
+    float target_angle;
     CarState state;
     unsigned int texture; // OpenGL texture id
     float tex_width;
