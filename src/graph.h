@@ -28,11 +28,11 @@ typedef struct {
 } GridPoint;
 
 typedef struct Graph {
-    RoadSegment *roads;
+    RoadSegment* roads;
     int road_count;
     int max_roads;
 
-    GridPoint *intersections;
+    GridPoint* intersections;
     int intersection_count;
     int max_intersections;
 
@@ -45,7 +45,7 @@ typedef struct Graph {
     int padding;      // отступ от края окна в чанках
 } Graph;
 
-Graph* graph_create(int window_width, int window_height, int chunk_size, int padding);
+Graph* graph_init(int window_width, int window_height, int chunk_size, int padding);
 int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, float speed_limit);
 void graph_build_intersections(Graph *g);
 void graph_destroy(Graph *g);

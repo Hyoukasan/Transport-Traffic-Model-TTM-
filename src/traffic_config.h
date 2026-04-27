@@ -13,7 +13,8 @@ typedef struct TrafficConfig {
     ScenarioType scenario;  
 
     int lane_count;            
-    int max_cars;                       
+    int max_cars;
+    int max_roads;                    
  
 } TrafficConfig;
 

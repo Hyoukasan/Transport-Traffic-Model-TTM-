@@ -2,9 +2,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define INITIAL_CAPACITY 50
-#define INITIAL_INTERSECTION_CAPACITY 16
-
 static bool graph_expand_roads(Graph *g) {
     if (g == NULL) {
         return false;
@@ -41,25 +38,6 @@ Graph* graph_create(int window_width, int window_height, int chunk_size, int pad
     }
     if (g->grid_height <= 0) {
         g->grid_height = 1;
-    }
-
-    g->road_count = 0;
-    g->max_roads = INITIAL_CAPACITY;
-    g->roads = malloc(sizeof(RoadSegment) * g->max_roads);
-    if (g->roads == NULL) {
-        fprintf(stderr, "graph_create: failed to allocate roads array\n");
-        free(g);
-        return NULL;
-    }
-
-    g->intersection_count = 0;
-    g->max_intersections = INITIAL_INTERSECTION_CAPACITY;
-    g->intersections = malloc(sizeof(GridPoint) * g->max_intersections);
-    if (g->intersections == NULL) {
-        fprintf(stderr, "graph_create: failed to allocate intersections array\n");
-        free(g->roads);
-        free(g);
-        return NULL;
     }
 
     return g;

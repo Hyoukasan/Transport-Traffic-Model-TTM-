@@ -104,9 +104,9 @@ void application_update(void){
             }
 
             TrafficConfig config = {
-                .scenario = SCENARIO_HIGHWAY,
+                .scenario = SCENARIO_SINGLE_INTERSECTION,
                 .lane_count = 2,
-                .max_cars = 100
+                .max_cars = 10,
             };
 
             if(traffic_manager_init(&manager, &config) == 0) {
@@ -165,6 +165,7 @@ void application_update(void){
 //            glColor3f(1.0f, 0.0f, 0.0f);
 //            renderer_draw_nodes(manager.graph);
             break;
+            
         case APP_STATE_CLOSED:
             break;
 
