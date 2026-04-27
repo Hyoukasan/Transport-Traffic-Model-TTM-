@@ -35,6 +35,10 @@ void road_gen_generate_points(RoadGenerator *gen, Graph *graph);
 // Построить сегменты дорог на основе точек
 void road_gen_build_roads(RoadGenerator *gen, Graph *graph);
 
+// Сгенерировать точки и построить дороги одной функцией.
+// Параметр scenario позволяет функции самой выбрать нужный кейс.
+void road_gen_generate_and_build(RoadGenerator *gen, Graph *graph, int scenario);
+
 // Освободить генератор
 void road_gen_destroy(RoadGenerator *gen);
 

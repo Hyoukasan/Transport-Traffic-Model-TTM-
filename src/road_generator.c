@@ -143,6 +143,17 @@ void road_gen_generate_points(RoadGenerator *gen, Graph *graph) {
     }
 }
 
+// Выполнить полный шаг: выбрать кейс, сгенерировать точки и построить дороги.
+void road_gen_generate_and_build(RoadGenerator *gen, Graph *graph, int scenario) {
+    if (!gen || !graph) {
+        return;
+    }
+
+    gen->scenario = scenario;
+    road_gen_generate_points(gen, graph);
+    road_gen_build_roads(gen, graph);
+}
+
 void road_gen_build_roads(RoadGenerator *gen, Graph *graph) {
     if (!gen || !graph) {
         return;

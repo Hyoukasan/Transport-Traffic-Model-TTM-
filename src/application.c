@@ -120,7 +120,6 @@ void application_update(void){
             config.lane_count = 2;
             config.max_cars   = 10;
 
-            app.current_state = APP_STATE_RUNNING_SIMULATION;
             menu_set_state(&menu, MENU_STATE_START_SIMULATION);
             break;
 
@@ -134,7 +133,6 @@ void application_update(void){
             config.lane_count = 2;
             config.max_cars   = 10;
 
-            app.current_state = APP_STATE_RUNNING_SIMULATION;
             menu_set_state(&menu, MENU_STATE_START_SIMULATION);
             break;
 
@@ -148,7 +146,6 @@ void application_update(void){
             config.lane_count = 2;
             config.max_cars   = 10;
 
-            app.current_state = APP_STATE_RUNNING_SIMULATION;
             menu_set_state(&menu, MENU_STATE_START_SIMULATION);
             break;
 

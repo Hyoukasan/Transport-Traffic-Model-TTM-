@@ -5,9 +5,20 @@
 
 #include "traffic_manager.h"
 #include "traffic_config.h"
-#include "road_generator.h"
 #include "car.h"
 #include "graph.h"
+#include "road_generator.h"
+
+static int traffic_manager_build_roads(TrafficManager *manager, int scenario) {
+    RoadGenerator *road_gen = road_gen_create_with_scenario(scenario);
+    if (road_gen == NULL) {
+        return -1;
+    }
+
+    road_gen_generate_and_build(road_gen, manager->graph, scenario);
+    road_gen_destroy(road_gen);
+    return 0;
+}
 
 int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
     if(manager == NULL || config == NULL) {
@@ -45,7 +56,11 @@ int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
         return -1;
     }
 
-
+    if (traffic_manager_build_roads(manager, config->scenario) != 0) {
+        fprintf(stderr, "Road generation failed!\n");
+        traffic_manager_clear(manager);
+        return -1;
+    }
 
     manager->car_count = 0;
     manager->accident_count = 0;
@@ -90,7 +105,4 @@ void traffic_manager_clear(TrafficManager *manager) {
     manager->time = 0.0f;
     manager->next_car_id = 0;
 }
-
-
-
 
