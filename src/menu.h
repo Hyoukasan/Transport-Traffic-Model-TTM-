@@ -4,11 +4,12 @@
 #include <stdbool.h>
 
 typedef enum {
+    MENU_STATE_IDLE,
     MENU_STATE_MAIN_MENU,
     MENU_STATE_CREATE_SIMULATION,
     MENU_STATE_SIMULATION_CONFIG,
     MENU_STATE_SIMULATION_PAUSE,
-    MENU_STATE_RUNNING_SIMULATION,
+    MENU_STATE_START_SIMULATION,
     MENU_STATE_CLOSED,
     MENU_STATE_INFO,
     MENU_STATE_EXIT,
@@ -41,6 +42,7 @@ typedef struct Menu {
 } Menu_t;
 
 void menu_init(Menu_t* menu, int screen_width, int screen_height);
+void menu_set_state(Menu_t* menu, MenuState state);
 void menu_update(Menu_t* menu, int mx, int my, bool click);
 
-#endif  
+#endif 

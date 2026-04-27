@@ -20,6 +20,7 @@ static GLFWwindow* window = NULL;
 static Menu_t menu = {0};
 static InputState input = {0};
 static TrafficManager manager = {0};
+static TrafficConfig config = {0};
 
 static double last_frame_time = 0.0;
 
@@ -91,7 +92,7 @@ void application_update(void){
 
             if(input.key_esc_click) {
                 app.current_state = APP_STATE_CLOSED;
-                menu.current_state = MENU_STATE_EXIT;
+                menu_set_state(&menu, MENU_STATE_EXIT);
                 break;
             } else {
                 menu_render(&menu, app.screen_width, app.screen_height);
@@ -101,35 +102,70 @@ void application_update(void){
 
         case MENU_STATE_CREATE_SIMULATION:
             if(input.key_esc_click) {
-                menu.current_state = MENU_STATE_MAIN_MENU;
+                menu_set_state(&menu, MENU_STATE_MAIN_MENU);
                 break;
             }
 
+            menu_update(&menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
             menu_render(&menu, app.screen_width, app.screen_height);
+            break;
 
-            TrafficConfig config = {
-                .scenario = SCENARIO_SINGLE_INTERSECTION,
-                .lane_count = 2,
-                .max_cars = 10
-            };
+        case MENU_STATE_SCENARIO_HIGHWAY:
+            if(input.key_esc_click) {
+                menu_set_state(&menu, MENU_STATE_CREATE_SIMULATION);
+                break;
+            }
 
+            config.scenario   = SCENARIO_HIGHWAY;
+            config.lane_count = 2;
+            config.max_cars   = 10;
+
+            app.current_state = APP_STATE_RUNNING_SIMULATION;
+            menu_set_state(&menu, MENU_STATE_START_SIMULATION);
+            break;
+
+        case MENU_STATE_SCENARIO_SINGLE_INTERSECTION:
+            if(input.key_esc_click) {
+                menu_set_state(&menu, MENU_STATE_CREATE_SIMULATION);
+                break;
+            } 
+        
+            config.scenario   = SCENARIO_SINGLE_INTERSECTION;
+            config.lane_count = 2;
+            config.max_cars   = 10;
+
+            app.current_state = APP_STATE_RUNNING_SIMULATION;
+            menu_set_state(&menu, MENU_STATE_START_SIMULATION);
+            break;
+
+        case MENU_STATE_SCENARIO_MULTI_INTERSECTION:
+            if(input.key_esc_click) {
+                menu_set_state(&menu, MENU_STATE_CREATE_SIMULATION);
+                break;
+            } 
+        
+            config.scenario   = SCENARIO_MULTI_INTERSECTION;
+            config.lane_count = 2;
+            config.max_cars   = 10;
+
+            app.current_state = APP_STATE_RUNNING_SIMULATION;
+            menu_set_state(&menu, MENU_STATE_START_SIMULATION);
+            break;
+
+        case MENU_STATE_START_SIMULATION:
             if(traffic_manager_init(&manager, &config) == 0) {
                 renderer_upload_graph(manager.graph);
                 app.current_state = APP_STATE_RUNNING_SIMULATION;
-                menu.current_state = MENU_STATE_RUNNING_SIMULATION;
+                menu_set_state(&menu, MENU_STATE_IDLE);
             } else {
                 app.current_state = APP_STATE_IDLE;
-                menu.current_state = MENU_STATE_MAIN_MENU;
+                menu_set_state(&menu, MENU_STATE_MAIN_MENU);
             }
-
-            break;
-
-        case MENU_STATE_RUNNING_SIMULATION:
             break;
 
         case MENU_STATE_INFO:
             if (input.key_esc_click) {
-                menu.current_state = MENU_STATE_MAIN_MENU;
+                menu_set_state(&menu, MENU_STATE_MAIN_MENU);
                 break;
             } else {
                 menu_render(&menu, app.screen_width, app.screen_height);
@@ -151,7 +187,7 @@ void application_update(void){
 
         case APP_STATE_RUNNING_SIMULATION:
             if (input.key_esc_click) {
-                menu.current_state = MENU_STATE_SIMULATION_PAUSE;
+                menu_set_state(&menu, MENU_STATE_SIMULATION_PAUSE);
                 app.current_state = APP_STATE_SIMULATION_PAUSE;
                 break;
             }
@@ -175,7 +211,7 @@ void application_update(void){
 
         case APP_STATE_SIMULATION_PAUSE:
             if(input.key_esc_click) {
-                menu.current_state = MENU_STATE_RUNNING_SIMULATION;
+                menu_set_state(&menu, MENU_STATE_IDLE);
                 app.current_state = APP_STATE_RUNNING_SIMULATION;
                 break;
             }
