@@ -19,28 +19,51 @@ static bool graph_expand_roads(Graph *g) {
     return true;
 }
 
-Graph* graph_init(int window_width, int window_height, int chunk_size, int padding) {
-    Graph *g = malloc(sizeof(Graph));
-    if (g == NULL) {
+Graph* graph_init(int window_width, int window_height, int chunk_size, int padding, int max_roads) {
+    Graph *graph = malloc(sizeof(Graph));
+    if (graph == NULL) {
         fprintf(stderr, "graph_create: failed to allocate Graph\n");
         return NULL;
     }
 
-    g->window_width = window_width;
-    g->window_height = window_height;
-    g->chunk_size = chunk_size;
-    g->padding = padding;
+    graph->window_width = window_width;
+    graph->window_height = window_height;
+    graph->chunk_size = chunk_size;
+    graph->padding = padding;
 
-    g->grid_width = (window_width / chunk_size) - (2 * padding);
-    g->grid_height = (window_height / chunk_size) - (2 * padding);
-    if (g->grid_width <= 0) {
-        g->grid_width = 1;
+    graph->grid_width = (window_width / chunk_size) - (2 * padding);
+    graph->grid_height = (window_height / chunk_size) - (2 * padding);
+    if (graph->grid_width <= 0) {
+        graph->grid_width = 1;
     }
-    if (g->grid_height <= 0) {
-        g->grid_height = 1;
+    if (graph->grid_height <= 0) {
+        graph->grid_height = 1;
     }
 
-    return g;
+    graph->road_count = 0;
+    graph->max_roads = max_roads;
+
+    if (graph->max_roads <= 0) {
+        graph->max_roads = 16;
+    }
+
+    graph->roads = calloc((size_t)graph->max_roads, sizeof(RoadSegment));
+    if(graph->roads == NULL) {
+        free(graph);
+        return NULL;
+    }
+
+    graph->intersection_count = 0;
+    graph->max_intersections = 16;
+
+    graph->intersections = calloc((size_t)graph->max_intersections, sizeof(GridPoint));
+    if(graph->intersections == NULL) {
+        free(graph->roads);
+        free(graph);
+        return NULL;  
+    }
+
+    return graph;
 }
 
 static bool point_in_range(int value, int a, int b) {

@@ -118,6 +118,7 @@ void application_update(void){
 
             config.scenario   = SCENARIO_HIGHWAY;
             config.lane_count = 2;
+            config.max_roads  = 1;
             config.max_cars   = 10;
 
             menu_set_state(&menu, MENU_STATE_START_SIMULATION);
@@ -131,6 +132,7 @@ void application_update(void){
         
             config.scenario   = SCENARIO_SINGLE_INTERSECTION;
             config.lane_count = 2;
+            config.max_roads  = 2;
             config.max_cars   = 10;
 
             menu_set_state(&menu, MENU_STATE_START_SIMULATION);
@@ -144,6 +146,7 @@ void application_update(void){
         
             config.scenario   = SCENARIO_MULTI_INTERSECTION;
             config.lane_count = 2;
+            config.max_roads  = 4; 
             config.max_cars   = 10;
 
             menu_set_state(&menu, MENU_STATE_START_SIMULATION);
@@ -195,7 +198,7 @@ void application_update(void){
             renderer_draw_grid(manager.graph);
 
 //            glColor3f(1.0f, 1.0f, 1.0f);
-//            renderer_draw_roads(manager.graph);
+            renderer_draw_roads(manager.graph);
 
 //            renderer_draw_cars(manager.graph, manager.cars, manager.car_count);
 

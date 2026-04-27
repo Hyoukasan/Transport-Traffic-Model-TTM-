@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 typedef enum {
-    SCENARIO_HIGHWAY,
+    SCENARIO_HIGHWAY = 1,
     SCENARIO_SINGLE_INTERSECTION,
     SCENARIO_MULTI_INTERSECTION
 } ScenarioType;

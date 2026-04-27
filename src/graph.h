@@ -45,7 +45,7 @@ typedef struct Graph {
     int padding;      // отступ от края окна в чанках
 } Graph;
 
-Graph* graph_init(int window_width, int window_height, int chunk_size, int padding);
+Graph* graph_init(int window_width, int window_height, int chunk_size, int padding, int max_roads);
 int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, float speed_limit);
 void graph_build_intersections(Graph *g);
 void graph_destroy(Graph *g);
