@@ -137,7 +137,10 @@ void menu_render(Menu_t* menu, int screen_width, int screen_height) {
         return;
     }
 
-    renderer_draw_background(menu->background_texture);
+    glColor3f(1.0f, 1.0f, 1.0f);
+    if(menu->current_state != MENU_STATE_SIMULATION_PAUSE) {
+        renderer_draw_background(menu->background_texture);
+    }
 
     float left   = pixel_to_normalized_x(menu->x, screen_width);
     float right  = pixel_to_normalized_x(menu->x + menu->width, screen_width);

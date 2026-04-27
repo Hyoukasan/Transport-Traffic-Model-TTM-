@@ -210,6 +210,25 @@ void application_update(void){
             break;
 
         case APP_STATE_SIMULATION_PAUSE:
+            menu_update(&menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
+
+            if(menu.current_state == MENU_STATE_IDLE) {
+                app.current_state = APP_STATE_RUNNING_SIMULATION;
+                break;
+            }
+
+            if(menu.current_state == MENU_STATE_MAIN_MENU) {
+                traffic_manager_clear(&manager);
+                app.current_state = APP_STATE_IDLE;
+                break;
+            }
+
+            if(menu.current_state == MENU_STATE_SIMULATION_CONFIG) {
+                menu_set_state(&menu, MENU_STATE_SIMULATION_PAUSE);
+            }
+
+            menu_render(&menu, app.screen_width, app.screen_height);
+
             if(input.key_esc_click) {
                 menu_set_state(&menu, MENU_STATE_IDLE);
                 app.current_state = APP_STATE_RUNNING_SIMULATION;

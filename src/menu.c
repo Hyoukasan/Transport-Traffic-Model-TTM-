@@ -64,6 +64,12 @@ static ButtonInfo scenario_menu_buttons[] = {
     {"Data/textures/back.png",                  MENU_STATE_MAIN_MENU}
 };
 
+static ButtonInfo pause_menu_buttons[] = {
+    {"Data/textures/resume.png", MENU_STATE_IDLE},
+    {"Data/textures/save.png",   MENU_STATE_SIMULATION_CONFIG},
+    {"Data/textures/back.png",   MENU_STATE_MAIN_MENU}
+};
+
 static void set_buttons(MenuButton_t* buttons, int button_count, int menu_width, int menu_height, int gap) {
     if(buttons == NULL) {
         return;
@@ -109,7 +115,11 @@ static void menu_load_state(Menu_t* menu) {
         case MENU_STATE_EXIT:
             menu->button_count = 0;
             break;
-
+        case MENU_STATE_SIMULATION_PAUSE:
+            menu->button_count = 3;
+            set_buttons(menu->buttons, menu->button_count, menu->width, menu->height, 30);
+            bind_buttons(menu->buttons, pause_menu_buttons, menu->button_count);
+            break;
         default:
             menu->button_count = 0;
             break;
