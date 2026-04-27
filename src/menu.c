@@ -45,7 +45,7 @@ void menu_set_state(Menu_t* menu, MenuState state) {
 
 static void bind_buttons(MenuButton_t *buttons, ButtonInfo* map, int count_buttons) {
     for (int i = 0; i < count_buttons; i++) {
-        buttons[i].texture = texture_load(map[i].texture_path, NULL, NULL);
+        buttons[i].texture      = texture_load(map[i].texture_path, NULL, NULL);
         buttons[i].target_state = map[i].target_state;
     }
 }
@@ -75,17 +75,17 @@ static void set_buttons(MenuButton_t* buttons, int button_count, int menu_width,
         return;
     }
 
-    int button_width = 320;
+    int button_width  = 320;
     int button_height = 100;
 
-    int total_height = button_count * button_height + (button_count - 1) * gap;
-    int start_y = (menu_height - total_height) / 2;
+    int total_height  = button_count * button_height + (button_count - 1) * gap;
+    int start_y       = (menu_height - total_height) / 2;
 
     for(size_t i = 0; i < button_count; i++) {
         buttons[i].width  = button_width;
         buttons[i].height = button_height;
-        buttons[i].x = (menu_width - button_width) / 2;
-        buttons[i].y = start_y + i * (button_height + gap) + 50;
+        buttons[i].x      = (menu_width - button_width) / 2;
+        buttons[i].y      = start_y + i * (button_height + gap) + 50;
     }
 
 }
