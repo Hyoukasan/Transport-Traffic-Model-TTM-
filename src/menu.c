@@ -65,9 +65,9 @@ static ButtonInfo scenario_menu_buttons[] = {
 };
 
 static ButtonInfo pause_menu_buttons[] = {
-    {"Data/textures/resume.png", MENU_STATE_IDLE},
-    {"Data/textures/save.png",   MENU_STATE_SIMULATION_CONFIG},
-    {"Data/textures/back.png",   MENU_STATE_MAIN_MENU}
+    {"Data/textures/resume.png",         MENU_STATE_IDLE},
+    {"Data/textures/save_profile.png",   MENU_STATE_SIMULATION_CONFIG},
+    {"Data/textures/back.png",           MENU_STATE_MAIN_MENU}
 };
 
 static void set_buttons(MenuButton_t* buttons, int button_count, int menu_width, int menu_height, int gap) {
@@ -81,7 +81,7 @@ static void set_buttons(MenuButton_t* buttons, int button_count, int menu_width,
     int total_height  = button_count * button_height + (button_count - 1) * gap;
     int start_y       = (menu_height - total_height) / 2;
 
-    for(size_t i = 0; i < button_count; i++) {
+    for(size_t i = 0; i < (size_t)button_count; i++) {
         buttons[i].width  = button_width;
         buttons[i].height = button_height;
         buttons[i].x      = (menu_width - button_width) / 2;
