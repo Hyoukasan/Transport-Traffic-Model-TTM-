@@ -192,10 +192,10 @@ void renderer_upload_graph(Graph *graph) {
 
         for (int i = 0; i < graph->road_count; i++) {
             RoadSegment *road = &graph->roads[i];
-            float x1 = grid_center_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
-            float y1 = grid_center_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
-            float x2 = grid_center_to_normalized_x(road->x2, graph->chunk_size, graph->padding, graph->window_width);
-            float y2 = grid_center_to_normalized_y(road->y2, graph->chunk_size, graph->padding, graph->window_height);
+            float x1 = grid_edge_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
+            float y1 = grid_edge_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
+            float x2 = grid_edge_to_normalized_x(road->x2, graph->chunk_size, graph->padding, graph->window_width);
+            float y2 = grid_edge_to_normalized_y(road->y2, graph->chunk_size, graph->padding, graph->window_height);
             vertices[i * 4 + 0] = x1;
             vertices[i * 4 + 1] = y1;
             vertices[i * 4 + 2] = x2;
