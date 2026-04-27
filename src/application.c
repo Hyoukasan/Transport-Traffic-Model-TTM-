@@ -83,7 +83,7 @@ void application_update(void){
 
     if(menu.current_state != MENU_STATE_SIMULATION_PAUSE) {
         if (app.current_state == APP_STATE_RUNNING_SIMULATION) {
-            glClearColor(0.35f, 0.55f, 0.30f, 1.0f);
+            glClearColor(0.45f, 0.65f, 0.35f, 1.0f);
         } else {
             glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         }
