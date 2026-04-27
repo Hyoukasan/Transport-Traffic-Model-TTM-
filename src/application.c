@@ -80,8 +80,10 @@ void application_update(void){
     }
     last_frame_time = now;
 
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    if(menu.current_state != MENU_STATE_SIMULATION_PAUSE) {
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
 
     switch(menu.current_state) {
         case MENU_STATE_MAIN_MENU:
@@ -103,10 +105,12 @@ void application_update(void){
                 break;
             }
 
+            menu_render(&menu, app.screen_width, app.screen_height);
+
             TrafficConfig config = {
                 .scenario = SCENARIO_SINGLE_INTERSECTION,
                 .lane_count = 2,
-                .max_cars = 10,
+                .max_cars = 10
             };
 
             if(traffic_manager_init(&manager, &config) == 0) {

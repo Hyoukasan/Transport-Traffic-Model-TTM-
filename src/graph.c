@@ -19,7 +19,7 @@ static bool graph_expand_roads(Graph *g) {
     return true;
 }
 
-Graph* graph_create(int window_width, int window_height, int chunk_size, int padding) {
+Graph* graph_init(int window_width, int window_height, int chunk_size, int padding) {
     Graph *g = malloc(sizeof(Graph));
     if (g == NULL) {
         fprintf(stderr, "graph_create: failed to allocate Graph\n");

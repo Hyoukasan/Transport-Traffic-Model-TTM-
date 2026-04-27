@@ -109,17 +109,19 @@ void button_render(MenuButton_t* button, int offset_x, int offset_y,
     glBindTexture(GL_TEXTURE_2D, button->texture);
 
     glBegin(GL_QUADS);
-    glTexCoord2f(0, 0);
-    glVertex2f(left, bottom);
-
-    glTexCoord2f(1, 0);
-    glVertex2f(right, bottom);
-
-    glTexCoord2f(1, 1);
-    glVertex2f(right, top);
 
     glTexCoord2f(0, 1);
+    glVertex2f(left, bottom);
+
+    glTexCoord2f(1, 1);
+    glVertex2f(right, bottom);
+
+    glTexCoord2f(1, 0);
+    glVertex2f(right, top);
+
+    glTexCoord2f(0, 0);
     glVertex2f(left, top);
+
     glEnd();
 
     glBindTexture(GL_TEXTURE_2D, 0);

@@ -34,12 +34,26 @@ void menu_init(Menu_t *menu, int screen_width, int screen_height){
     menu_load_state(menu); 
 }
 
-static void bind_buttons(MenuButton_t *buttons, ButtonInfo *info, int count) {
-    for (int i = 0; i < count; i++) {
+static void bind_buttons(MenuButton_t *buttons, ButtonInfo *info, int count_buttons) {
+    for (int i = 0; i < count_buttons; i++) {
         buttons[i].texture = texture_load(info[i].texture_path, NULL, NULL);
         buttons[i].target_state = info[i].target_state;
     }
 }
+
+static ButtonInfo main_menu_buttons[] = {
+    {"Data/textures/start.png",                 MENU_STATE_CREATE_SIMULATION},
+    {"Data/textures/config.png",                MENU_STATE_SIMULATION_CONFIG},
+    {"Data/textures/about.png",                 MENU_STATE_INFO},
+    {"Data/textures/exit.png",                  MENU_STATE_EXIT}
+};
+
+static ButtonInfo scenario_menu_buttons[] = {
+    {"Data/textures/hightway.png",              MENU_STATE_SCENARIO_HIGHWAY},
+    {"Data/textures/single_intersection.png",   MENU_STATE_SCENARIO_SINGLE_INTERSECTION},
+    {"Data/textures/multi_intersection.png",    MENU_STATE_SCENARIO_MULTI_INTERSECTION},
+    {"Data/textures/back.png",                  MENU_STATE_MAIN_MENU}
+};
 
 static void set_buttons(MenuButton_t* buttons, int button_count, int menu_width, int menu_height, int gap) {
     if(buttons == NULL) {
@@ -47,7 +61,7 @@ static void set_buttons(MenuButton_t* buttons, int button_count, int menu_width,
     }
 
     int button_width = 320;
-    int button_height = 60;
+    int button_height = 100;
 
     int total_height = button_count * button_height + (button_count - 1) * gap;
     int start_y = (menu_height - total_height) / 2;
@@ -56,7 +70,7 @@ static void set_buttons(MenuButton_t* buttons, int button_count, int menu_width,
         buttons[i].width  = button_width;
         buttons[i].height = button_height;
         buttons[i].x = (menu_width - button_width) / 2;
-        buttons[i].y = start_y + i * (button_height + gap);
+        buttons[i].y = start_y + i * (button_height + gap) + 50;
     }
 
 }
@@ -68,18 +82,14 @@ static void menu_load_state(Menu_t* menu) {
     
     switch(menu->current_state){
         case MENU_STATE_MAIN_MENU:
-            ButtonInfo buttons_map[] = {
-                { "Data/textures/start.png",  MENU_STATE_CREATE_SIMULATION },
-                { "Data/textures/config.png", MENU_STATE_SIMULATION_CONFIG },
-                { "Data/textures/about.png",  MENU_STATE_INFO },
-                { "Data/textures/exit.png",   MENU_STATE_EXIT }
-            };
-
             menu->button_count = 4;
-            set_buttons(menu->buttons, menu->button_count, menu->width, menu->height, 10);
-            bind_buttons(menu->buttons, buttons_map, menu->button_count);
+            set_buttons(menu->buttons, menu->button_count, menu->width, menu->height, 25);
+            bind_buttons(menu->buttons, main_menu_buttons, menu->button_count);
             break;
         case MENU_STATE_CREATE_SIMULATION:
+            menu->button_count = 4;
+            set_buttons(menu->buttons, menu->button_count, menu->width, menu->height, 30);
+            bind_buttons(menu->buttons, scenario_menu_buttons, menu->button_count);
             break;
         case MENU_STATE_SIMULATION_CONFIG:
             break;
@@ -106,9 +116,11 @@ void menu_update(Menu_t* menu, int mx, int my, bool click) {
     for (int i = 0; i < menu->button_count; i++) {
         MenuButton_t *button = &menu->buttons[i];
 
-        bool inside =
-            mx >= button->x && mx <= button->x + button->width &&
-            my >= button->y && my <= button->y + button->height;
+        int x = menu->x + button->x;
+        int y = menu->y + button->y;
+
+        bool inside = mx >= x && mx <= x + button->width &&
+            my >= y && my <= y + button->height;
 
         if (click && inside) {
             menu->current_state = button->target_state;

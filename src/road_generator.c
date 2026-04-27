@@ -3,92 +3,165 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-RoadGenerator* road_gen_create(int num_roads) {
+static int road_count_for_scenario(int scenario) {
+    switch (scenario) {
+        case ROAD_SCENARIO_HIGHWAY:
+            return 1;
+        case ROAD_SCENARIO_SINGLE_INTERSECTION:
+            return 2;
+        case ROAD_SCENARIO_MULTI_INTERSECTION:
+            return 4;
+        default:
+            return 2;
+    }
+}
+
+static void set_point(Point *point, int x, int y) {
+    point->x = x;
+    point->y = y;
+}
+
+static float random_speed_limit(void) {
+    return 0.8f + (rand() % 5) * 0.1f;
+}
+
+static void build_roads_range(RoadGenerator *gen, Graph *graph, int start_index, int count, RoadType type) {
+    for (int i = 0; i < count; i++) {
+        Point *p = &gen->points[start_index + i];
+        if (type == ROAD_HORIZONTAL) {
+            float speed_limit = (gen->scenario == ROAD_SCENARIO_HIGHWAY) ? 1.0f : random_speed_limit();
+            int road_id = graph_add_road(graph, 0, p->y, graph->grid_width - 1, p->y, ROAD_HORIZONTAL, speed_limit);
+            if (road_id >= 0) {
+                printf("горизонтальная дорога %d: от (0, %d) до (%d, %d), скорость=%.1f\n",
+                       road_id, p->y, graph->grid_width - 1, p->y, speed_limit);
+            }
+        } else {
+            float speed_limit = random_speed_limit();
+            int road_id = graph_add_road(graph, p->x, 0, p->x, graph->grid_height - 1, ROAD_VERTICAL, speed_limit);
+            if (road_id >= 0) {
+                printf("вертикальная дорога %d: от (%d, 0) до (%d, %d), скорость=%.1f\n",
+                       road_id, p->x, p->x, graph->grid_height - 1, speed_limit);
+            }
+        }
+    }
+}
+
+static RoadGenerator* road_gen_create_internal(int num_roads) {
     if (num_roads <= 0) {
-        fprintf(stderr, "road_gen_create: invalid road count %d\n", num_roads);
+        fprintf(stderr, "road_gen_create: неправильное количество дорог %d\n", num_roads);
         return NULL;
     }
 
     RoadGenerator *gen = malloc(sizeof(RoadGenerator));
-    if (gen == NULL) {
-        fprintf(stderr, "road_gen_create: failed to allocate RoadGenerator\n");
+    if (!gen) {
+        fprintf(stderr, "road_gen_create: не удалось выделить память для RoadGenerator\n");
         return NULL;
     }
 
     gen->point_count = num_roads;
     gen->max_points = num_roads;
     gen->points = malloc(sizeof(Point) * num_roads);
-    if (gen->points == NULL) {
-        fprintf(stderr, "road_gen_create: failed to allocate points\n");
+    if (!gen->points) {
+        fprintf(stderr, "road_gen_create: не удалось выделить память для точек\n");
         free(gen);
         return NULL;
     }
 
     gen->horizontal_roads = num_roads / 2;
     gen->vertical_roads = num_roads - gen->horizontal_roads;
+    gen->scenario = ROAD_SCENARIO_SINGLE_INTERSECTION;
 
     return gen;
 }
 
+RoadGenerator* road_gen_create(int num_roads) {
+    return road_gen_create_internal(num_roads);
+}
+
+RoadGenerator* road_gen_create_with_scenario(int scenario) {
+    int num_roads = road_count_for_scenario(scenario);
+    RoadGenerator *gen = road_gen_create_internal(num_roads);
+    if (!gen) {
+        return NULL;
+    }
+
+    gen->scenario = scenario;
+    return gen;
+}
+
 void road_gen_generate_points(RoadGenerator *gen, Graph *graph) {
-    if (gen == NULL || graph == NULL || gen->point_count == 0) {
+    if (!gen || !graph || gen->max_points == 0) {
         return;
     }
 
-    for (int i = 0; i < gen->horizontal_roads; i++) {
-        gen->points[i].x = rand() % graph->grid_width;
-        gen->points[i].y = rand() % graph->grid_height;
+    if (graph->grid_width <= 0 || graph->grid_height <= 0) {
+        return;
     }
 
-    for (int i = gen->horizontal_roads; i < gen->point_count; i++) {
-        gen->points[i].x = rand() % graph->grid_width;
-        gen->points[i].y = rand() % graph->grid_height;
+    switch (gen->scenario) {
+        case ROAD_SCENARIO_HIGHWAY:
+            gen->point_count = 1;
+            gen->horizontal_roads = 1;
+            gen->vertical_roads = 0;
+            set_point(&gen->points[0], 0, graph->grid_height / 2);
+            break;
+        case ROAD_SCENARIO_SINGLE_INTERSECTION:
+            gen->point_count = 2;
+            gen->horizontal_roads = 1;
+            gen->vertical_roads = 1;
+            set_point(&gen->points[0], 0, graph->grid_height / 2);
+            set_point(&gen->points[1], graph->grid_width / 2, 0);
+            break;
+        case ROAD_SCENARIO_MULTI_INTERSECTION:
+            gen->point_count = 4;
+            gen->horizontal_roads = 2;
+            gen->vertical_roads = 2;
+            set_point(&gen->points[0], 0, graph->grid_height / 3);
+            set_point(&gen->points[1], 0, (graph->grid_height * 2) / 3);
+            set_point(&gen->points[2], graph->grid_width / 3, 0);
+            set_point(&gen->points[3], (graph->grid_width * 2) / 3, 0);
+            break;
+        default:
+            gen->point_count = 2;
+            gen->horizontal_roads = 1;
+            gen->vertical_roads = 1;
+            set_point(&gen->points[0], 0, graph->grid_height / 2);
+            set_point(&gen->points[1], graph->grid_width / 2, 0);
+            break;
     }
 
-    printf("Generated %d road points:\n", gen->point_count);
-    printf("  Horizontal roads: %d\n", gen->horizontal_roads);
-    printf("  Vertical roads: %d\n", gen->vertical_roads);
+    if (gen->point_count > gen->max_points) {
+        gen->point_count = gen->max_points;
+    }
+
+    printf("Сгенерировано %d точек дорог для сценария %d:\n", gen->point_count, gen->scenario);
+    printf("  Горизонтальные дороги: %d\n", gen->horizontal_roads);
+    printf("  вертикальные дороги: %d\n", gen->vertical_roads);
 
     for (int i = 0; i < gen->point_count; i++) {
-        printf("  Point %d: (%d, %d)\n", i, gen->points[i].x, gen->points[i].y);
+        printf("  точка %d: (%d, %d)\n", i, gen->points[i].x, gen->points[i].y);
     }
 }
 
 void road_gen_build_roads(RoadGenerator *gen, Graph *graph) {
-    if (gen == NULL || graph == NULL) {
+    if (!gen || !graph) {
         return;
     }
 
-    for (int i = 0; i < gen->horizontal_roads; i++) {
-        Point *p = &gen->points[i];
-        int y = p->y;
-        float speed_limit = 0.8f + (rand() % 5) * 0.1f;
-        int road_id = graph_add_road(graph, 0, y, graph->grid_width - 1, y, ROAD_HORIZONTAL, speed_limit);
-        if (road_id >= 0) {
-            printf("Horizontal road %d: from (0, %d) to (%d, %d), speed=%.1f\n",
-                   road_id, y, graph->grid_width - 1, y, speed_limit);
-        }
+    if (gen->horizontal_roads > 0) {
+        build_roads_range(gen, graph, 0, gen->horizontal_roads, ROAD_HORIZONTAL);
     }
 
-    for (int i = 0; i < gen->vertical_roads; i++) {
-        Point *p = &gen->points[gen->horizontal_roads + i];
-        int x = p->x;
-        float speed_limit = 0.8f + (rand() % 5) * 0.1f;
-        int road_id = graph_add_road(graph, x, 0, x, graph->grid_height - 1, ROAD_VERTICAL, speed_limit);
-        if (road_id >= 0) {
-            printf("Vertical road %d: from (%d, 0) to (%d, %d), speed=%.1f\n",
-                   road_id, x, x, graph->grid_height - 1, speed_limit);
-        }
+    if (gen->vertical_roads > 0) {
+        build_roads_range(gen, graph, gen->horizontal_roads, gen->vertical_roads, ROAD_VERTICAL);
     }
 
-    printf("\nRoad network created:\n");
-    printf("  Total roads: %d\n", graph->road_count);
+    printf("\nсеть дорог создана:\n");
+    printf("  всего дорог: %d\n", graph->road_count);
 }
 
 void road_gen_destroy(RoadGenerator *gen) {
-    if (gen == NULL) {
-        return;
-    }
+    if (!gen) return;
     
     free(gen->points);
     free(gen);

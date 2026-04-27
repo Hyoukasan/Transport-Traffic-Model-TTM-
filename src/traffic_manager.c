@@ -5,6 +5,7 @@
 
 #include "traffic_manager.h"
 #include "traffic_config.h"
+#include "road_generator.h"
 #include "car.h"
 #include "graph.h"
 
@@ -43,6 +44,8 @@ int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
         traffic_manager_clear(manager);
         return -1;
     }
+
+
 
     manager->car_count = 0;
     manager->accident_count = 0;
