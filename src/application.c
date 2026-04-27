@@ -146,7 +146,7 @@ void application_update(void){
         
             config.scenario   = SCENARIO_MULTI_INTERSECTION;
             config.lane_count = 2;
-            config.max_roads  = 4; 
+            config.max_roads  = 6; 
             config.max_cars   = 10;
 
             menu_set_state(&menu, MENU_STATE_START_SIMULATION);

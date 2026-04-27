@@ -114,7 +114,7 @@ void road_gen_generate_points(RoadGenerator *gen, Graph *graph) {
             break;
         case ROAD_SCENARIO_MULTI_INTERSECTION:
             gen->point_count = 4;
-            gen->horizontal_roads = 2;
+            gen->horizontal_roads = 4;
             gen->vertical_roads = 2;
             set_point(&gen->points[0], 0, graph->grid_height / 3);
             set_point(&gen->points[1], 0, (graph->grid_height * 2) / 3);
