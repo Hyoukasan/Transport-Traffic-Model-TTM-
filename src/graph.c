@@ -101,7 +101,7 @@ static bool graph_add_intersection(Graph *g, int x, int y) {
     return true;
 }
 
-int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, float speed_limit) {
+int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, float speed_limit, int lanes) {
     if (g == NULL) {
         fprintf(stderr, "graph_add_road: graph is NULL\n");
         return -1;
@@ -129,7 +129,7 @@ int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, floa
     road->length = abs(x2 - x1) + abs(y2 - y1) + 1;
     road->speed_limit = speed_limit;
     road->accident = false;
-    road->lanes = 1;
+    road->lanes = lanes > 0 ? lanes : 1;
 
     return g->road_count++;
 }

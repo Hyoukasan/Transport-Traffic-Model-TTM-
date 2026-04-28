@@ -9,19 +9,122 @@
 #include <stdio.h>
 #include <math.h>
 
-static GLuint VAO = 0, VBO = 0;
+static GLuint VAO = 0, roadVBO = 0;
+static GLuint helperRoadVAO = 0, helperRoadVBO = 0;
 static GLuint gridVAO = 0, gridVBO = 0;
 static GLuint nodeVAO = 0, nodeVBO = 0;
-static int roadVertexCount = 0;
+static int roadMainVertexCount = 0;
+static int roadHelperVertexCount = 0;
 static int nodeVertexCount = 0;
 static GLuint carVAO = 0, carVBO = 0;
 
+static void road_vertex_counts(const Graph *graph, int *mainCount, int *helperCount) {
+    if (graph == NULL || mainCount == NULL || helperCount == NULL) {
+        return;
+    }
+
+    *mainCount = 0;
+    *helperCount = 0;
+
+    for (int i = 0; i < graph->road_count; i++) {
+        const RoadSegment *road = &graph->roads[i];
+        int lanes = road->lanes > 0 ? road->lanes : 1;
+
+        if (lanes <= 1) {
+            *mainCount += 2;
+            continue;
+        }
+
+        int start_edge = (road->type == ROAD_HORIZONTAL) ? road->y1 - (lanes / 2) : road->x1 - (lanes / 2);
+        for (int edge = start_edge; edge <= start_edge + lanes; edge++) {
+            if (road->type == ROAD_HORIZONTAL) {
+                if (edge >= 0 && edge <= graph->grid_height) {
+                    *helperCount += 2;
+                }
+            } else if (road->type == ROAD_VERTICAL) {
+                if (edge >= 0 && edge <= graph->grid_width) {
+                    *helperCount += 2;
+                }
+            }
+        }
+
+        for (int lane = 0; lane < lanes; lane++) {
+            int center = start_edge + lane;
+            if (road->type == ROAD_HORIZONTAL) {
+                if (center >= 0 && center < graph->grid_height) {
+                    *mainCount += 2;
+                }
+            } else if (road->type == ROAD_VERTICAL) {
+                if (center >= 0 && center < graph->grid_width) {
+                    *mainCount += 2;
+                }
+            }
+        }
+    }
+}
+
+// static void add_road_vertices(float *vertices, int *index, const Graph *graph, const RoadSegment *road) {
+//     float x1 = grid_edge_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
+//     float y1 = grid_edge_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
+//     float x2 = grid_edge_to_normalized_x(road->x2, graph->chunk_size, graph->padding, graph->window_width);
+//     float y2 = grid_edge_to_normalized_y(road->y2, graph->chunk_size, graph->padding, graph->window_height);
+
+//     vertices[(*index)++] = x1;
+//     vertices[(*index)++] = y1;
+//     vertices[(*index)++] = x2;
+//     vertices[(*index)++] = y2;
+
+//     if (road->lanes > 1) {
+//         if (road->type == ROAD_HORIZONTAL) {
+//             if (road->y1 - 1 >= 0) {
+//                 float offset_y = grid_center_to_normalized_y(road->y1 - 1, graph->chunk_size, graph->padding, graph->window_height);
+//                 vertices[(*index)++] = x1;
+//                 vertices[(*index)++] = offset_y;
+//                 vertices[(*index)++] = x2;
+//                 vertices[(*index)++] = offset_y;
+//             }
+//             if (road->y1 + 1 <= graph->grid_height) {
+//                 float offset_y = grid_center_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
+//                 vertices[(*index)++] = x1;
+//                 vertices[(*index)++] = offset_y;
+//                 vertices[(*index)++] = x2;
+//                 vertices[(*index)++] = offset_y;
+//             }
+//         } else if (road->type == ROAD_VERTICAL) {
+//             if (road->x1 - 1 >= 0) {
+//                 float offset_x = grid_center_to_normalized_x(road->x1 - 1, graph->chunk_size, graph->padding, graph->window_width);
+//                 vertices[(*index)++] = offset_x;
+//                 vertices[(*index)++] = y1;
+//                 vertices[(*index)++] = offset_x;
+//                 vertices[(*index)++] = y2;
+//             }
+//             if (road->x1 + 1 <= graph->grid_width) {
+//                 float offset_x = grid_center_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
+//                 vertices[(*index)++] = offset_x;
+//                 vertices[(*index)++] = y1;
+//                 vertices[(*index)++] = offset_x;
+//                 vertices[(*index)++] = y2;
+//             }
+//         }
+//     }
+// }
+
 void renderer_init(void) {
     glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &roadVBO);
 
     glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, roadVBO);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    glGenVertexArrays(1, &helperRoadVAO);
+    glGenBuffers(1, &helperRoadVBO);
+
+    glBindVertexArray(helperRoadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, helperRoadVBO);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -185,31 +288,90 @@ void renderer_upload_graph(Graph *graph) {
         return;
     }
 
+    roadMainVertexCount = 0;
+    roadHelperVertexCount = 0;
+
     if (graph->road_count > 0) {
-        roadVertexCount = graph->road_count * 2;
-        float *vertices = malloc(roadVertexCount * 2 * sizeof(float));
-        if (vertices == NULL) {
-            fprintf(stderr, "renderer_upload_graph: failed to allocate road vertices buffer\n");
+        road_vertex_counts(graph, &roadMainVertexCount, &roadHelperVertexCount);
+        float *mainVertices = malloc(roadMainVertexCount * 2 * sizeof(float));
+        float *helperVertices = malloc(roadHelperVertexCount * 2 * sizeof(float));
+        if (mainVertices == NULL || helperVertices == NULL) {
+            fprintf(stderr, "renderer_upload_graph: failed to allocate split road vertices buffers\n");
+            free(mainVertices);
+            free(helperVertices);
             return;
         }
 
+        int mainIndex = 0;
+        int helperIndex = 0;
         for (int i = 0; i < graph->road_count; i++) {
-            RoadSegment *road = &graph->roads[i];
+            const RoadSegment *road = &graph->roads[i];
             float x1 = grid_edge_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
             float y1 = grid_edge_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
             float x2 = grid_edge_to_normalized_x(road->x2, graph->chunk_size, graph->padding, graph->window_width);
             float y2 = grid_edge_to_normalized_y(road->y2, graph->chunk_size, graph->padding, graph->window_height);
-            vertices[i * 4 + 0] = x1;
-            vertices[i * 4 + 1] = y1;
-            vertices[i * 4 + 2] = x2;
-            vertices[i * 4 + 3] = y2;
+            int lanes = road->lanes > 0 ? road->lanes : 1;
+
+            if (lanes > 1) {
+                int start_edge = (road->type == ROAD_HORIZONTAL) ? road->y1 - (lanes / 2) : road->x1 - (lanes / 2);
+                for (int edge = start_edge; edge <= start_edge + lanes; edge++) {
+                    if (road->type == ROAD_HORIZONTAL) {
+                        if (edge >= 0 && edge <= graph->grid_height) {
+                            helperVertices[helperIndex++] = x1;
+                            helperVertices[helperIndex++] = grid_edge_to_normalized_y(edge, graph->chunk_size, graph->padding, graph->window_height);
+                            helperVertices[helperIndex++] = x2;
+                            helperVertices[helperIndex++] = grid_edge_to_normalized_y(edge, graph->chunk_size, graph->padding, graph->window_height);
+                        }
+                    } else if (road->type == ROAD_VERTICAL) {
+                        if (edge >= 0 && edge <= graph->grid_width) {
+                            helperVertices[helperIndex++] = grid_edge_to_normalized_x(edge, graph->chunk_size, graph->padding, graph->window_width);
+                            helperVertices[helperIndex++] = y1;
+                            helperVertices[helperIndex++] = grid_edge_to_normalized_x(edge, graph->chunk_size, graph->padding, graph->window_width);
+                            helperVertices[helperIndex++] = y2;
+                        }
+                    }
+                }
+
+                for (int lane = 0; lane < lanes; lane++) {
+                    int center = start_edge + lane;
+                    if (road->type == ROAD_HORIZONTAL) {
+                        if (center >= 0 && center < graph->grid_height) {
+                            mainVertices[mainIndex++] = x1;
+                            mainVertices[mainIndex++] = grid_center_to_normalized_y(center, graph->chunk_size, graph->padding, graph->window_height);
+                            mainVertices[mainIndex++] = x2;
+                            mainVertices[mainIndex++] = grid_center_to_normalized_y(center, graph->chunk_size, graph->padding, graph->window_height);
+                        }
+                    } else if (road->type == ROAD_VERTICAL) {
+                        if (center >= 0 && center < graph->grid_width) {
+                            mainVertices[mainIndex++] = grid_center_to_normalized_x(center, graph->chunk_size, graph->padding, graph->window_width);
+                            mainVertices[mainIndex++] = y1;
+                            mainVertices[mainIndex++] = grid_center_to_normalized_x(center, graph->chunk_size, graph->padding, graph->window_width);
+                            mainVertices[mainIndex++] = y2;
+                        }
+                    }
+                }
+            } else {
+                mainVertices[mainIndex++] = x1;
+                mainVertices[mainIndex++] = y1;
+                mainVertices[mainIndex++] = x2;
+                mainVertices[mainIndex++] = y2;
+            }
         }
 
         glBindVertexArray(VAO);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, roadVertexCount * 2 * sizeof(float), vertices, GL_STATIC_DRAW);
+
+        if (roadMainVertexCount > 0) {
+            glBindBuffer(GL_ARRAY_BUFFER, roadVBO);
+            glBufferData(GL_ARRAY_BUFFER, roadMainVertexCount * 2 * sizeof(float), mainVertices, GL_STATIC_DRAW);
+        }
+        if (roadHelperVertexCount > 0) {
+            glBindBuffer(GL_ARRAY_BUFFER, helperRoadVBO);
+            glBufferData(GL_ARRAY_BUFFER, roadHelperVertexCount * 2 * sizeof(float), helperVertices, GL_STATIC_DRAW);
+        }
+
         glBindVertexArray(0);
-        free(vertices);
+        free(mainVertices);
+        free(helperVertices);
     }
 
     if (graph->intersection_count > 0) {
@@ -236,13 +398,27 @@ void renderer_upload_graph(Graph *graph) {
 
 void renderer_draw_roads(Graph *graph) {
     (void)graph;
-    if (roadVertexCount == 0) {
+    if (roadMainVertexCount == 0 && roadHelperVertexCount == 0) {
         return;
     }
 
-    glBindVertexArray(VAO);
-    glDrawArrays(GL_LINES, 0, roadVertexCount);
-    glBindVertexArray(0);
+    if (roadMainVertexCount > 0) {
+        glBindVertexArray(VAO);
+        glLineWidth(2.5f);
+        glColor3f(0.85f, 0.15f, 0.15f);
+        glDrawArrays(GL_LINES, 0, roadMainVertexCount);
+        glBindVertexArray(0);
+    }
+
+    if (roadHelperVertexCount > 0) {
+        glBindVertexArray(helperRoadVAO);
+        glLineWidth(1.0f);
+        glColor3f(0.95f, 0.85f, 0.2f);
+        glDrawArrays(GL_LINES, 0, roadHelperVertexCount);
+        glBindVertexArray(0);
+    }
+    glLineWidth(1.0f);
+    glColor3f(1.0f, 1.0f, 1.0f);
 }
 
 void renderer_draw_grid(Graph *graph) {
@@ -358,8 +534,12 @@ void renderer_shutdown(void) {
         glDeleteVertexArrays(1, &gridVAO);
         glDeleteBuffers(1, &gridVBO);
     }
+    if (helperRoadVAO != 0) {
+        glDeleteVertexArrays(1, &helperRoadVAO);
+        glDeleteBuffers(1, &helperRoadVBO);
+    }
     if (VAO != 0) {
         glDeleteVertexArrays(1, &VAO);
-        glDeleteBuffers(1, &VBO);
+        glDeleteBuffers(1, &roadVBO);
     }
 }

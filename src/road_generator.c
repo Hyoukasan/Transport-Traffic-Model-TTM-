@@ -30,14 +30,14 @@ static void build_roads_range(RoadGenerator *gen, Graph *graph, int start_index,
         Point *p = &gen->points[start_index + i];
         if (type == ROAD_HORIZONTAL) {
             float speed_limit = (gen->scenario == ROAD_SCENARIO_HIGHWAY) ? 1.0f : random_speed_limit();
-            int road_id = graph_add_road(graph, 0, p->y, graph->grid_width - 1, p->y, ROAD_HORIZONTAL, speed_limit);
+            int road_id = graph_add_road(graph, 0, p->y, graph->grid_width - 1, p->y, ROAD_HORIZONTAL, speed_limit, 4);
             if (road_id >= 0) {
                 printf("горизонтальная дорога %d: от (0, %d) до (%d, %d), скорость=%.1f\n",
                        road_id, p->y, graph->grid_width - 1, p->y, speed_limit);
             }
         } else {
             float speed_limit = random_speed_limit();
-            int road_id = graph_add_road(graph, p->x, 0, p->x, graph->grid_height - 1, ROAD_VERTICAL, speed_limit);
+            int road_id = graph_add_road(graph, p->x, 0, p->x, graph->grid_height - 1, ROAD_VERTICAL, speed_limit, 4);
             if (road_id >= 0) {
                 printf("вертикальная дорога %d: от (%d, 0) до (%d, %d), скорость=%.1f\n",
                        road_id, p->x, p->x, graph->grid_height - 1, speed_limit);
