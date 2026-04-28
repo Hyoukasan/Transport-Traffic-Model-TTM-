@@ -49,7 +49,7 @@ int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
         return -1;
     }
 
-    manager->graph = graph_init(1920, 1080, 50, 0, config->max_roads);
+    manager->graph = graph_create(1920, 1080, 50, 0, config->max_roads);
     if(manager->graph == NULL) {
         fprintf(stderr, "Graph initialization failed!\n");
         traffic_manager_clear(manager);
@@ -82,8 +82,8 @@ void traffic_manager_clear(TrafficManager *manager) {
     }
 
     if(manager->cars != NULL) {
-        for(size_t i = 0; i < manager->car_count; i++) {
-            car_destroy(manager->cars + i * sizeof(Car));
+        for(int i = 0; i < manager->car_count; i++) {
+            car_destroy(&manager->cars[i]);
         }
     }
     

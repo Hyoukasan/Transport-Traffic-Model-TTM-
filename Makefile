@@ -31,7 +31,7 @@ OBJECTS = $(SRCS:src/%.c=$(BUILD_DIR)/%.o)
 all: $(BUILD_DIR) $(TARGET)
 
 $(BUILD_DIR):
-	@mkdir -p $(BUILD_DIR)
+	@if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
 
 $(TARGET): $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
@@ -40,6 +40,7 @@ $(BUILD_DIR)/%.o: src/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -rf $(TARGET) $(BUILD_DIR)
+	@if exist "$(TARGET)" del /q "$(TARGET)"
+	@if exist "$(BUILD_DIR)" rmdir /s /q "$(BUILD_DIR)"
 
 .PHONY: all clean

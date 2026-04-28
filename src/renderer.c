@@ -396,10 +396,59 @@ void renderer_upload_graph(Graph *graph) {
     }
 }
 
-void renderer_draw_roads(Graph *graph) {
-    (void)graph;
-    if (roadMainVertexCount == 0 && roadHelperVertexCount == 0) {
+static void renderer_draw_road_texture(const Graph *graph, const RoadSegment *road) {
+    if (graph == NULL || road == NULL || road->texture == 0) {
         return;
+    }
+
+    float left, right, top, bottom;
+    if (road->type == ROAD_HORIZONTAL) {
+        int start_edge = road->y1 - (road->lanes / 2);
+        int end_edge = start_edge + road->lanes;
+        left = grid_edge_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
+        right = grid_edge_to_normalized_x(road->x2 + 1, graph->chunk_size, graph->padding, graph->window_width);
+        top = grid_edge_to_normalized_y(start_edge, graph->chunk_size, graph->padding, graph->window_height);
+        bottom = grid_edge_to_normalized_y(end_edge, graph->chunk_size, graph->padding, graph->window_height);
+    } else if (road->type == ROAD_VERTICAL) {
+        int start_edge = road->x1 - (road->lanes / 2);
+        int end_edge = start_edge + road->lanes;
+        left = grid_edge_to_normalized_x(start_edge, graph->chunk_size, graph->padding, graph->window_width);
+        right = grid_edge_to_normalized_x(end_edge, graph->chunk_size, graph->padding, graph->window_width);
+        top = grid_edge_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
+        bottom = grid_edge_to_normalized_y(road->y2 + 1, graph->chunk_size, graph->padding, graph->window_height);
+    } else {
+        return;
+    }
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, road->texture);
+    glColor3f(1.0f, 1.0f, 1.0f);
+
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex2f(left, top);
+
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex2f(right, top);
+
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex2f(right, bottom);
+
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex2f(left, bottom);
+    glEnd();
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_TEXTURE_2D);
+}
+
+void renderer_draw_roads(Graph *graph) {
+    if (graph == NULL) {
+        return;
+    }
+
+    for (int i = 0; i < graph->road_count; i++) {
+        renderer_draw_road_texture(graph, &graph->roads[i]);
     }
 
     if (roadMainVertexCount > 0) {

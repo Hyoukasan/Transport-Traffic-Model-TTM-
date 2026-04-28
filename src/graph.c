@@ -1,4 +1,4 @@
-#include "graph.h"
+﻿#include "graph.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -19,7 +19,7 @@ static bool graph_expand_roads(Graph *g) {
     return true;
 }
 
-Graph* graph_init(int window_width, int window_height, int chunk_size, int padding, int max_roads) {
+Graph* graph_create(int window_width, int window_height, int chunk_size, int padding, int max_roads) {
     Graph *graph = malloc(sizeof(Graph));
     if (graph == NULL) {
         fprintf(stderr, "graph_create: failed to allocate Graph\n");
@@ -63,7 +63,16 @@ Graph* graph_init(int window_width, int window_height, int chunk_size, int paddi
         return NULL;  
     }
 
+    graph->adj_graph = NULL;
     return graph;
+}
+
+void graph_set_road_texture(Graph *g, int road_id, unsigned int texture) {
+    if (g == NULL || road_id < 0 || road_id >= g->road_count) {
+        return;
+    }
+
+    g->roads[road_id].texture = texture;
 }
 
 static bool point_in_range(int value, int a, int b) {
@@ -171,3 +180,5 @@ void graph_destroy(Graph *g) {
     free(g->roads);
     free(g);
 }
+
+
