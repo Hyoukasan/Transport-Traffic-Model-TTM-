@@ -420,21 +420,37 @@ static void renderer_draw_road_texture(const Graph *graph, const RoadSegment *ro
         return;
     }
 
+    float repeat_u = 1.0f;
+    float repeat_v = 1.0f;
+    if (road->type == ROAD_HORIZONTAL) {
+        int length_chunks = abs(road->x2 - road->x1) + 1;
+        int width_chunks = road->lanes;
+        repeat_u = length_chunks / 2.0f;
+        repeat_v = width_chunks / 2.0f;
+    } else if (road->type == ROAD_VERTICAL) {
+        int length_chunks = abs(road->y2 - road->y1) + 1;
+        int width_chunks = road->lanes;
+        repeat_u = width_chunks / 2.0f;
+        repeat_v = length_chunks / 2.0f;
+    }
+
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, road->texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glColor3f(1.0f, 1.0f, 1.0f);
 
     glBegin(GL_QUADS);
     glTexCoord2f(0.0f, 0.0f);
     glVertex2f(left, top);
 
-    glTexCoord2f(1.0f, 0.0f);
+    glTexCoord2f(repeat_u, 0.0f);
     glVertex2f(right, top);
 
-    glTexCoord2f(1.0f, 1.0f);
+    glTexCoord2f(repeat_u, repeat_v);
     glVertex2f(right, bottom);
 
-    glTexCoord2f(0.0f, 1.0f);
+    glTexCoord2f(0.0f, repeat_v);
     glVertex2f(left, bottom);
     glEnd();
 
