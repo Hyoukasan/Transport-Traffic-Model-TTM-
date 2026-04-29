@@ -27,31 +27,46 @@ static float random_speed_limit(void) {
 }
 
 static void build_roads_range(RoadGenerator *gen, Graph *graph, int start_index, int count, RoadType type) {
+    int lanes = gen->lane_count > 0 ? gen->lane_count : 2;
     for (int i = 0; i < count; i++) {
         Point *p = &gen->points[start_index + i];
         if (type == ROAD_HORIZONTAL) {
             float speed_limit = (gen->scenario == ROAD_SCENARIO_HIGHWAY) ? 1.0f : random_speed_limit();
-            int road_id = graph_add_road(graph, 0, p->y, graph->grid_width - 1, p->y, ROAD_HORIZONTAL, speed_limit, 4);
+            int road_id = graph_add_road(graph, 0, p->y - 1, graph->grid_width - 1, p->y - 1, ROAD_HORIZONTAL, ROAD_DIR_WEST, speed_limit, lanes);
             if (road_id >= 0) {
-                unsigned int texture = texture_load("Data/textures/background_menu.png", NULL, NULL);
+                unsigned int texture = texture_load("Data/textures/road132.png", NULL, NULL);
                 graph_set_road_texture(graph, road_id, texture);
-                printf("горизонтальная дорога %d: от (0, %d) до (%d, %d), скорость=%.1f\n",
-                       road_id, p->y, graph->grid_width - 1, p->y, speed_limit);
+                printf("горизонтальная дорога %d (верх, влево): от (0, %d) до (%d, %d), скорость=%.1f, полос=%d\n",
+                       road_id, p->y - 1, graph->grid_width - 1, p->y - 1, speed_limit, lanes);
+            }
+            road_id = graph_add_road(graph, 0, p->y + 1, graph->grid_width - 1, p->y + 1, ROAD_HORIZONTAL, ROAD_DIR_EAST, speed_limit, lanes);
+            if (road_id >= 0) {
+                unsigned int texture = texture_load("Data/textures/road132.png", NULL, NULL);
+                graph_set_road_texture(graph, road_id, texture);
+                printf("горизонтальная дорога %d (низ, вправо): от (0, %d) до (%d, %d), скорость=%.1f, полос=%d\n",
+                       road_id, p->y + 1, graph->grid_width - 1, p->y + 1, speed_limit, lanes);
             }
         } else {
             float speed_limit = random_speed_limit();
-            int road_id = graph_add_road(graph, p->x, 0, p->x, graph->grid_height - 1, ROAD_VERTICAL, speed_limit, 4);
+            int road_id = graph_add_road(graph, p->x - 1, 0, p->x - 1, graph->grid_height - 1, ROAD_VERTICAL, ROAD_DIR_NORTH, speed_limit, lanes);
             if (road_id >= 0) {
-                unsigned int texture = texture_load("Data/textures/background_menu.png", NULL, NULL);
+                unsigned int texture = texture_load("Data/textures/road132.png", NULL, NULL);
                 graph_set_road_texture(graph, road_id, texture);
-                printf("вертикальная дорога %d: от (%d, 0) до (%d, %d), скорость=%.1f\n",
-                       road_id, p->x, p->x, graph->grid_height - 1, speed_limit);
+                printf("вертикальная дорога %d (лево, вверх): от (%d, 0) до (%d, %d), скорость=%.1f, полос=%d\n",
+                       road_id, p->x - 1, p->x - 1, graph->grid_height - 1, speed_limit, lanes);
+            }
+            road_id = graph_add_road(graph, p->x + 1, 0, p->x + 1, graph->grid_height - 1, ROAD_VERTICAL, ROAD_DIR_SOUTH, speed_limit, lanes);
+            if (road_id >= 0) {
+                unsigned int texture = texture_load("Data/textures/road132.png", NULL, NULL);
+                graph_set_road_texture(graph, road_id, texture);
+                printf("вертикальная дорога %d (право, вниз): от (%d, 0) до (%d, %d), скорость=%.1f, полос=%d\n",
+                       road_id, p->x + 1, p->x + 1, graph->grid_height - 1, speed_limit, lanes);
             }
         }
     }
 }
 
-static RoadGenerator* road_gen_create_internal(int num_roads) {
+static RoadGenerator* road_gen_create_internal(int num_roads, int lane_count) {
     if (num_roads <= 0) {
         fprintf(stderr, "road_gen_create: неправильное количество дорог %d\n", num_roads);
         return NULL;
@@ -75,17 +90,18 @@ static RoadGenerator* road_gen_create_internal(int num_roads) {
     gen->horizontal_roads = num_roads / 2;
     gen->vertical_roads = num_roads - gen->horizontal_roads;
     gen->scenario = ROAD_SCENARIO_SINGLE_INTERSECTION;
+    gen->lane_count = lane_count > 0 ? lane_count : 2;
 
     return gen;
 }
 
 RoadGenerator* road_gen_create(int num_roads) {
-    return road_gen_create_internal(num_roads);
+    return road_gen_create_internal(num_roads, 2);
 }
 
-RoadGenerator* road_gen_create_with_scenario(int scenario) {
+RoadGenerator* road_gen_create_with_scenario(int scenario, int lane_count) {
     int num_roads = road_count_for_scenario(scenario);
-    RoadGenerator *gen = road_gen_create_internal(num_roads);
+    RoadGenerator *gen = road_gen_create_internal(num_roads, lane_count);
     if (!gen) {
         return NULL;
     }

@@ -9,6 +9,14 @@ typedef enum {
     ROAD_DIAGONAL
 } RoadType;
 
+typedef enum {
+    ROAD_DIR_NONE,
+    ROAD_DIR_EAST,
+    ROAD_DIR_WEST,
+    ROAD_DIR_NORTH,
+    ROAD_DIR_SOUTH
+} RoadDirection;
+
 typedef struct {
     int id;
     int x1;
@@ -16,6 +24,7 @@ typedef struct {
     int x2;
     int y2;
     RoadType type;
+    RoadDirection direction;
     int length;        // длина в ячейках
     float speed_limit; // скорость на дороге
     bool accident;     // авария на сегменте
@@ -26,14 +35,16 @@ typedef struct {
 typedef struct {
     int x;
     int y;
-} GridPoint;
+    int road_count;
+    int roads[8];
+} Intersection;
 
 typedef struct Graph {
     RoadSegment* roads;
     int road_count;
     int max_roads;
 
-    GridPoint* intersections;
+    Intersection *intersections;
     int intersection_count;
     int max_intersections;
 
@@ -49,8 +60,9 @@ typedef struct Graph {
 } Graph;
 
 Graph* graph_create(int window_width, int window_height, int chunk_size, int padding, int max_roads);
-int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, float speed_limit, int lanes);
+int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, RoadDirection direction, float speed_limit, int lanes);
 void graph_set_road_texture(Graph *g, int road_id, unsigned int texture);
+void graph_set_road_direction(Graph *g, int road_id, RoadDirection direction);
 void graph_build_intersections(Graph *g);
 void graph_destroy(Graph *g);
 

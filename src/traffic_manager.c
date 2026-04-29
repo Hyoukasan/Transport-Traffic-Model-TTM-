@@ -9,15 +9,40 @@
 #include "graph.h"
 #include "road_generator.h"
 
-static int traffic_manager_build_roads(TrafficManager *manager, int scenario) {
-    RoadGenerator *road_gen = road_gen_create_with_scenario(scenario);
+static int traffic_manager_build_roads(TrafficManager *manager, int scenario, int lane_count) {
+    RoadGenerator *road_gen = road_gen_create_with_scenario(scenario, lane_count);
     if (road_gen == NULL) {
         return -1;
     }
 
     road_gen_generate_and_build(road_gen, manager->graph, scenario);
     road_gen_destroy(road_gen);
+    graph_build_intersections(manager->graph);
     return 0;
+}
+
+static void traffic_manager_spawn_cars(TrafficManager *manager, const TrafficConfig *config) {
+    if (manager == NULL || manager->graph == NULL || config == NULL || manager->graph->road_count <= 0) {
+        return;
+    }
+
+    int roads = manager->graph->road_count;
+    int total_cars = config->max_cars > 0 ? config->max_cars : 0;
+    if (total_cars > manager->max_cars) {
+        total_cars = manager->max_cars;
+    }
+
+    for (int i = 0; i < total_cars; i++) {
+        int road_id = i % roads;
+        RoadSegment *road = &manager->graph->roads[road_id];
+        float speed_factor = 0.6f + (float)(rand() % 41) / 100.0f;
+        float desired_speed = road->speed_limit * speed_factor;
+        int lane = config->lane_count > 0 ? (i % config->lane_count) : 0;
+
+        car_init(&manager->cars[manager->car_count], manager->next_car_id++, road_id, desired_speed, 1.0f, lane, 0.0f);
+        manager->cars[manager->car_count].position = 0.05f + ((float)i / (float)total_cars) * 0.4f;
+        manager->car_count++;
+    }
 }
 
 int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
@@ -56,7 +81,7 @@ int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
         return -1;
     }
 
-    if (traffic_manager_build_roads(manager, config->scenario) != 0) {
+    if (traffic_manager_build_roads(manager, config->scenario, config->lane_count) != 0) {
         fprintf(stderr, "Road generation failed!\n");
         traffic_manager_clear(manager);
         return -1;
@@ -66,8 +91,22 @@ int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
     manager->accident_count = 0;
     manager->light_count = 0;
     manager->time = 0.0f;
-    manager->next_car_id = 0; 
+    manager->next_car_id = 0;
+    traffic_manager_spawn_cars(manager, config);
 
+    return 0;
+}
+
+int traffic_manager_update(TrafficManager *manager, float dt) {
+    if (manager == NULL || manager->graph == NULL) {
+        return -1;
+    }
+
+    for (int i = 0; i < manager->car_count; i++) {
+        car_update(&manager->cars[i], manager->graph, dt);
+    }
+
+    manager->time += dt;
     return 0;
 }
 

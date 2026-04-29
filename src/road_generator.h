@@ -21,13 +21,14 @@ typedef struct {
 
     int horizontal_roads;  // количество горизонтальных дорог
     int vertical_roads;    // количество вертикальных дорог
+    int lane_count;        // количество полос на дороге
 } RoadGenerator;
 
 // Создать генератор
 RoadGenerator* road_gen_create(int num_roads);
 
 // Создать генератор для конкретного сценария
-RoadGenerator* road_gen_create_with_scenario(int scenario);
+RoadGenerator* road_gen_create_with_scenario(int scenario, int lane_count);
 
 // Генерировать массив координат точек с учётом выбранного сценария
 void road_gen_generate_points(RoadGenerator *gen, Graph *graph);

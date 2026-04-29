@@ -1,6 +1,10 @@
-﻿#include "graph.h"
+#include "graph.h"
+#include "texture.h"
 #include <stdlib.h>
 #include <stdio.h>
+
+#define INITIAL_CAPACITY 50
+#define INITIAL_INTERSECTION_CAPACITY 16
 
 static bool graph_expand_roads(Graph *g) {
     if (g == NULL) {
@@ -20,59 +24,61 @@ static bool graph_expand_roads(Graph *g) {
 }
 
 Graph* graph_create(int window_width, int window_height, int chunk_size, int padding, int max_roads) {
-    Graph *graph = malloc(sizeof(Graph));
-    if (graph == NULL) {
+    Graph *g = malloc(sizeof(Graph));
+    if (g == NULL) {
         fprintf(stderr, "graph_create: failed to allocate Graph\n");
         return NULL;
     }
 
-    graph->window_width = window_width;
-    graph->window_height = window_height;
-    graph->chunk_size = chunk_size;
-    graph->padding = padding;
+    g->window_width = window_width;
+    g->window_height = window_height;
+    g->chunk_size = chunk_size;
+    g->padding = padding;
 
-    graph->grid_width = (window_width / chunk_size) - (2 * padding);
-    graph->grid_height = (window_height / chunk_size) - (2 * padding);
-    if (graph->grid_width <= 0) {
-        graph->grid_width = 1;
+    g->grid_width = (window_width / chunk_size) - (2 * padding);
+    g->grid_height = (window_height / chunk_size) - (2 * padding);
+    if (g->grid_width <= 0) {
+        g->grid_width = 1;
     }
-    if (graph->grid_height <= 0) {
-        graph->grid_height = 1;
-    }
-
-    graph->road_count = 0;
-    graph->max_roads = max_roads;
-
-    if (graph->max_roads <= 0) {
-        graph->max_roads = 16;
+    if (g->grid_height <= 0) {
+        g->grid_height = 1;
     }
 
-    graph->roads = calloc((size_t)graph->max_roads, sizeof(RoadSegment));
-    if(graph->roads == NULL) {
-        free(graph);
+    g->max_roads = max_roads > 0 ? max_roads : INITIAL_CAPACITY;
+    g->road_count = 0;
+    g->roads = malloc(sizeof(RoadSegment) * g->max_roads);
+    if (g->roads == NULL) {
+        fprintf(stderr, "graph_create: failed to allocate roads array\n");
+        free(g);
         return NULL;
     }
 
-    graph->intersection_count = 0;
-    graph->max_intersections = 16;
-
-    graph->intersections = calloc((size_t)graph->max_intersections, sizeof(GridPoint));
-    if(graph->intersections == NULL) {
-        free(graph->roads);
-        free(graph);
-        return NULL;  
+    g->max_intersections = INITIAL_INTERSECTION_CAPACITY;
+    g->intersection_count = 0;
+    g->intersections = malloc(sizeof(Intersection) * g->max_intersections);
+    if (g->intersections == NULL) {
+        fprintf(stderr, "graph_create: failed to allocate intersections array\n");
+        free(g->roads);
+        free(g);
+        return NULL;
     }
 
-    graph->adj_graph = NULL;
-    return graph;
+    g->adj_graph = NULL;
+    return g;
 }
 
 void graph_set_road_texture(Graph *g, int road_id, unsigned int texture) {
     if (g == NULL || road_id < 0 || road_id >= g->road_count) {
         return;
     }
-
     g->roads[road_id].texture = texture;
+}
+
+void graph_set_road_direction(Graph *g, int road_id, RoadDirection direction) {
+    if (g == NULL || road_id < 0 || road_id >= g->road_count) {
+        return;
+    }
+    g->roads[road_id].direction = direction;
 }
 
 static bool point_in_range(int value, int a, int b) {
@@ -82,20 +88,28 @@ static bool point_in_range(int value, int a, int b) {
     return value >= b && value <= a;
 }
 
-static bool graph_add_intersection(Graph *g, int x, int y) {
+static bool graph_add_intersection(Graph *g, int x, int y, int road_id) {
     if (g == NULL) {
         return false;
     }
 
     for (int i = 0; i < g->intersection_count; i++) {
         if (g->intersections[i].x == x && g->intersections[i].y == y) {
+            for (int j = 0; j < g->intersections[i].road_count; j++) {
+                if (g->intersections[i].roads[j] == road_id) {
+                    return true;
+                }
+            }
+            if (g->intersections[i].road_count < 8) {
+                g->intersections[i].roads[g->intersections[i].road_count++] = road_id;
+            }
             return true;
         }
     }
 
     if (g->intersection_count >= g->max_intersections) {
         int new_max = g->max_intersections * 2;
-        GridPoint *new_points = realloc(g->intersections, sizeof(GridPoint) * new_max);
+        Intersection *new_points = realloc(g->intersections, sizeof(Intersection) * new_max);
         if (new_points == NULL) {
             fprintf(stderr, "graph_add_intersection: failed to allocate expanded intersections array\n");
             return false;
@@ -104,20 +118,23 @@ static bool graph_add_intersection(Graph *g, int x, int y) {
         g->max_intersections = new_max;
     }
 
-    g->intersections[g->intersection_count].x = x;
-    g->intersections[g->intersection_count].y = y;
+    Intersection *intersection = &g->intersections[g->intersection_count];
+    intersection->x = x;
+    intersection->y = y;
+    intersection->road_count = 0;
+    intersection->roads[intersection->road_count++] = road_id;
     g->intersection_count++;
     return true;
 }
 
-int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, float speed_limit, int lanes) {
+int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, RoadDirection direction, float speed_limit, int lanes) {
     if (g == NULL) {
         fprintf(stderr, "graph_add_road: graph is NULL\n");
         return -1;
     }
 
-    if (x1 < 0 || x1 >= g->grid_width || x2 < 0 || x2 >= g->grid_width ||
-        y1 < 0 || y1 >= g->grid_height || y2 < 0 || y2 >= g->grid_height) {
+    if (x1 < 0 || x1 > g->grid_width || x2 < 0 || x2 > g->grid_width ||
+        y1 < 0 || y1 > g->grid_height || y2 < 0 || y2 > g->grid_height) {
         fprintf(stderr, "graph_add_road: invalid road bounds (%d,%d)-(%d,%d)\n", x1, y1, x2, y2);
         return -1;
     }
@@ -135,10 +152,12 @@ int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, floa
     road->x2 = x2;
     road->y2 = y2;
     road->type = type;
+    road->direction = direction;
     road->length = abs(x2 - x1) + abs(y2 - y1) + 1;
     road->speed_limit = speed_limit;
     road->accident = false;
     road->lanes = lanes > 0 ? lanes : 1;
+    road->texture = 0;
 
     return g->road_count++;
 }
@@ -158,13 +177,15 @@ void graph_build_intersections(Graph *g) {
                 int x = road_b->x1;
                 int y = road_a->y1;
                 if (point_in_range(x, road_a->x1, road_a->x2) && point_in_range(y, road_b->y1, road_b->y2)) {
-                    graph_add_intersection(g, x, y);
+                    graph_add_intersection(g, x, y, road_a->id);
+                    graph_add_intersection(g, x, y, road_b->id);
                 }
             } else if (road_a->type == ROAD_VERTICAL && road_b->type == ROAD_HORIZONTAL) {
                 int x = road_a->x1;
                 int y = road_b->y1;
                 if (point_in_range(x, road_b->x1, road_b->x2) && point_in_range(y, road_a->y1, road_a->y2)) {
-                    graph_add_intersection(g, x, y);
+                    graph_add_intersection(g, x, y, road_a->id);
+                    graph_add_intersection(g, x, y, road_b->id);
                 }
             }
         }
@@ -176,9 +197,12 @@ void graph_destroy(Graph *g) {
         return;
     }
 
+    for (int i = 0; i < g->road_count; i++) {
+        if (g->roads[i].texture != 0) {
+            texture_delete(g->roads[i].texture);
+        }
+    }
     free(g->intersections);
     free(g->roads);
     free(g);
 }
-
-

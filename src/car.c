@@ -39,6 +39,49 @@ static float calculate_road_fraction(const RoadSegment *road, int x, int y) {
     return 0.0f;
 }
 
+static bool is_horizontal_direction(RoadDirection dir) {
+    return dir == ROAD_DIR_EAST || dir == ROAD_DIR_WEST;
+}
+
+static bool is_vertical_direction(RoadDirection dir) {
+    return dir == ROAD_DIR_NORTH || dir == ROAD_DIR_SOUTH;
+}
+
+static bool is_left_turn(RoadDirection current, RoadDirection candidate) {
+    switch (current) {
+        case ROAD_DIR_EAST:
+            return candidate == ROAD_DIR_NORTH;
+        case ROAD_DIR_WEST:
+            return candidate == ROAD_DIR_SOUTH;
+        case ROAD_DIR_NORTH:
+            return candidate == ROAD_DIR_WEST;
+        case ROAD_DIR_SOUTH:
+            return candidate == ROAD_DIR_EAST;
+        default:
+            return false;
+    }
+}
+
+static bool is_right_turn(RoadDirection current, RoadDirection candidate) {
+    switch (current) {
+        case ROAD_DIR_EAST:
+            return candidate == ROAD_DIR_SOUTH;
+        case ROAD_DIR_WEST:
+            return candidate == ROAD_DIR_NORTH;
+        case ROAD_DIR_NORTH:
+            return candidate == ROAD_DIR_EAST;
+        case ROAD_DIR_SOUTH:
+            return candidate == ROAD_DIR_WEST;
+        default:
+            return false;
+    }
+}
+
+static bool is_perpendicular_direction(RoadDirection current, RoadDirection candidate) {
+    return (is_horizontal_direction(current) && is_vertical_direction(candidate)) ||
+           (is_vertical_direction(current) && is_horizontal_direction(candidate));
+}
+
 void car_init(Car *car, int id, int road_id, float desired_speed, float length, int lane, float offset) {
     if (car == NULL) {
         return;
@@ -124,17 +167,16 @@ void car_update(Car *car, const Graph *graph, float dt) {
     for (int i = 0; i < graph->intersection_count; i++) {
         int ix = graph->intersections[i].x;
         int iy = graph->intersections[i].y;
-        
-        if (!point_in_range(ix, road->x1, road->x2) && road->type == ROAD_HORIZONTAL) {
-            continue;
-        }
-        if (!point_in_range(iy, road->y1, road->y2) && road->type == ROAD_VERTICAL) {
-            continue;
-        }
-        if (road->type == ROAD_HORIZONTAL && iy != road->y1) {
-            continue;
-        }
-        if (road->type == ROAD_VERTICAL && ix != road->x1) {
+
+        if (road->type == ROAD_HORIZONTAL) {
+            if (!point_in_range(ix, road->x1, road->x2) || iy != road->y1) {
+                continue;
+            }
+        } else if (road->type == ROAD_VERTICAL) {
+            if (!point_in_range(iy, road->y1, road->y2) || ix != road->x1) {
+                continue;
+            }
+        } else {
             continue;
         }
 
@@ -152,27 +194,38 @@ void car_update(Car *car, const Graph *graph, float dt) {
             break;
         }
 
-        int crossing_road_id = -1;
-        for (int r = 0; r < graph->road_count; r++) {
-            if (r == car->road_id) {
+        int left_road_id = -1;
+        int right_road_id = -1;
+
+        Intersection *intersection = &graph->intersections[i];
+        for (int j = 0; j < intersection->road_count; j++) {
+            int candidate_id = intersection->roads[j];
+            if (candidate_id == car->road_id) {
                 continue;
             }
-            const RoadSegment *other = &graph->roads[r];
-            if (other->type == ROAD_HORIZONTAL && ix >= other->x1 && ix <= other->x2 && iy == other->y1) {
-                if (road->type == ROAD_VERTICAL) {
-                    crossing_road_id = r;
-                    break;
-                }
-            } else if (other->type == ROAD_VERTICAL && iy >= other->y1 && iy <= other->y2 && ix == other->x1) {
-                if (road->type == ROAD_HORIZONTAL) {
-                    crossing_road_id = r;
-                    break;
-                }
+
+            const RoadSegment *candidate = &graph->roads[candidate_id];
+            if (!is_perpendicular_direction(road->direction, candidate->direction)) {
+                continue;
+            }
+
+            if (is_left_turn(road->direction, candidate->direction)) {
+                left_road_id = candidate_id;
+            } else if (is_right_turn(road->direction, candidate->direction)) {
+                right_road_id = candidate_id;
             }
         }
 
-        if (crossing_road_id >= 0) {
-            const RoadSegment *new_road = &graph->roads[crossing_road_id];
+        int chosen_road_id = -1;
+        int roll = rand() % 100;
+        if (left_road_id >= 0 && roll < 20) {
+            chosen_road_id = left_road_id;
+        } else if (right_road_id >= 0 && roll < 40) {
+            chosen_road_id = right_road_id;
+        }
+
+        if (chosen_road_id >= 0) {
+            const RoadSegment *new_road = &graph->roads[chosen_road_id];
             float new_position = 0.0f;
             if (new_road->type == ROAD_HORIZONTAL) {
                 int span = abs(new_road->x2 - new_road->x1);
@@ -184,7 +237,7 @@ void car_update(Car *car, const Graph *graph, float dt) {
                 car->angle = 90.0f;
             }
 
-            car->road_id = crossing_road_id;
+            car->road_id = chosen_road_id;
             car->position = new_position + 0.02f;
             if (car->position > 1.0f) {
                 car->position = 1.0f;
@@ -194,6 +247,11 @@ void car_update(Car *car, const Graph *graph, float dt) {
             car->last_turn_y = iy;
             break;
         }
+
+        car->at_intersection = true;
+        car->last_turn_x = ix;
+        car->last_turn_y = iy;
+        break;
     }
 
     if (!car->at_intersection) {
