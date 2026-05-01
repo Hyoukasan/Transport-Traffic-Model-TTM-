@@ -634,12 +634,15 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
         float cx = x1 + (x2 - x1) * car->position;
         float cy = y1 + (y2 - y1) * car->position;
 
-        float scale_x = 0.06f;
-        float scale_y = 0.04f;
-        if (road->type == ROAD_VERTICAL) {
-            scale_x = 0.04f;
-            scale_y = 0.06f;
+        float car_width_px = 28.0f;
+        float car_height_px = 44.0f;
+        if (road->type == ROAD_HORIZONTAL) {
+            car_width_px = 44.0f;
+            car_height_px = 28.0f;
         }
+
+        float scale_x = (car_width_px * 2.0f) / (float)graph->window_width;
+        float scale_y = (car_height_px * 2.0f) / (float)graph->window_height;
 
         if (car->texture != 0) {
             glEnable(GL_TEXTURE_2D);

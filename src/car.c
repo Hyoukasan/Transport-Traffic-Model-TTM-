@@ -150,8 +150,23 @@ void car_update(Car *car, const Graph *graph, float dt) {
     }
 
     car->at_intersection = false;
-    float base_angle = (road->type == ROAD_VERTICAL) ? 90.0f : 0.0f;
-    car->angle = base_angle;
+    switch (road->direction) {
+        case ROAD_DIR_EAST:
+            car->angle = -90.0f;
+            break;
+        case ROAD_DIR_WEST:
+            car->angle = 90.0f;
+            break;
+        case ROAD_DIR_NORTH:
+            car->angle = 0.0f;
+            break;
+        case ROAD_DIR_SOUTH:
+            car->angle = 180.0f;
+            break;
+        default:
+            car->angle = 0.0f;
+            break;
+    }
 
     for (int i = 0; i < graph->intersection_count; i++) {
         int ix = graph->intersections[i].x;
