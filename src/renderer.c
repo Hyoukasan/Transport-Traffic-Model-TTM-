@@ -568,7 +568,7 @@ void renderer_draw_text(float x, float y, char* text, float scale, float r, floa
     glLoadIdentity();
 
     glTranslatef(x, y, 0.0f);
-    glScalef(2.0f, 2.0f, 1.0f);
+    glScalef(scale, scale, 1.0f);
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);

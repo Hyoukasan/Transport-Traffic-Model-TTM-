@@ -74,7 +74,7 @@ int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
         return -1;
     }
 
-    manager->graph = graph_create(1920, 1080, 50, 0, config->max_roads);
+    manager->graph = graph_create(1920, 1080, 40, 0, config->max_roads);
     if(manager->graph == NULL) {
         fprintf(stderr, "Graph initialization failed!\n");
         traffic_manager_clear(manager);

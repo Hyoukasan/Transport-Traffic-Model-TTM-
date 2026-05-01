@@ -201,7 +201,7 @@ void application_update(void){
             traffic_manager_update(&manager, frame);
 
 //            glColor3f(0.35f, 0.35f, 0.35f);
-            renderer_draw_grid(manager.graph);
+//            renderer_draw_grid(manager.graph);
 
 //            glColor3f(1.0f, 0.0f, 0.0f);
             renderer_draw_roads(manager.graph);
