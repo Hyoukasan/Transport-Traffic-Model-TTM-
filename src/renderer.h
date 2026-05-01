@@ -29,6 +29,8 @@ void renderer_draw_nodes(Graph *graph);
 // Рисование машин на дорогах
 void renderer_draw_cars(Graph *graph, Car *cars, int car_count);
 
+void renderer_draw_text(float x, float y, const char *text, int screen_width, int screen_height);
+
 // Очистка рендерера
 void renderer_shutdown(void);
 

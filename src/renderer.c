@@ -545,6 +545,10 @@ void renderer_draw_grid(Graph *graph) {
     glLineWidth(1.0f);
 }
 
+void renderer_draw_text(float x, float y, const char *text, int screen_width, int screen_height) {
+    
+}
+
 void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
     if (graph == NULL || !cars || car_count <= 0) {
         return;
