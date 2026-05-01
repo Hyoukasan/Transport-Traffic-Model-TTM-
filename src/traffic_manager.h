@@ -47,11 +47,11 @@ typedef struct {
     int                 next_car_id;
 } TrafficManager;
 
-int traffic_manager_init                     (TrafficManager* manager, const struct TrafficConfig* config);
-void traffic_manager_clear                   (TrafficManager* manager);
-int traffic_manager_update                   (TrafficManager* manager, float dt);
-int traffic_manager_add_accident             (TrafficManager* manager, int road_id, int lane, float position, float clear_time);
+int traffic_manager_init(TrafficManager* manager, const struct TrafficConfig* config);
+void traffic_manager_clear(TrafficManager* manager);
+int traffic_manager_update(TrafficManager* manager, float dt);
+int traffic_manager_add_accident(TrafficManager* manager, int road_id, int lane, float position, float clear_time);
 const struct Graph* traffic_manager_get_graph(const TrafficManager* manager);
-const struct Car* traffic_manager_get_cars   (const TrafficManager* manager, int* out_count);
+const struct Car* traffic_manager_get_cars(const TrafficManager* manager, int* out_count);
 
 #endif
