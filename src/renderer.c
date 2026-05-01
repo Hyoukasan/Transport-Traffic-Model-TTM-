@@ -590,13 +590,18 @@ void renderer_draw_text(float x, float y, char* text, float scale, float r, floa
 }
 
 void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
-    if (graph == NULL || !cars || car_count <= 0) {
+    if (graph == NULL || cars == NULL || car_count <= 0) {
         return;
     }
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBindVertexArray(carVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, carVBO);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glVertexPointer(2, GL_FLOAT, 4 * sizeof(float), (void*)0);
+    glTexCoordPointer(2, GL_FLOAT, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
     for (int i = 0; i < car_count; i++) {
         Car *car = &cars[i];
@@ -648,14 +653,18 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
         glTranslatef(cx, cy, 0.0f);
         glRotatef(car->angle, 0.0f, 0.0f, 1.0f);
         glScalef(scale_x, scale_y, 1.0f);
-        glColor3f(car->color[0], car->color[1], car->color[2]);
+        glColor3f(1.0f, 1.0f, 1.0f);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         glPopMatrix();
 
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+    glDisable(GL_TEXTURE_2D);
     glDisable(GL_BLEND);
 }
 

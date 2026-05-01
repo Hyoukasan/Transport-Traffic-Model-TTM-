@@ -53,12 +53,20 @@ static void traffic_manager_spawn_cars(TrafficManager* manager, const TrafficCon
     for (int i = 0; i < total_cars; i++) {
         int road_id = i % roads;
         RoadSegment *road = &manager->graph->roads[road_id];
-        float speed_factor = 0.6f + (float)(rand() % 41) / 100.0f;
-        float desired_speed = road->speed_limit * speed_factor;
         int lane = config->lane_count > 0 ? (i % config->lane_count) : 0;
 
-        car_init(&manager->cars[manager->car_count], manager->next_car_id++, road_id, desired_speed, 1.0f, lane, 0.0f);
-        manager->cars[manager->car_count].position = 0.05f + ((float)i / (float)total_cars) * 0.4f;
+        float speed_factor = 0.6f + (float)(rand() % 41) / 100.0f;
+        float desired_speed = road->speed_limit * speed_factor;
+
+        Car* car = &manager->cars[manager->car_count];
+
+        car_init(car, manager->next_car_id++, road_id, desired_speed, 1.0f, lane, 0.0f);
+        car->position = 0.05f + ((float)i / (float)total_cars) * 0.4f;
+
+        CarColor color = (CarColor)(rand() % 5);
+        car->color = color;
+        car_set_texture(car, manager->car_textures[color]);
+
         manager->car_count++;
     }
 }
@@ -110,6 +118,8 @@ int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
     manager->light_count = 0;
     manager->time = 0.0f;
     manager->next_car_id = 0;
+
+    traffic_manager_load_car_textures(manager);
     traffic_manager_spawn_cars(manager, config);
 
     return 0;
@@ -139,9 +149,9 @@ void traffic_manager_clear(TrafficManager *manager) {
     }
 
     if(manager->cars != NULL) {
-        for(int i = 0; i < manager->car_count; i++) {
-            car_destroy(&manager->cars[i]);
-        }
+        //for(int i = 0; i < manager->car_count; i++) {
+        //    car_destroy(&manager->cars[i]);
+        //}
     }
     
     free(manager->cars);

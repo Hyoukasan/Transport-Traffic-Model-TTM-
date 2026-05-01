@@ -249,14 +249,3 @@ void car_update(Car *car, const Graph *graph, float dt) {
     }
 }
 
-void car_destroy(Car *car) {
-    if (car == NULL) {
-        return;
-    }
-
-    if (car->texture != 0) {
-        GLuint tex = (GLuint)car->texture;
-        glDeleteTextures(1, &tex);
-        car->texture = 0;
-    }
-}
