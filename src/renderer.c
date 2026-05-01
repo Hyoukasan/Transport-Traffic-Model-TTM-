@@ -18,6 +18,29 @@ static int roadHelperVertexCount = 0;
 static int nodeVertexCount = 0;
 static GLuint carVAO = 0, carVBO = 0;
 
+static int road_lane_count(const RoadSegment *road) {
+    return (road != NULL && road->lanes > 0) ? road->lanes : 1;
+}
+
+static int road_start_edge(const RoadSegment *road) {
+    int lanes = road_lane_count(road);
+    if (road->type == ROAD_HORIZONTAL) {
+        return road->y1 - (lanes / 2);
+    }
+    return road->x1 - (lanes / 2);
+}
+
+static int clamp_lane(const RoadSegment *road, int lane) {
+    int lanes = road_lane_count(road);
+    if (lane < 0) {
+        return 0;
+    }
+    if (lane >= lanes) {
+        return lanes - 1;
+    }
+    return lane;
+}
+
 static void road_vertex_counts(const Graph *graph, int *mainCount, int *helperCount) {
     if (graph == NULL || mainCount == NULL || helperCount == NULL) {
         return;
@@ -28,14 +51,14 @@ static void road_vertex_counts(const Graph *graph, int *mainCount, int *helperCo
 
     for (int i = 0; i < graph->road_count; i++) {
         const RoadSegment *road = &graph->roads[i];
-        int lanes = road->lanes > 0 ? road->lanes : 1;
+        int lanes = road_lane_count(road);
 
         if (lanes <= 1) {
             *mainCount += 2;
             continue;
         }
 
-        int start_edge = (road->type == ROAD_HORIZONTAL) ? road->y1 - (lanes / 2) : road->x1 - (lanes / 2);
+        int start_edge = road_start_edge(road);
         for (int edge = start_edge; edge <= start_edge + lanes; edge++) {
             if (road->type == ROAD_HORIZONTAL) {
                 if (edge >= 0 && edge <= graph->grid_height) {
@@ -293,9 +316,10 @@ void renderer_upload_graph(Graph *graph) {
 
     if (graph->road_count > 0) {
         road_vertex_counts(graph, &roadMainVertexCount, &roadHelperVertexCount);
-        float *mainVertices = malloc(roadMainVertexCount * 2 * sizeof(float));
-        float *helperVertices = malloc(roadHelperVertexCount * 2 * sizeof(float));
-        if (mainVertices == NULL || helperVertices == NULL) {
+        float *mainVertices = roadMainVertexCount > 0 ? malloc(roadMainVertexCount * 2 * sizeof(float)) : NULL;
+        float *helperVertices = roadHelperVertexCount > 0 ? malloc(roadHelperVertexCount * 2 * sizeof(float)) : NULL;
+        if ((roadMainVertexCount > 0 && mainVertices == NULL) ||
+            (roadHelperVertexCount > 0 && helperVertices == NULL)) {
             fprintf(stderr, "renderer_upload_graph: failed to allocate split road vertices buffers\n");
             free(mainVertices);
             free(helperVertices);
@@ -310,10 +334,10 @@ void renderer_upload_graph(Graph *graph) {
             float y1 = grid_edge_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
             float x2 = grid_edge_to_normalized_x(road->x2, graph->chunk_size, graph->padding, graph->window_width);
             float y2 = grid_edge_to_normalized_y(road->y2, graph->chunk_size, graph->padding, graph->window_height);
-            int lanes = road->lanes > 0 ? road->lanes : 1;
+            int lanes = road_lane_count(road);
 
             if (lanes > 1) {
-                int start_edge = (road->type == ROAD_HORIZONTAL) ? road->y1 - (lanes / 2) : road->x1 - (lanes / 2);
+                int start_edge = road_start_edge(road);
                 for (int edge = start_edge; edge <= start_edge + lanes; edge++) {
                     if (road->type == ROAD_HORIZONTAL) {
                         if (edge >= 0 && edge <= graph->grid_height) {
@@ -351,10 +375,10 @@ void renderer_upload_graph(Graph *graph) {
                     }
                 }
             } else {
-                mainVertices[mainIndex++] = x1;
-                mainVertices[mainIndex++] = y1;
-                mainVertices[mainIndex++] = x2;
-                mainVertices[mainIndex++] = y2;
+                mainVertices[mainIndex++] = grid_center_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
+                mainVertices[mainIndex++] = grid_center_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
+                mainVertices[mainIndex++] = grid_center_to_normalized_x(road->x2, graph->chunk_size, graph->padding, graph->window_width);
+                mainVertices[mainIndex++] = grid_center_to_normalized_y(road->y2, graph->chunk_size, graph->padding, graph->window_height);
             }
         }
 
@@ -402,16 +426,17 @@ static void renderer_draw_road_texture(const Graph *graph, const RoadSegment *ro
     }
 
     float left, right, top, bottom;
+    int lanes = road_lane_count(road);
     if (road->type == ROAD_HORIZONTAL) {
-        int start_edge = road->y1 - (road->lanes / 2);
-        int end_edge = start_edge + road->lanes;
+        int start_edge = road_start_edge(road);
+        int end_edge = start_edge + lanes;
         left = grid_edge_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
         right = grid_edge_to_normalized_x(road->x2 + 1, graph->chunk_size, graph->padding, graph->window_width);
         top = grid_edge_to_normalized_y(start_edge, graph->chunk_size, graph->padding, graph->window_height);
         bottom = grid_edge_to_normalized_y(end_edge, graph->chunk_size, graph->padding, graph->window_height);
     } else if (road->type == ROAD_VERTICAL) {
-        int start_edge = road->x1 - (road->lanes / 2);
-        int end_edge = start_edge + road->lanes;
+        int start_edge = road_start_edge(road);
+        int end_edge = start_edge + lanes;
         left = grid_edge_to_normalized_x(start_edge, graph->chunk_size, graph->padding, graph->window_width);
         right = grid_edge_to_normalized_x(end_edge, graph->chunk_size, graph->padding, graph->window_width);
         top = grid_edge_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
@@ -424,12 +449,12 @@ static void renderer_draw_road_texture(const Graph *graph, const RoadSegment *ro
     float repeat_v = 1.0f;
     if (road->type == ROAD_HORIZONTAL) {
         int length_chunks = abs(road->x2 - road->x1) + 1;
-        int width_chunks = road->lanes;
+        int width_chunks = lanes;
         repeat_u = length_chunks / 2.0f;
         repeat_v = width_chunks / 2.0f;
     } else if (road->type == ROAD_VERTICAL) {
         int length_chunks = abs(road->y2 - road->y1) + 1;
-        int width_chunks = road->lanes;
+        int width_chunks = lanes;
         repeat_u = width_chunks / 2.0f;
         repeat_v = length_chunks / 2.0f;
     }
@@ -536,10 +561,27 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
         }
 
         RoadSegment *road = &graph->roads[car->road_id];
-        float x1 = grid_center_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
-        float y1 = grid_center_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
-        float x2 = grid_center_to_normalized_x(road->x2, graph->chunk_size, graph->padding, graph->window_width);
-        float y2 = grid_center_to_normalized_y(road->y2, graph->chunk_size, graph->padding, graph->window_height);
+        int lane = clamp_lane(road, car->lane);
+        int lane_center = road_start_edge(road) + lane;
+        float x1;
+        float y1;
+        float x2;
+        float y2;
+
+        if (road->type == ROAD_HORIZONTAL) {
+            x1 = grid_center_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
+            y1 = grid_center_to_normalized_y(lane_center, graph->chunk_size, graph->padding, graph->window_height);
+            x2 = grid_center_to_normalized_x(road->x2, graph->chunk_size, graph->padding, graph->window_width);
+            y2 = y1;
+        } else if (road->type == ROAD_VERTICAL) {
+            x1 = grid_center_to_normalized_x(lane_center, graph->chunk_size, graph->padding, graph->window_width);
+            y1 = grid_center_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
+            x2 = x1;
+            y2 = grid_center_to_normalized_y(road->y2, graph->chunk_size, graph->padding, graph->window_height);
+        } else {
+            continue;
+        }
+
         float cx = x1 + (x2 - x1) * car->position;
         float cy = y1 + (y2 - y1) * car->position;
 

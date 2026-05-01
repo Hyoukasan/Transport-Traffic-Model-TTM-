@@ -11,7 +11,7 @@ static int road_count_for_scenario(int scenario) {
         case ROAD_SCENARIO_SINGLE_INTERSECTION:
             return 2;
         case ROAD_SCENARIO_MULTI_INTERSECTION:
-            return 4;
+            return 5;
         default:
             return 2;
     }
@@ -139,8 +139,9 @@ void road_gen_generate_points(RoadGenerator *gen, Graph *graph) {
             gen->vertical_roads = 2;
             set_point(&gen->points[0], 0, graph->grid_height / 3);
             set_point(&gen->points[1], 0, (graph->grid_height * 2) / 3);
-            set_point(&gen->points[2], graph->grid_width / 3, 0);
-            set_point(&gen->points[3], (graph->grid_width * 2) / 3, 0);
+            set_point(&gen->points[2], 0, graph->grid_height / 2);
+            set_point(&gen->points[3], graph->grid_width / 3, 0);
+            set_point(&gen->points[4], (graph->grid_width * 2) / 3, 0);
             break;
         default:
             gen->point_count = 2;
