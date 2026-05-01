@@ -39,8 +39,7 @@ typedef struct Car{
 } Car;
 
 void car_init(Car *car, int id, int road_id, float desired_speed, float length, int lane, float offset);
-void car_set_texture(Car *car, unsigned int texture, float width, float height);
-unsigned int car_load_texture(const char *path, int *out_width, int *out_height);
+void car_set_texture(Car *car, unsigned int texture);
 void car_update(struct Car *car, const struct Graph *graph, float dt);
 void car_destroy(Car *car);
 
