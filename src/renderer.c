@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "stb_easy_font.h"
 #include "geometry.h"
 #include "menu.h"
 #include "graph.h"
@@ -545,8 +546,38 @@ void renderer_draw_grid(Graph *graph) {
     glLineWidth(1.0f);
 }
 
-void renderer_draw_text(float x, float y, const char *text, int screen_width, int screen_height) {
-    
+void renderer_draw_text(float x, float y, const char* text, int screen_width, int screen_height) {
+    if(text == NULL || screen_width <= 0 || screen_height <= 0) {
+        return;
+    }
+
+    char buffer[10000];
+
+    int massage = stb_easy_font_print(x, y, text, NULL, buffer, sizeof(buffer));
+
+    glDisable(GL_TEXTURE_2D);
+    glColor3f(1.0f, 1.0f, 1.0f);
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    glOrtho(0.0, screen_width, screen_height, 0.0, -1.0, 1.0);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glVertexPointer(2, GL_FLOAT, 16, buffer);
+    glDrawArrays(GL_QUADS, 0, massage * 4);
+    glDisableClientState(GL_VERTEX_ARRAY);
+
+    glPopMatrix();
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+
+    glMatrixMode(GL_MODELVIEW);    
 }
 
 void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
