@@ -11,10 +11,11 @@ void debug_overlay_draw(struct TrafficManager* manager, int screen_width, int sc
     }
 
     char line[128];
-    int x = 20;
-    int y = 20;
+    int x = 40;
+    int y = 40;
     int step = 18;
 
     renderer_draw_text(20, 20, "Transport-Traffic-Manager ver. Beta", screen_width, screen_height);
 
+    sprintf(line, )
 }

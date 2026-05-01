@@ -200,7 +200,6 @@ void application_update(void){
 
             traffic_manager_update(&manager, frame);
 
-            debug_overlay_draw(&manager, app.screen_width, app.screen_height);
 //            glColor3f(0.35f, 0.35f, 0.35f);
             renderer_draw_grid(manager.graph);
 
@@ -208,6 +207,8 @@ void application_update(void){
             renderer_draw_roads(manager.graph);
 
             renderer_draw_cars(manager.graph, manager.cars, manager.car_count);
+
+            debug_overlay_draw(&manager, app.screen_width, app.screen_height);
 
 //            glColor3f(1.0f, 0.0f, 0.0f);
 //            renderer_draw_nodes(manager.graph);

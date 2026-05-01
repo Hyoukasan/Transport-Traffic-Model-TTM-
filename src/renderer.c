@@ -546,7 +546,7 @@ void renderer_draw_grid(Graph *graph) {
     glLineWidth(1.0f);
 }
 
-void renderer_draw_text(float x, float y, const char* text, int screen_width, int screen_height) {
+void renderer_draw_text(float x, float y, char* text, int screen_width, int screen_height) {
     if(text == NULL || screen_width <= 0 || screen_height <= 0) {
         return;
     }
@@ -567,7 +567,10 @@ void renderer_draw_text(float x, float y, const char* text, int screen_width, in
     glPushMatrix();
     glLoadIdentity();
 
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glEnableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glVertexPointer(2, GL_FLOAT, 16, buffer);
     glDrawArrays(GL_QUADS, 0, massage * 4);
     glDisableClientState(GL_VERTEX_ARRAY);
