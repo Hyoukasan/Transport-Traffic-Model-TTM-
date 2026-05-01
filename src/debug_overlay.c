@@ -15,7 +15,6 @@ void debug_overlay_draw(struct TrafficManager* manager, int screen_width, int sc
     int y = 40;
     int step = 18;
 
-    renderer_draw_text(20, 20, "Transport-Traffic-Manager ver. Beta", screen_width, screen_height);
-
-    sprintf(line, )
+    renderer_draw_text(22, 22, "Transport-Traffic-Manager ver. Beta", 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
+    renderer_draw_text(20, 20, "Transport-Traffic-Manager ver. Beta", 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
 }
