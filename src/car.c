@@ -6,7 +6,6 @@
 
 #include "car.h"
 #include "graph.h"
-#include "texture.h"
 
 static bool point_in_range(int value, int a, int b) {
     if (a <= b) {
@@ -101,26 +100,16 @@ void car_init(Car *car, int id, int road_id, float desired_speed, float length, 
     car->angle = 0.0f;
     car->state = CAR_STATE_NORMAL;
     car->texture = 0;
-    car->tex_width = 0.0f;
-    car->tex_height = 0.0f;
-    car->color[0] = 0.8f;
-    car->color[1] = 0.2f;
-    car->color[2] = 0.2f;
 }
 
-void car_set_texture(Car *car, unsigned int texture, float width, float height) {
+void car_set_texture(Car *car, unsigned int texture) {
     if (car == NULL) {
         return;
     }
 
     car->texture = texture;
-    car->tex_width = width;
-    car->tex_height = height;
 }
 
-unsigned int car_load_texture(const char *path, int *out_width, int *out_height) {
-    return texture_load(path, out_width, out_height);
-}
 
 void car_update(Car *car, const Graph *graph, float dt) {
     if (car == NULL || graph == NULL || car->road_id < 0 || car->road_id >= graph->road_count) {
@@ -157,7 +146,7 @@ void car_update(Car *car, const Graph *graph, float dt) {
 
     car->position += car->speed * dt / segment_length;
     if (car->position > 1.0f) {
-        car->position = 1.0f;
+        car->position = 1.2f;
     }
 
     car->at_intersection = false;

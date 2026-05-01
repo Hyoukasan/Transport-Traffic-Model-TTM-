@@ -12,6 +12,14 @@ typedef enum {
     CAR_STATE_ACCIDENT
 } CarState;
 
+typedef enum {
+    CAR_COLOR_YELLOW,
+    CAR_COLOR_RED,
+    CAR_COLOR_BLUE,
+    CAR_COLOR_GREEN,
+    CAR_COLOR_BLACK
+} CarColor;
+
 typedef struct Car{
     int id;
     int road_id;          // индекс сегмента дороги
@@ -26,10 +34,8 @@ typedef struct Car{
     int last_turn_y;
     float angle;          // угол поворота для рендера
     CarState state;
+    CarColor color;
     unsigned int texture; // OpenGL texture id
-    float tex_width;
-    float tex_height;
-    float color[3];
 } Car;
 
 void car_init(Car *car, int id, int road_id, float desired_speed, float length, int lane, float offset);

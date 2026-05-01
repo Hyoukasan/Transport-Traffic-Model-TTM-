@@ -30,6 +30,7 @@ typedef struct {
 
 typedef struct TrafficManager { 
     struct Car          *cars;
+    unsigned int        car_textures[5];
     int                 car_count;
     int                 max_cars;
 

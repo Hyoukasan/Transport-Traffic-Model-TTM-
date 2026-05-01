@@ -5,11 +5,29 @@
 
 #include "traffic_manager.h"
 #include "traffic_config.h"
+#include "texture.h"
 #include "car.h"
 #include "graph.h"
 #include "road_generator.h"
 
-static int traffic_manager_build_roads(TrafficManager *manager, int scenario, int lane_count) {
+static void traffic_manager_load_car_textures(TrafficManager* manager) {
+    manager->car_textures[CAR_COLOR_YELLOW] =
+        texture_load("Data/textures/car_color_yellow.png", NULL, NULL);
+
+    manager->car_textures[CAR_COLOR_BLACK] =
+        texture_load("Data/textures/car_color_black.png", NULL, NULL);
+
+    manager->car_textures[CAR_COLOR_RED] =
+        texture_load("Data/textures/car_color_red.png", NULL, NULL);
+
+    manager->car_textures[CAR_COLOR_GREEN] =
+        texture_load("Data/textures/car_color_green.png", NULL, NULL);
+
+    manager->car_textures[CAR_COLOR_BLUE] =
+        texture_load("Data/textures/car_color_blue.png", NULL, NULL);
+}
+
+static int traffic_manager_build_roads(TrafficManager* manager, int scenario, int lane_count) {
     RoadGenerator *road_gen = road_gen_create_with_scenario(scenario, lane_count);
     if (road_gen == NULL) {
         return -1;
@@ -21,7 +39,7 @@ static int traffic_manager_build_roads(TrafficManager *manager, int scenario, in
     return 0;
 }
 
-static void traffic_manager_spawn_cars(TrafficManager *manager, const TrafficConfig *config) {
+static void traffic_manager_spawn_cars(TrafficManager* manager, const TrafficConfig* config) {
     if (manager == NULL || manager->graph == NULL || config == NULL || manager->graph->road_count <= 0) {
         return;
     }
