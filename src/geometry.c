@@ -27,3 +27,11 @@ float grid_edge_to_normalized_y(int grid_y, int chunk_size, int padding, int hei
     float pixel = (grid_y + padding) * chunk_size;
     return 1.0f - (2.0f * pixel / height);
 }
+
+int coord_min(int a, int b) {
+    return a < b ? a : b;
+}
+
+int coord_max(int a, int b) {
+    return a > b ? a : b;
+}

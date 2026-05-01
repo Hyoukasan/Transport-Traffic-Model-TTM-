@@ -55,7 +55,7 @@ static void build_roads_range(RoadGenerator *gen, Graph *graph, int start_index,
                 printf("вертикальная дорога %d (лево, вверх): от (%d, 0) до (%d, %d), скорость=%.1f, полос=%d\n",
                        road_id, p->x - 1, p->x - 1, graph->grid_height - 1, speed_limit, lanes);
             }
-            road_id = graph_add_road(graph, p->x + 1, 0, p->x + 1, graph->grid_height - 1, ROAD_VERTICAL, ROAD_DIR_SOUTH, speed_limit, lanes);
+            road_id = graph_add_road(graph, p->x + 1, graph->grid_height, p->x + 1, 0, ROAD_VERTICAL, ROAD_DIR_SOUTH, speed_limit, lanes);
             if (road_id >= 0) {
                 unsigned int texture = texture_load("Data/textures/road132.png", NULL, NULL);
                 graph_set_road_texture(graph, road_id, texture);

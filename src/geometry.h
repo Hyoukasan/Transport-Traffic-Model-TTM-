@@ -7,5 +7,7 @@ float grid_center_to_normalized_x(int grid_x, int chunk_size, int padding, int w
 float grid_center_to_normalized_y(int grid_y, int chunk_size, int padding, int height);
 float grid_edge_to_normalized_x(int grid_x, int chunk_size, int padding, int width);
 float grid_edge_to_normalized_y(int grid_y, int chunk_size, int padding, int height);
+int coord_min(int a, int b);
+int coord_max(int a, int b);
 
 #endif 
