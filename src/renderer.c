@@ -448,7 +448,7 @@ static void renderer_draw_road_texture(const Graph *graph, const RoadSegment *ro
 
         left = grid_edge_to_normalized_x(start_edge, graph->chunk_size, graph->padding, graph->window_width);
         right = grid_edge_to_normalized_x(end_edge, graph->chunk_size, graph->padding, graph->window_width);
-        top = grid_edge_to_normalized_y(max_y, graph->chunk_size, graph->padding, graph->window_height);
+        top = grid_edge_to_normalized_y(min_y, graph->chunk_size, graph->padding, graph->window_height);
         bottom = grid_edge_to_normalized_y(max_y + 1, graph->chunk_size, graph->padding, graph->window_height);
     } else {
         return;
@@ -464,8 +464,8 @@ static void renderer_draw_road_texture(const Graph *graph, const RoadSegment *ro
     } else if (road->type == ROAD_VERTICAL) {
         int length_chunks = abs(road->y2 - road->y1) + 1;
         int width_chunks = lanes;
-        repeat_u = width_chunks / 2.0f;
-        repeat_v = length_chunks / 2.0f;
+        repeat_u = length_chunks / 2.0f;
+        repeat_v = width_chunks / 2.0f;
     }
 
     glEnable(GL_TEXTURE_2D);
@@ -475,17 +475,33 @@ static void renderer_draw_road_texture(const Graph *graph, const RoadSegment *ro
     glColor3f(1.0f, 1.0f, 1.0f);
 
     glBegin(GL_QUADS);
-    glTexCoord2f(0.0f, 0.0f);
-    glVertex2f(left, top);
 
-    glTexCoord2f(repeat_u, 0.0f);
-    glVertex2f(right, top);
+    if(road->type == ROAD_HORIZONTAL){
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex2f(left, top);
 
-    glTexCoord2f(repeat_u, repeat_v);
-    glVertex2f(right, bottom);
+        glTexCoord2f(repeat_u, 0.0f);
+        glVertex2f(right, top);
 
-    glTexCoord2f(0.0f, repeat_v);
-    glVertex2f(left, bottom);
+        glTexCoord2f(repeat_u, repeat_v);
+        glVertex2f(right, bottom);
+
+        glTexCoord2f(0.0f, repeat_v);
+        glVertex2f(left, bottom);
+    } else {
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex2f(left, top);
+
+        glTexCoord2f(0.0f, repeat_v);
+        glVertex2f(right, top);
+
+        glTexCoord2f(repeat_u, repeat_v);
+        glVertex2f(right, bottom);
+
+        glTexCoord2f(repeat_u, 0.0f);
+        glVertex2f(left, bottom);
+    }
+
     glEnd();
 
     glBindTexture(GL_TEXTURE_2D, 0);
