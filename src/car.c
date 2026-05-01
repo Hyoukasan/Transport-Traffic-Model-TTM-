@@ -152,10 +152,10 @@ void car_update(Car *car, const Graph *graph, float dt) {
     car->at_intersection = false;
     switch (road->direction) {
         case ROAD_DIR_EAST:
-            car->angle = -90.0f;
+            car->angle = 90.0f;
             break;
         case ROAD_DIR_WEST:
-            car->angle = 90.0f;
+            car->angle = -90.0f;
             break;
         case ROAD_DIR_NORTH:
             car->angle = 0.0f;

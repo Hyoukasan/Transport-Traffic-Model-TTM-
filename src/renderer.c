@@ -426,18 +426,31 @@ static void renderer_draw_road_texture(const Graph *graph, const RoadSegment *ro
         return;
     }
 
+    int min_x;
+    int max_x;
+
+    if(road->x2 > road->x1) {
+        min_x = road->x1;
+        max_x = road->x2;
+    } else {
+        min_x = road->x2;
+        max_x = road->x1;
+    }
+
     float left, right, top, bottom;
     int lanes = road_lane_count(road);
     if (road->type == ROAD_HORIZONTAL) {
         int start_edge = road_start_edge(road);
         int end_edge = start_edge + lanes;
-        left = grid_edge_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
-        right = grid_edge_to_normalized_x(road->x2 + 1, graph->chunk_size, graph->padding, graph->window_width);
+
+        left = grid_edge_to_normalized_x(min_x, graph->chunk_size, graph->padding, graph->window_width);
+        right = grid_edge_to_normalized_x(max_x + 1, graph->chunk_size, graph->padding, graph->window_width);
         top = grid_edge_to_normalized_y(start_edge, graph->chunk_size, graph->padding, graph->window_height);
         bottom = grid_edge_to_normalized_y(end_edge, graph->chunk_size, graph->padding, graph->window_height);
     } else if (road->type == ROAD_VERTICAL) {
         int start_edge = road_start_edge(road);
         int end_edge = start_edge + lanes;
+
         left = grid_edge_to_normalized_x(start_edge, graph->chunk_size, graph->padding, graph->window_width);
         right = grid_edge_to_normalized_x(end_edge, graph->chunk_size, graph->padding, graph->window_width);
         top = grid_edge_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);

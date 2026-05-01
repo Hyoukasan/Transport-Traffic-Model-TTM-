@@ -32,7 +32,7 @@ static void build_roads_range(RoadGenerator *gen, Graph *graph, int start_index,
         Point *p = &gen->points[start_index + i];
         if (type == ROAD_HORIZONTAL) {
             float speed_limit = (gen->scenario == ROAD_SCENARIO_HIGHWAY) ? 1.0f : random_speed_limit();
-            int road_id = graph_add_road(graph, 0, p->y - 1, graph->grid_width - 1, p->y - 1, ROAD_HORIZONTAL, ROAD_DIR_WEST, speed_limit, lanes);
+            int road_id = graph_add_road(graph, graph->grid_width, p->y - 1, 0, p->y - 1, ROAD_HORIZONTAL, ROAD_DIR_WEST, speed_limit, lanes);
             if (road_id >= 0) {
                 unsigned int texture = texture_load("Data/textures/road132.png", NULL, NULL);
                 graph_set_road_texture(graph, road_id, texture);
