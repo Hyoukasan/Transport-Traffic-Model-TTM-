@@ -11,6 +11,7 @@
 #include "audio_manager.h"
 #include "traffic_manager.h"
 #include "traffic_config.h"
+#include "debug_overlay.h"
 #include "menu.h"
 #include "renderer.h"
 #include "input.h"
@@ -199,6 +200,7 @@ void application_update(void){
 
             traffic_manager_update(&manager, frame);
 
+            debug_overlay_draw(&manager, app.screen_width, app.screen_height);
 //            glColor3f(0.35f, 0.35f, 0.35f);
             renderer_draw_grid(manager.graph);
 

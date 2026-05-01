@@ -1,3 +1,4 @@
+#include "debug_overlay.h"
 #include "traffic_manager.h"
 #include "graph.h"
 #include "renderer.h"
