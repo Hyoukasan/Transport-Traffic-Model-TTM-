@@ -53,7 +53,7 @@ static void traffic_manager_spawn_cars(TrafficManager* manager, const TrafficCon
     for (int i = 0; i < total_cars; i++) {
         int road_id = i % roads;
         RoadSegment *road = &manager->graph->roads[road_id];
-        int lane = config->lane_count > 0 ? (i % config->lane_count) : 0;
+        int lane = road->lanes > 0 ? (i % road->lanes) : 0;
 
         float speed_factor = 0.6f + (float)(rand() % 41) / 100.0f;
         float desired_speed = road->speed_limit * speed_factor;
@@ -61,7 +61,29 @@ static void traffic_manager_spawn_cars(TrafficManager* manager, const TrafficCon
         Car* car = &manager->cars[manager->car_count];
 
         car_init(car, manager->next_car_id++, road_id, desired_speed, 1.0f, lane, 0.0f);
-        car->position = 0.05f + ((float)i / (float)total_cars) * 0.4f;
+
+        int road_car_index = i / roads;
+        float travel_position = 0.02f + (float)road_car_index * 0.06f;
+        if (travel_position > 0.30f) {
+            travel_position = 0.30f;
+        }
+
+        RoadDirection spawn_direction = road->direction;
+        if (spawn_direction == ROAD_DIR_NONE) {
+            int lanes = road->lanes > 0 ? road->lanes : 1;
+            int half = lanes / 2;
+            if (road->type == ROAD_HORIZONTAL) {
+                spawn_direction = lane < half ? ROAD_DIR_WEST : ROAD_DIR_EAST;
+            } else if (road->type == ROAD_VERTICAL) {
+                spawn_direction = lane < half ? ROAD_DIR_SOUTH : ROAD_DIR_NORTH;
+            }
+        }
+
+        if (spawn_direction == ROAD_DIR_WEST || spawn_direction == ROAD_DIR_NORTH) {
+            car->position = 1.0f - travel_position;
+        } else {
+            car->position = travel_position;
+        }
 
         CarColor color = (CarColor)(rand() % 5);
         car->color = color;

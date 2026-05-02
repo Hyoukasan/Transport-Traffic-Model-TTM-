@@ -66,28 +66,28 @@ Graph* graph_create(int window_width, int window_height, int chunk_size, int pad
     g->adj_graph = NULL;
     return g;
 }
-
+// текстурка
 void graph_set_road_texture(Graph *g, int road_id, unsigned int texture) {
     if (g == NULL || road_id < 0 || road_id >= g->road_count) {
         return;
     }
     g->roads[road_id].texture = texture;
 }
-
+//направление
 void graph_set_road_direction(Graph *g, int road_id, RoadDirection direction) {
     if (g == NULL || road_id < 0 || road_id >= g->road_count) {
         return;
     }
     g->roads[road_id].direction = direction;
 }
-
+// скорость на дороге 
 static bool point_in_range(int value, int a, int b) {
     if (a <= b) {
         return value >= a && value <= b;
     }
     return value >= b && value <= a;
 }
-
+// перекресток
 static bool graph_add_intersection(Graph *g, int x, int y, int road_id) {
     if (g == NULL) {
         return false;
@@ -126,7 +126,7 @@ static bool graph_add_intersection(Graph *g, int x, int y, int road_id) {
     g->intersection_count++;
     return true;
 }
-
+// дорога
 int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, RoadDirection direction, float speed_limit, int lanes) {
     if (g == NULL) {
         fprintf(stderr, "graph_add_road: graph is NULL\n");
@@ -153,7 +153,7 @@ int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, Road
     road->y2 = y2;
     road->type = type;
     road->direction = direction;
-    road->length = abs(x2 - x1) + abs(y2 - y1) + 1;
+    road->length = abs(x2 - x1) + abs(y2 - y1);
     road->speed_limit = speed_limit;
     road->accident = false;
     road->lanes = lanes > 0 ? lanes : 1;

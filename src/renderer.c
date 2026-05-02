@@ -26,8 +26,23 @@ static int road_lane_count(const RoadSegment *road) {
 static int road_start_edge(const RoadSegment *road) {
     int lanes = road_lane_count(road);
     if (road->type == ROAD_HORIZONTAL) {
+        if (road->direction == ROAD_DIR_EAST) {
+            return road->y1;
+        } else if (road->direction == ROAD_DIR_WEST) {
+            return road->y1 - (lanes - 1);
+        }
         return road->y1 - (lanes / 2);
     }
+
+    if (road->type == ROAD_VERTICAL) {
+        if (road->direction == ROAD_DIR_NORTH) {
+            return road->x1;
+        } else if (road->direction == ROAD_DIR_SOUTH) {
+            return road->x1 - (lanes - 1);
+        }
+        return road->x1 - (lanes / 2);
+    }
+
     return road->x1 - (lanes / 2);
 }
 
@@ -640,6 +655,19 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
         float y1;
         float x2;
         float y2;
+        RoadDirection effective_direction = ROAD_DIR_NONE;
+
+        if (road->direction == ROAD_DIR_NONE) {
+            int lanes = road->lanes > 0 ? road->lanes : 1;
+            int half = lanes / 2;
+            if (road->type == ROAD_HORIZONTAL) {
+                effective_direction = lane < half ? ROAD_DIR_WEST : ROAD_DIR_EAST;
+            } else if (road->type == ROAD_VERTICAL) {
+                effective_direction = lane < half ? ROAD_DIR_SOUTH : ROAD_DIR_NORTH;
+            }
+        } else {
+            effective_direction = road->direction;
+        }
 
         if (road->type == ROAD_HORIZONTAL) {
             x1 = grid_center_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
@@ -655,8 +683,10 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
             continue;
         }
 
-        float cx = x1 + (x2 - x1) * car->position;
-        float cy = y1 + (y2 - y1) * car->position;
+        float position = car->position;
+
+        float cx = x1 + (x2 - x1) * position;
+        float cy = y1 + (y2 - y1) * position;
 
         float car_width_px = 28.0f;
         float car_height_px = 44.0f;
