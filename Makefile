@@ -4,7 +4,7 @@
 
 CC = gcc
 OPT = -O2
-CFLAGS = -Wall -Wextra -DGLEW_NO_GLU -Ithird_party/include -Ithird_party/include/Other -g $(OPT)
+CFLAGS = -Wall -Wextra -DGLEW_NO_GLU -DGLFW_INCLUDE_NONE -Ithird_party/include -Ithird_party/include/Other -g $(OPT)
 LDFLAGS = -Lthird_party/lib
 LIBS = -lglfw3 -lglew32 -lopengl32
 MKDIR_BUILD = @if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
