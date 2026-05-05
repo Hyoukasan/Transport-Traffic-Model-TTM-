@@ -40,6 +40,8 @@ int application_init(const char *title){
         app.screen_height = 1080;
     }
 
+    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+
     window = glfwCreateWindow(app.screen_width, app.screen_height, title, NULL, NULL);
     if (window == NULL){
         fprintf(stderr, "Window initialization failed!\n");
