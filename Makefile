@@ -18,7 +18,7 @@ else
     UNAME_S := $(shell uname -s)
 endif
 ifeq ($(UNAME_S),Linux)
-    LIBS = -lglfw -lGLEW -lGL
+    LIBS = -lglfw -lGLEW -l:libGL.so.1
     LDFLAGS = -Lthird_party/lib/linux -Wl,-rpath,'$$ORIGIN/third_party/lib/linux'
     MKDIR_BUILD = mkdir -p "$(BUILD_DIR)"
     CLEAN_CMD = rm -f "$(TARGET)"
