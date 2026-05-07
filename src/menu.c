@@ -21,12 +21,12 @@ void menu_init(Menu_t *menu, int screen_width, int screen_height){
     menu->button_count = 4;
     menu->selected_index = -1;
 
-    menu->background_texture = texture_load("Data/textures/background.png", NULL, NULL);
+    menu->background_texture = texture_load("data/textures/background.png", NULL, NULL);
     if(menu->background_texture == 0) {
         printf("Warning: background.png not loaded.\n");
     }
 
-    menu->texture = texture_load("Data/textures/background_menu.png", NULL, NULL);
+    menu->texture = texture_load("data/textures/background_menu.png", NULL, NULL);
     if (menu->texture == 0) {
         printf("Warning: new_background.png not loaded, using fallback color.\n");
     }
@@ -51,23 +51,23 @@ static void bind_buttons(MenuButton_t *buttons, ButtonInfo* map, int count_butto
 }
 
 static ButtonInfo main_menu_buttons[] = {
-    {"Data/textures/start.png",                 MENU_STATE_CREATE_SIMULATION},
-    {"Data/textures/config.png",                MENU_STATE_SIMULATION_CONFIG},
-    {"Data/textures/about.png",                 MENU_STATE_INFO},
-    {"Data/textures/exit.png",                  MENU_STATE_EXIT}
+    {"data/textures/start.png",                 MENU_STATE_CREATE_SIMULATION},
+    {"data/textures/config.png",                MENU_STATE_SIMULATION_CONFIG},
+    {"data/textures/about.png",                 MENU_STATE_INFO},
+    {"data/textures/exit.png",                  MENU_STATE_EXIT}
 };
 
 static ButtonInfo scenario_menu_buttons[] = {
-    {"Data/textures/highway.png",               MENU_STATE_SCENARIO_HIGHWAY},
-    {"Data/textures/single_intersection.png",   MENU_STATE_SCENARIO_SINGLE_INTERSECTION},
-    {"Data/textures/multi_intersection.png",    MENU_STATE_SCENARIO_MULTI_INTERSECTION},
-    {"Data/textures/back.png",                  MENU_STATE_MAIN_MENU}
+    {"data/textures/highway.png",               MENU_STATE_SCENARIO_HIGHWAY},
+    {"data/textures/single_intersection.png",   MENU_STATE_SCENARIO_SINGLE_INTERSECTION},
+    {"data/textures/multi_intersection.png",    MENU_STATE_SCENARIO_MULTI_INTERSECTION},
+    {"data/textures/back.png",                  MENU_STATE_MAIN_MENU}
 };
 
 static ButtonInfo pause_menu_buttons[] = {
-    {"Data/textures/resume.png",         MENU_STATE_IDLE},
-    {"Data/textures/save_profile.png",   MENU_STATE_SIMULATION_CONFIG},
-    {"Data/textures/back.png",           MENU_STATE_MAIN_MENU}
+    {"data/textures/resume.png",         MENU_STATE_IDLE},
+    {"data/textures/save_profile.png",   MENU_STATE_SIMULATION_CONFIG},
+    {"data/textures/back.png",           MENU_STATE_MAIN_MENU}
 };
 
 static void set_buttons(MenuButton_t* buttons, int button_count, int menu_width, int menu_height, int gap) {

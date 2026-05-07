@@ -12,19 +12,19 @@
 
 static void traffic_manager_load_car_textures(TrafficManager* manager) {
     manager->car_textures[CAR_COLOR_YELLOW] =
-        texture_load("Data/textures/car_color_yellow.png", NULL, NULL);
+        texture_load("data/textures/car_color_yellow.png", NULL, NULL);
 
     manager->car_textures[CAR_COLOR_BLACK] =
-        texture_load("Data/textures/car_color_black.png", NULL, NULL);
+        texture_load("data/textures/car_color_black.png", NULL, NULL);
 
     manager->car_textures[CAR_COLOR_RED] =
-        texture_load("Data/textures/car_color_red.png", NULL, NULL);
+        texture_load("data/textures/car_color_red.png", NULL, NULL);
 
     manager->car_textures[CAR_COLOR_GREEN] =
-        texture_load("Data/textures/car_color_green.png", NULL, NULL);
+        texture_load("data/textures/car_color_green.png", NULL, NULL);
 
     manager->car_textures[CAR_COLOR_BLUE] =
-        texture_load("Data/textures/car_color_blue.png", NULL, NULL);
+        texture_load("data/textures/car_color_blue.png", NULL, NULL);
 }
 
 static int traffic_manager_build_roads(TrafficManager* manager, int scenario, int lane_count) {

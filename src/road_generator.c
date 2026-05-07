@@ -34,7 +34,7 @@ static void build_roads_range(RoadGenerator *gen, Graph *graph, int start_index,
             float speed_limit = (gen->scenario == ROAD_SCENARIO_HIGHWAY) ? 1.0f : random_speed_limit();
             int road_id = graph_add_road(graph, 0, p->y, graph->grid_width - 1, p->y, ROAD_HORIZONTAL, ROAD_DIR_NONE, speed_limit, total_lanes);
             if (road_id >= 0) {
-                unsigned int texture = texture_load("Data/textures/road132.png", NULL, NULL);
+                unsigned int texture = texture_load("data/textures/road132.png", NULL, NULL);
                 graph_set_road_texture(graph, road_id, texture);
                 printf("горизонтальная дорога %d: от (0, %d) до (%d, %d), скорость=%.1f, полос=%d\n",
                        road_id, p->y, graph->grid_width - 1, p->y, speed_limit, total_lanes);
@@ -43,7 +43,7 @@ static void build_roads_range(RoadGenerator *gen, Graph *graph, int start_index,
             float speed_limit = random_speed_limit();
             int road_id = graph_add_road(graph, p->x, 0, p->x, graph->grid_height - 1, ROAD_VERTICAL, ROAD_DIR_NONE, speed_limit, total_lanes);
             if (road_id >= 0) {
-                unsigned int texture = texture_load("Data/textures/road132.png", NULL, NULL);
+                unsigned int texture = texture_load("data/textures/road132.png", NULL, NULL);
                 graph_set_road_texture(graph, road_id, texture);
                 printf("вертикальная дорога %d: от (%d, 0) до (%d, %d), скорость=%.1f, полос=%d\n",
                        road_id, p->x, p->x, graph->grid_height - 1, speed_limit, total_lanes);

@@ -52,7 +52,7 @@ void audio_play_click(void) {
         return;
     }
 
-    if(ma_sound_init_from_file(audio.engine, "Data/audio/click.mp3", 
+    if(ma_sound_init_from_file(audio.engine, "data/audio/click.mp3", 
             0, NULL, NULL, audio.click) != MA_SUCCESS) {
             return;
     }
@@ -71,7 +71,7 @@ void audio_start_menu_music(void) {
     }
 
     if(audio.menu_music_loaded == 0) {
-        if(ma_sound_init_from_file(audio.engine, "Data/audio/menu.mp3", 
+        if(ma_sound_init_from_file(audio.engine, "data/audio/menu.mp3", 
             MA_SOUND_FLAG_STREAM, NULL, NULL, audio.menu_music) != MA_SUCCESS) {
             return;
         }
