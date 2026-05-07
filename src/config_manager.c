@@ -4,12 +4,6 @@
 
 #include "config_manager.h"
 
-static ConfigManager config = {
-    .lane_count = 2,
-    .max_cars   = 10,
-    .scenario = 2
-};
-
 static void config_manager_get_slot_path(int slot, char* buffer, int buffer_size) {
     snprintf(buffer, buffer_size, "../data/profiles/profile_%d.cfg", slot);
 }

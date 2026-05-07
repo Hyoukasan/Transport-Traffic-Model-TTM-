@@ -167,13 +167,23 @@ void application_update(void){
             break;
 
         case MENU_STATE_INFO:
-            if (input.key_esc_click) {
+            if(input.key_esc_click) {
                 menu_set_state(&menu, MENU_STATE_MAIN_MENU);
                 break;
             } else {
                 menu_render(&menu, app.screen_width, app.screen_height);
             }
 
+            break;
+
+        case MENU_STATE_SIMULATION_CONFIG:
+            if(input.key_esc_click) {
+                menu_set_state(&menu, MENU_STATE_MAIN_MENU);
+                break;
+            }
+            
+            menu_update(&menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
+            menu_render(&menu, app.screen_width, app.screen_height);
             break;
 
         case MENU_STATE_EXIT:
