@@ -1,5 +1,6 @@
-#include "application.h"
 #include <stdio.h>
+
+#include "application.h"
 
 int main(void){
     if(application_init("Transport Traffic Model")){

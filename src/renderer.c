@@ -1,14 +1,15 @@
-#include "renderer.h"
-#include "stb_easy_font.h"
-#include "geometry.h"
-#include "menu.h"
-#include "graph.h"
-#include "car.h"
-
 #include <GL/glew.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+
+#include "stb_easy_font.h"
+
+#include "renderer.h"
+#include "geometry.h"
+#include "menu.h"
+#include "graph.h"
+#include "car.h"
 
 static GLuint VAO = 0, roadVBO = 0;
 static GLuint helperRoadVAO = 0, helperRoadVBO = 0;

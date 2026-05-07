@@ -1,8 +1,9 @@
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "road_generator.h"
 #include "graph.h"
 #include "texture.h"
-#include <stdlib.h>
-#include <stdio.h>
 
 static int road_count_for_scenario(int scenario) {
     switch (scenario) {

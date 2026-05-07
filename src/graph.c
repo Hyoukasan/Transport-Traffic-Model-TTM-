@@ -1,7 +1,8 @@
-#include "graph.h"
-#include "texture.h"
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "graph.h"
+#include "texture.h"
 
 #define INITIAL_CAPACITY 50
 #define INITIAL_INTERSECTION_CAPACITY 16

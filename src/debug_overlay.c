@@ -1,9 +1,9 @@
+#include <stdio.h>
+
 #include "debug_overlay.h"
 #include "traffic_manager.h"
 #include "graph.h"
 #include "renderer.h"
-
-#include <stdio.h>
 
 void debug_overlay_draw(struct TrafficManager* manager, int screen_width, int screen_height) {
     if(manager == NULL || manager->graph == NULL) {

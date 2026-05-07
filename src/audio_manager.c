@@ -1,9 +1,9 @@
+#include <stdio.h>
+
 #include "audio_manager.h"
 
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
-
-#include <stdio.h>
 
 static ma_engine engine;
 static ma_sound menu_music;

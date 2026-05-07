@@ -10,12 +10,13 @@ typedef enum {
 } ScenarioType;
 
 typedef struct ConfigManager {
-    ScenarioType scenario;  
-
-    int lane_count;            
+    ScenarioType scenario;
+    int lane_count;
     int max_cars;
-    int max_roads;                    
- 
 } ConfigManager;
+
+int config_manager_save_profile(const ConfigManager* config, int slot, float time);
+bool config_manager_is_empty_slot(int slot);
+int config_manager_load_profile(ConfigManager* config, int slot, float* out_time);
 
 #endif

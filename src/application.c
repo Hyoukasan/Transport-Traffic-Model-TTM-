@@ -1,10 +1,10 @@
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <time.h>
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 #include "application.h"
 #include "app_manager.h"
@@ -124,7 +124,6 @@ void application_update(void){
 
             config.scenario   = SCENARIO_HIGHWAY;
             config.lane_count = 2;
-            config.max_roads  = 1;
             config.max_cars   = 10;
 
             menu_set_state(&menu, MENU_STATE_START_SIMULATION);
@@ -138,7 +137,6 @@ void application_update(void){
         
             config.scenario   = SCENARIO_SINGLE_INTERSECTION;
             config.lane_count = 4;
-            config.max_roads  = 2;
             config.max_cars   = 10;
 
             menu_set_state(&menu, MENU_STATE_START_SIMULATION);
@@ -152,7 +150,6 @@ void application_update(void){
         
             config.scenario   = SCENARIO_MULTI_INTERSECTION;
             config.lane_count = 4;
-            config.max_roads  = 6; 
             config.max_cars   = 10;
 
             menu_set_state(&menu, MENU_STATE_START_SIMULATION);

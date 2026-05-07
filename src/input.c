@@ -1,5 +1,7 @@
-#include "input.h"
 #include <GLFW/glfw3.h>
+
+#include "input.h"
+
 
 void input_init(InputState* input) {
     if (input == NULL) {

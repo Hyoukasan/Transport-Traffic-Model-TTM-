@@ -39,6 +39,19 @@ static int traffic_manager_build_roads(TrafficManager* manager, int scenario, in
     return 0;
 }
 
+static int traffic_manager_max_roads_for_scenario(ScenarioType scenario) {
+    switch (scenario) {
+        case SCENARIO_HIGHWAY:
+            return 1;
+        case SCENARIO_SINGLE_INTERSECTION:
+            return 2;
+        case SCENARIO_MULTI_INTERSECTION:
+            return 6;
+        default:
+            return 1;
+    }
+}
+
 static void traffic_manager_spawn_cars(TrafficManager* manager, const ConfigManager* config) {
     if (manager == NULL || manager->graph == NULL || config == NULL || manager->graph->road_count <= 0) {
         return;
@@ -122,7 +135,8 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
         return -1;
     }
 
-    manager->graph = graph_create(1920, 1080, 40, 0, config->max_roads);
+    int max_roads = traffic_manager_max_roads_for_scenario(config->scenario);
+    manager->graph = graph_create(1920, 1080, 40, 0, max_roads);
     if(manager->graph == NULL) {
         fprintf(stderr, "Graph initialization failed!\n");
         traffic_manager_clear(manager);
