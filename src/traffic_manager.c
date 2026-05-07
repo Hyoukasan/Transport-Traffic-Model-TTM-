@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "traffic_manager.h"
-#include "traffic_config.h"
+#include "config_manager.h"
 #include "texture.h"
 #include "car.h"
 #include "graph.h"
@@ -39,7 +39,7 @@ static int traffic_manager_build_roads(TrafficManager* manager, int scenario, in
     return 0;
 }
 
-static void traffic_manager_spawn_cars(TrafficManager* manager, const TrafficConfig* config) {
+static void traffic_manager_spawn_cars(TrafficManager* manager, const ConfigManager* config) {
     if (manager == NULL || manager->graph == NULL || config == NULL || manager->graph->road_count <= 0) {
         return;
     }
@@ -93,7 +93,7 @@ static void traffic_manager_spawn_cars(TrafficManager* manager, const TrafficCon
     }
 }
 
-int traffic_manager_init(TrafficManager* manager, const TrafficConfig* config) {
+int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
     if(manager == NULL || config == NULL) {
         fprintf(stderr, "Invalid args!\n");
         return -1;

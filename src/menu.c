@@ -66,8 +66,15 @@ static ButtonInfo scenario_menu_buttons[] = {
 
 static ButtonInfo pause_menu_buttons[] = {
     {"data/textures/resume.png",         MENU_STATE_IDLE},
-    {"data/textures/save_profile.png",   MENU_STATE_SIMULATION_CONFIG},
+    {"data/textures/save_profile.png",   MENU_STATE_SIMULATION_CONFIG_PAUSE},
     {"data/textures/back.png",           MENU_STATE_MAIN_MENU}
+};
+
+static ButtonInfo profile_menu_buttons[] = {
+    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG_PAUSE},
+    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG_PAUSE},
+    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG_PAUSE},
+    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG_PAUSE}
 };
 
 static void set_buttons(MenuButton_t* buttons, int button_count, int menu_width, int menu_height, int gap) {
@@ -107,8 +114,15 @@ static void menu_load_state(Menu_t* menu) {
             bind_buttons(menu->buttons, scenario_menu_buttons, menu->button_count);
             break;
         case MENU_STATE_SIMULATION_CONFIG:
-            menu->button_count = 0;
+            menu->button_count = 4;
+            set_buttons(menu->buttons, menu->button_count, menu->width, menu->height, 30);
+            bind_buttons(menu->buttons, profile_menu_buttons, menu->button_count);
             break;
+        case MENU_STATE_SIMULATION_CONFIG_PAUSE:
+            menu->button_count = 4;
+            set_buttons(menu->buttons, menu->button_count, menu->width, menu->height, 30);
+            bind_buttons(menu->buttons, profile_menu_buttons, menu->button_count);
+            break;            
         case MENU_STATE_INFO:
             menu->button_count = 0;
             break;

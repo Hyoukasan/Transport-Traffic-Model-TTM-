@@ -5,7 +5,7 @@
 
 struct Car;
 struct Graph;
-struct TrafficConfig;
+struct ConfigManager;
 
 typedef enum {
     LIGHT_RED,
@@ -48,7 +48,7 @@ typedef struct TrafficManager {
     int                 next_car_id;
 } TrafficManager;
 
-int traffic_manager_init(TrafficManager* manager, const struct TrafficConfig* config);
+int traffic_manager_init(TrafficManager* manager, const struct ConfigManager* config);
 void traffic_manager_clear(TrafficManager* manager);
 int traffic_manager_update(TrafficManager* manager, float dt);
 int traffic_manager_add_accident(TrafficManager* manager, int road_id, int lane, float position, float clear_time);

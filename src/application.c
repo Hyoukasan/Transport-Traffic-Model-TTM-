@@ -10,7 +10,7 @@
 #include "app_manager.h"
 #include "audio_manager.h"
 #include "traffic_manager.h"
-#include "traffic_config.h"
+#include "config_manager.h"
 #include "debug_overlay.h"
 #include "menu.h"
 #include "renderer.h"
@@ -21,7 +21,7 @@ static GLFWwindow* window = NULL;
 static Menu_t menu = {0};
 static InputState input = {0};
 static TrafficManager manager = {0};
-static TrafficConfig config = {0};
+static ConfigManager config = {0};
 
 static double last_frame_time = 0.0;
 
@@ -40,9 +40,7 @@ int application_init(const char *title){
         app.screen_height = 1080;
     }
 
-    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-
-    window = glfwCreateWindow(app.screen_width, app.screen_height, title, NULL, NULL);
+    window = glfwCreateWindow(app.screen_width, app.screen_height, title, glfwGetPrimaryMonitor(), NULL);
     if (window == NULL){
         fprintf(stderr, "Window initialization failed!\n");
         glfwTerminate();
@@ -84,7 +82,7 @@ void application_update(void){
     }
     last_frame_time = now;
 
-    if(menu.current_state != MENU_STATE_SIMULATION_PAUSE) {
+    if(menu.current_state != MENU_STATE_SIMULATION_PAUSE && menu.current_state != MENU_STATE_SIMULATION_CONFIG_PAUSE) {
         if (app.current_state == APP_STATE_RUNNING_SIMULATION) {
             glClearColor(0.45f, 0.65f, 0.35f, 1.0f);
         } else {
@@ -180,7 +178,7 @@ void application_update(void){
             }
 
             break;
-        
+
         case MENU_STATE_EXIT:
             app.current_state = APP_STATE_CLOSED;
             break;
@@ -233,9 +231,10 @@ void application_update(void){
                 break;
             }
 
-            if(menu.current_state == MENU_STATE_SIMULATION_CONFIG) {
-                menu_set_state(&menu, MENU_STATE_SIMULATION_PAUSE);
-            }
+            renderer_draw_grid(manager.graph);
+            renderer_draw_roads(manager.graph);
+            renderer_draw_cars(manager.graph, manager.cars, manager.car_count);
+            debug_overlay_draw(&manager, app.screen_width, app.screen_height);
 
             menu_render(&menu, app.screen_width, app.screen_height);
 
