@@ -1,4 +1,5 @@
 #include "geometry.h"
+#include "graph.h" 
 
 float pixel_to_normalized_x(int px, int width) {
     return (2.0f * px / width) - 1.0f;

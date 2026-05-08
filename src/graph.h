@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-typedef enum {
+typedef enum RoadType {
     ROAD_HORIZONTAL,
     ROAD_VERTICAL,
     ROAD_DIAGONAL

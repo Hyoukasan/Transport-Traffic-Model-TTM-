@@ -6,8 +6,9 @@
 typedef enum {
     MENU_STATE_IDLE,
     MENU_STATE_MAIN_MENU,
-    MENU_STATE_CREATE_SIMULATION,
-    MENU_STATE_SIMULATION_CONFIG,
+    MENU_STATE_SCENARIO_SELECT,
+    MENU_STATE_LOAD_PROFILE,
+    MENU_STATE_SIMULATION_CONFIG_SETTING,
     MENU_STATE_SIMULATION_CONFIG_PAUSE,
     MENU_STATE_SIMULATION_PAUSE,
     MENU_STATE_START_SIMULATION,
@@ -31,6 +32,11 @@ typedef enum {
     BUTTON_ID_SINGLE_INTERSECTION,
     BUTTON_ID_MULTI_INTERSECTION,
 
+    BUTTON_ID_ADD_2_LANES,
+    BUTTON_ID_SUB_2_LANES,
+    BUTTON_ID_ADD_5_CARS,
+    BUTTON_ID_SUB_5_CARS,
+    
     BUTTON_ID_RESUME,
     BUTTON_ID_BACK,
     BUTTON_ID_SAVE_PROFILE,
@@ -54,7 +60,7 @@ typedef struct {
 
     MenuState target_state;
     ButtonId button_id;
-    char profile_text[96];
+    char profile_text[64];
 } MenuButton_t;
 
 typedef struct Menu {
@@ -63,7 +69,7 @@ typedef struct Menu {
     unsigned int background_texture;
 
     MenuState current_state;
-    MenuButton_t buttons[4];
+    MenuButton_t buttons[8];
     
     int button_count;
     ButtonId last_pressed_button;

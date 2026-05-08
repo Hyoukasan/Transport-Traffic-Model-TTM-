@@ -133,8 +133,8 @@ static void bind_profile_buttons(MenuButton_t *buttons, ButtonInfo* map, int cou
 }
 
 static ButtonInfo main_menu_buttons[] = {
-    {"data/textures/start.png",                 MENU_STATE_CREATE_SIMULATION, BUTTON_ID_START},
-    {"data/textures/config.png",                MENU_STATE_SIMULATION_CONFIG, BUTTON_ID_CONFIG},
+    {"data/textures/start.png",                 MENU_STATE_SCENARIO_SELECT, BUTTON_ID_START},
+    {"data/textures/config.png",                MENU_STATE_LOAD_PROFILE, BUTTON_ID_CONFIG},
     {"data/textures/about.png",                 MENU_STATE_INFO, BUTTON_ID_ABOUT},
     {"data/textures/exit.png",                  MENU_STATE_EXIT, BUTTON_ID_EXIT}
 };
@@ -153,10 +153,10 @@ static ButtonInfo pause_menu_buttons[] = {
 };
 
 static ButtonInfo load_profile_menu_buttons[] = {
-    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG, BUTTON_ID_SLOT_1},
-    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG, BUTTON_ID_SLOT_2},
-    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG, BUTTON_ID_SLOT_3},
-    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG, BUTTON_ID_SLOT_4}
+    {"data/textures/empty.png", MENU_STATE_LOAD_PROFILE, BUTTON_ID_SLOT_1},
+    {"data/textures/empty.png", MENU_STATE_LOAD_PROFILE, BUTTON_ID_SLOT_2},
+    {"data/textures/empty.png", MENU_STATE_LOAD_PROFILE, BUTTON_ID_SLOT_3},
+    {"data/textures/empty.png", MENU_STATE_LOAD_PROFILE, BUTTON_ID_SLOT_4}
 };
 
 static ButtonInfo save_profile_menu_buttons[] = {
@@ -165,6 +165,68 @@ static ButtonInfo save_profile_menu_buttons[] = {
     {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG_PAUSE, BUTTON_ID_SLOT_3},
     {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG_PAUSE, BUTTON_ID_SLOT_4}
 };
+
+static ButtonInfo setting_menu_buttons[] = {
+    {"data/textures/button_background.png", MENU_STATE_SIMULATION_CONFIG_SETTING,        BUTTON_ID_NONE},
+    {"data/textures/button_background.png", MENU_STATE_SIMULATION_CONFIG_SETTING,        BUTTON_ID_NONE},
+    {"data/textures/arrow_left.png",        MENU_STATE_SIMULATION_CONFIG_SETTING,        BUTTON_ID_SUB_2_LANES},
+    {"data/textures/arrow_right.png",       MENU_STATE_SIMULATION_CONFIG_SETTING,        BUTTON_ID_ADD_2_LANES},
+    {"data/textures/arrow_left.png",        MENU_STATE_SIMULATION_CONFIG_SETTING,        BUTTON_ID_SUB_5_CARS},
+    {"data/textures/arrow_right.png",       MENU_STATE_SIMULATION_CONFIG_SETTING,        BUTTON_ID_ADD_5_CARS},
+    {"data/textures/start.png",             MENU_STATE_START_SIMULATION,                 BUTTON_ID_START},
+    {"data/textures/back.png",              MENU_STATE_SCENARIO_SELECT,       BUTTON_ID_BACK}
+};
+
+static void set_setting_buttons(MenuButton_t* buttons, int menu_width, int menu_height) {
+    int button_width  = 320;
+    int button_height = 100;
+    int arrow_size    = 70;
+    int gap           = 20;
+    int button_x      = (menu_width - button_width) / 2;
+    int arrow_left_x  = button_x + 5;
+    int arrow_right_x = button_x + button_width - arrow_size - 5;
+    int start_y       = (menu_height - (button_height * 4 + gap * 3)) / 2 + 50;
+
+    buttons[0].x = button_x;
+    buttons[0].y = start_y;
+    buttons[0].width = button_width;
+    buttons[0].height = button_height;
+
+    buttons[1].x = button_x;
+    buttons[1].y = start_y + (button_height + gap);
+    buttons[1].width = button_width;
+    buttons[1].height = button_height;
+
+    buttons[2].x = arrow_left_x;
+    buttons[2].y = start_y + (button_height - arrow_size) / 2;
+    buttons[2].width = arrow_size;
+    buttons[2].height = arrow_size;    
+
+    buttons[3].x = arrow_right_x;
+    buttons[3].y = buttons[2].y;
+    buttons[3].width = arrow_size;
+    buttons[3].height = arrow_size; 
+
+    buttons[4].x = arrow_left_x;
+    buttons[4].y = buttons[1].y + (button_height - arrow_size) / 2;
+    buttons[4].width = arrow_size;
+    buttons[4].height = arrow_size;
+
+    buttons[5].x = arrow_right_x;
+    buttons[5].y = buttons[4].y;
+    buttons[5].width = arrow_size;
+    buttons[5].height = arrow_size;
+
+    buttons[6].x = button_x;
+    buttons[6].y = start_y + (button_height + gap) * 2;
+    buttons[6].width = button_width;
+    buttons[6].height = button_height;
+
+    buttons[7].x = button_x;
+    buttons[7].y = start_y + (button_height + gap) * 3;
+    buttons[7].width = button_width;
+    buttons[7].height = button_height;
+}
 
 static void set_buttons(MenuButton_t* buttons, int button_count, int menu_width, int menu_height, int gap) {
     if(buttons == NULL) {
@@ -197,15 +259,22 @@ static void menu_load_state(Menu_t* menu) {
             set_buttons(menu->buttons, menu->button_count, menu->width, menu->height, 25);
             bind_buttons(menu->buttons, main_menu_buttons, menu->button_count);
             break;
-        case MENU_STATE_CREATE_SIMULATION:
+        case MENU_STATE_SCENARIO_SELECT:
             menu->button_count = 4;
             set_buttons(menu->buttons, menu->button_count, menu->width, menu->height, 30);
             bind_buttons(menu->buttons, scenario_menu_buttons, menu->button_count);
             break;
-        case MENU_STATE_SIMULATION_CONFIG:
+        case MENU_STATE_LOAD_PROFILE:
             menu->button_count = 4;
             set_buttons(menu->buttons, menu->button_count, menu->width, menu->height, 30);
             bind_profile_buttons(menu->buttons, load_profile_menu_buttons, menu->button_count);
+            break;
+        case MENU_STATE_SIMULATION_CONFIG_SETTING:
+            menu->button_count = 8;
+            bind_buttons(menu->buttons, setting_menu_buttons, menu->button_count);
+            set_setting_buttons(menu->buttons, menu->width, menu->height);
+            snprintf(menu->buttons[0].profile_text, sizeof(menu->buttons[0].profile_text), "LANES");
+            snprintf(menu->buttons[1].profile_text, sizeof(menu->buttons[1].profile_text), "CARS");
             break;
         case MENU_STATE_SIMULATION_CONFIG_PAUSE:
             menu->button_count = 4;
@@ -246,6 +315,10 @@ void menu_update(Menu_t* menu, int mx, int my, bool click) {
             my >= y && my <= y + button->height;
 
         if (click && inside) {
+            if (button->button_id == BUTTON_ID_NONE) {
+                continue;
+            }
+
             menu->last_pressed_button = button->button_id;
             menu_set_state(menu, button->target_state);
             break;

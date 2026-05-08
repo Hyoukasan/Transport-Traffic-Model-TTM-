@@ -313,6 +313,11 @@ void menu_render(Menu_t* menu, int screen_width, int screen_height) {
             float scale = 1.45f;
             float max_text_width = (float)(menu->buttons[i].width - 52);
 
+            if (menu->current_state == MENU_STATE_SIMULATION_CONFIG_SETTING) {
+                scale = 2.15f;
+                max_text_width = (float)(menu->buttons[i].width - 150);
+            }
+
             if (raw_text_width > 0 && (float)raw_text_width * scale > max_text_width) {
                 scale = max_text_width / (float)raw_text_width;
             }
@@ -329,6 +334,10 @@ void menu_render(Menu_t* menu, int screen_width, int screen_height) {
             
             float text_x = button_x + ((float)menu->buttons[i].width - text_width) * 0.5f;
             float text_y = button_y + (float)menu->buttons[i].height - text_height - 10.0f;
+
+            if (menu->current_state == MENU_STATE_SIMULATION_CONFIG_SETTING) {
+                text_y = button_y + ((float)menu->buttons[i].height - text_height) * 0.5f + 6.0f;
+            }
 
             renderer_draw_text(text_x + 1.0f, text_y + 1.0f, menu->buttons[i].profile_text, scale,
                 0.0f, 0.0f, 0.0f, screen_width, screen_height);

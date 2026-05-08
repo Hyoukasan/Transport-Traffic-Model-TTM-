@@ -25,6 +25,11 @@ static ConfigManager config = {0};
 
 static double last_frame_time = 0.0;
 
+static void application_update_settings_text(void) {
+    snprintf(menu.buttons[0].profile_text, sizeof(menu.buttons[0].profile_text), "LANES: %d", config.lane_count);
+    snprintf(menu.buttons[1].profile_text, sizeof(menu.buttons[1].profile_text), "CARS: %d", config.max_cars);
+}
+
 static int slot_from_button_id(ButtonId button_id) {
     switch (button_id) {
         case BUTTON_ID_SLOT_1:
@@ -122,7 +127,7 @@ void application_update(void){
 
             break;
 
-        case MENU_STATE_CREATE_SIMULATION:
+        case MENU_STATE_SCENARIO_SELECT:
             if(input.key_esc_click) {
                 menu_set_state(&menu, MENU_STATE_MAIN_MENU);
                 break;
@@ -134,7 +139,7 @@ void application_update(void){
 
         case MENU_STATE_SCENARIO_HIGHWAY:
             if(input.key_esc_click) {
-                menu_set_state(&menu, MENU_STATE_CREATE_SIMULATION);
+                menu_set_state(&menu, MENU_STATE_SCENARIO_SELECT);
                 break;
             }
 
@@ -142,12 +147,12 @@ void application_update(void){
             config.lane_count = 4;
             config.max_cars   = 10;
 
-            menu_set_state(&menu, MENU_STATE_START_SIMULATION);
+            menu_set_state(&menu, MENU_STATE_SIMULATION_CONFIG_SETTING);
             break;
 
         case MENU_STATE_SCENARIO_SINGLE_INTERSECTION:
             if(input.key_esc_click) {
-                menu_set_state(&menu, MENU_STATE_CREATE_SIMULATION);
+                menu_set_state(&menu, MENU_STATE_SCENARIO_SELECT);
                 break;
             } 
         
@@ -155,12 +160,12 @@ void application_update(void){
             config.lane_count = 4;
             config.max_cars   = 10;
 
-            menu_set_state(&menu, MENU_STATE_START_SIMULATION);
+            menu_set_state(&menu, MENU_STATE_SIMULATION_CONFIG_SETTING);
             break;
 
         case MENU_STATE_SCENARIO_MULTI_INTERSECTION:
             if(input.key_esc_click) {
-                menu_set_state(&menu, MENU_STATE_CREATE_SIMULATION);
+                menu_set_state(&menu, MENU_STATE_SCENARIO_SELECT);
                 break;
             } 
         
@@ -168,7 +173,56 @@ void application_update(void){
             config.lane_count = 4;
             config.max_cars   = 10;
 
-            menu_set_state(&menu, MENU_STATE_START_SIMULATION);
+            menu_set_state(&menu, MENU_STATE_SIMULATION_CONFIG_SETTING);
+            break;
+
+        case MENU_STATE_SIMULATION_CONFIG_SETTING:
+            if(input.key_esc_click) {
+                menu_set_state(&menu, MENU_STATE_SCENARIO_SELECT);
+                break;
+            }
+
+            application_update_settings_text();
+            menu_update(&menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
+            if (menu.current_state != MENU_STATE_SIMULATION_CONFIG_SETTING) {
+                break;
+            }
+
+            switch (menu.last_pressed_button) {
+                case BUTTON_ID_SUB_2_LANES:
+                    if (config.lane_count > 2) {
+                        config.lane_count -= 2;
+                    }
+                    break;
+                case BUTTON_ID_ADD_2_LANES:
+                    if (config.lane_count < 8) {
+                        config.lane_count += 2;
+                    }
+                    break;
+                case BUTTON_ID_SUB_5_CARS:
+                    if (config.max_cars > 5) {
+                        config.max_cars -= 5;
+                    }
+                    break;
+                case BUTTON_ID_ADD_5_CARS:
+                    if (config.max_cars < 100) {
+                        config.max_cars += 5;
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            if(config.max_cars < 10) {
+                config.max_cars = 10;
+            }
+
+            if(config.lane_count < 2) {
+                config.lane_count = 2;
+            }
+
+            application_update_settings_text();
+            menu_render(&menu, app.screen_width, app.screen_height);
             break;
 
         case MENU_STATE_START_SIMULATION:
@@ -192,7 +246,7 @@ void application_update(void){
 
             break;
 
-        case MENU_STATE_SIMULATION_CONFIG:
+        case MENU_STATE_LOAD_PROFILE:
             if(input.key_esc_click) {
                 menu_set_state(&menu, MENU_STATE_MAIN_MENU);
                 break;
