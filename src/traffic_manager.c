@@ -116,6 +116,39 @@ static void traffic_manager_spawn_cars(TrafficManager* manager, const ConfigMana
     }
 }
 
+static int traffic_manager_init_lane_lists(TrafficManager* manager) {
+    if (manager == NULL || manager->graph == NULL || manager->lane_lists == NULL) {
+        return -1;
+    }
+
+    int index = 0;
+
+    for (int road_id = 0; road_id < manager->graph->road_count; road_id++) {
+        RoadSegment *road = &manager->graph->roads[road_id];
+
+        for (int lane = 0; lane < road->lanes; lane++) {
+            if (index >= manager->lane_list_count) {
+                return -1;
+            }
+
+            LaneCarList *list = &manager->lane_lists[index];
+
+            list->road_id = road->id;
+            list->lane = lane;
+            list->car_count = 0;
+            list->car_indices = (int*)malloc(sizeof(int) * manager->max_cars);
+
+            if (list->car_indices == NULL) {
+                return -1;
+            }
+
+            index++;
+        }
+    }
+
+    return 0;
+}
+
 int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
     if(manager == NULL || config == NULL) {
         fprintf(stderr, "Invalid args!\n");
@@ -153,8 +186,16 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
         return -1;
     }
 
-    if (traffic_manager_build_roads(manager, config->scenario, config->lane_count) != 0) {
+    if(traffic_manager_build_roads(manager, config->scenario, config->lane_count) != 0) {
         fprintf(stderr, "Road generation failed!\n");
+        traffic_manager_clear(manager);
+        return -1;
+    }
+
+    manager->lane_list_count = manager->graph->road_count * config->lane_count;
+    manager->lane_lists = (LaneCarList*)malloc(sizeof(LaneCarList) * manager->lane_list_count);
+    if(traffic_manager_init_lane_lists(manager) != 0) {
+        fprintf(stderr, "Lane lists initialization failed!\n");
         traffic_manager_clear(manager);
         return -1;
     }
@@ -229,7 +270,7 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     }
 
     for (int i = 0; i < manager->car_count; i++) {
-        traffic_manager_update_lane_change(manager, &manager->cars[i], dt);
+        traffic_manager_update_lane_change(manager, &manager->cars[i]);
 
         car_update(&manager->cars[i], manager->graph, dt);
     }
