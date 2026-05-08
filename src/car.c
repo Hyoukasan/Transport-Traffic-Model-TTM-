@@ -305,7 +305,7 @@ void car_init(Car *car, int id, int road_id, float desired_speed, float length, 
     car->lane_offset = 0.0f;
     car->target_lane = -1;
     car->lane_shift = 0.0f;
-    car->lane_change_timer = (float)(rand() % 301 + 300) / 60.0f;
+    car->lane_change_timer = (float)(rand() % 121 + 120) / 60.0f;
     car->turn_progress = 0.0f;
     car->angle_from = 0.0f;
     car->angle_to = 0.0f;

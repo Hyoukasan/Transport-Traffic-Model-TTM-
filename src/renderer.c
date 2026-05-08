@@ -321,11 +321,12 @@ void menu_render(Menu_t* menu, int screen_width, int screen_height) {
                 scale = 0.85f;
             }
 
-            float text_width = (float)raw_text_width * scale;
+            float text_width  = (float)raw_text_width * scale;
             float text_height = (float)stb_easy_font_height(menu->buttons[i].profile_text) * scale;
 
             float button_x = (float)(menu->x + menu->buttons[i].x);
             float button_y = (float)(menu->y + menu->buttons[i].y);
+            
             float text_x = button_x + ((float)menu->buttons[i].width - text_width) * 0.5f;
             float text_y = button_y + (float)menu->buttons[i].height - text_height - 10.0f;
 
@@ -712,9 +713,11 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
             float travel_fraction = position_to_travel_fraction(road, effective_direction, car->position);
             float s = (float)road->length * travel_fraction;
             float d = car->lane_offset;
+
             if (effective_direction == ROAD_DIR_WEST || effective_direction == ROAD_DIR_SOUTH) {
                 d = -d;
             }
+
             road_local_to_grid(start_x, start_y, effective_direction, s, d, &car_grid_x, &car_grid_y);
         } else if (road->type == ROAD_VERTICAL) {
             int min_y = road->y1 < road->y2 ? road->y1 : road->y2;
@@ -724,9 +727,11 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
             float travel_fraction = position_to_travel_fraction(road, effective_direction, car->position);
             float s = (float)road->length * travel_fraction;
             float d = car->lane_offset;
+
             if (effective_direction == ROAD_DIR_WEST || effective_direction == ROAD_DIR_SOUTH) {
                 d = -d;
             }
+
             road_local_to_grid(start_x, start_y, effective_direction, s, d, &car_grid_x, &car_grid_y);
         } else {
             continue;

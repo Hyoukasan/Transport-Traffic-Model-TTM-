@@ -257,13 +257,54 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
 }
 
 static const Car* traffic_manager_find_front_car(TrafficManager* manager, const Car* car, float search_radius) {
-    if(manager == NULL || car == NULL) {
+    if(manager == NULL || manager->graph == NULL || car == NULL) {
         return NULL;
-    }                                            
-}
+    }
 
-static bool traffic_manager_try_start_lane_change(TrafficManager* manager, Car* car) {
+    if(car->road_id < 0 || car->road_id >= manager->graph->road_count) {
+        return NULL;
+    }
+    
+    LaneCarList *list = traffic_manager_get_lane_list(manager, car->road_id, car->lane);
+    if(list == NULL) {
+        return NULL;
+    }
 
+    if(list->car_count <= 1) {
+        return NULL;
+    }
+
+    RoadSegment *road = &manager->graph->roads[car->road_id];
+    RoadDirection dir = graph_get_lane_direction(road, car->lane);
+
+    const Car *front_car = NULL;
+    float min_distance = search_radius;
+
+    for(size_t i = 0; i < (size_t)list->car_count; i++) {
+        int car_index = list->car_indices[i];
+        Car *other_car = &manager->cars[car_index];
+
+        if (other_car == car) {
+            continue;
+        }
+
+        float distance;
+
+        if(dir == ROAD_DIR_EAST || dir == ROAD_DIR_SOUTH) {
+            distance = other_car->position - car->position;
+        } else {
+            distance = car->position - other_car->position;
+        }
+
+        distance *= (float)road->length;
+
+        if (distance > 0.0f && distance < min_distance) {
+            min_distance = distance;
+            front_car = other_car;
+        }
+    }
+
+    return front_car;
 }
 
 static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car, float dt) {
@@ -278,6 +319,17 @@ static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car
     if(car->state == CAR_STATE_NORMAL && car->target_lane == -1 && !car->at_intersection) {
         car->lane_change_timer -= dt;
         if (car->lane_change_timer > 0.0f) {
+            return false;
+        }
+
+        const Car* front_car = traffic_manager_find_front_car(manager, car, 2.0f);
+        if(front_car == NULL) {
+            car->lane_change_timer = (float)(rand() % 121 + 120) / 60.0f;
+            return false;
+        }
+
+        if (front_car->speed >= car->speed) {
+            car->lane_change_timer = (float)(rand() % 121 + 120) / 60.0f;
             return false;
         }
 
@@ -306,11 +358,11 @@ static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car
 
         if(desired_lane >= 0) {
             car_start_lane_change(car, desired_lane);
-            car->lane_change_timer = (float)(rand() % 301 + 300) / 60.0f;
+            car->lane_change_timer = (float)(rand() % 121 + 120) / 60.0f;
             return true;
         } 
 
-        car->lane_change_timer = (float)(rand() % 301 + 300) / 60.0f;
+        car->lane_change_timer = (float)(rand() % 121 + 120) / 60.0f;
     }
 
     return false;
@@ -324,7 +376,9 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     traffic_manager_update_lane_lists(manager);
 
     for (int i = 0; i < manager->car_count; i++) {
-        traffic_manager_update_lane_change(manager, &manager->cars[i], dt);
+        if(traffic_manager_update_lane_change(manager, &manager->cars[i], dt)) {
+            
+        }
 
         car_update(&manager->cars[i], manager->graph, dt);
     }
