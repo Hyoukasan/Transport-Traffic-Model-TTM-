@@ -48,6 +48,35 @@ static int road_start_edge(const RoadSegment *road) {
     return road->x1 - (lanes / 2);
 }
 
+static bool is_direction_aligned_with_road(const RoadSegment *road, RoadDirection direction) {
+    if (road == NULL) {
+        return true;
+    }
+
+    if (road->type == ROAD_HORIZONTAL) {
+        if (road->x2 >= road->x1) {
+            return direction == ROAD_DIR_EAST;
+        }
+        return direction == ROAD_DIR_WEST;
+    }
+
+    if (road->type == ROAD_VERTICAL) {
+        if (road->y2 >= road->y1) {
+            return direction == ROAD_DIR_SOUTH;
+        }
+        return direction == ROAD_DIR_NORTH;
+    }
+
+    return true;
+}
+
+static float position_to_travel_fraction(const RoadSegment *road, RoadDirection direction, float position) {
+    if (is_direction_aligned_with_road(road, direction)) {
+        return position;
+    }
+    return 1.0f - position;
+}
+
 static int clamp_lane(const RoadSegment *road, int lane) {
     int lanes = road_lane_count(road);
     if (lane < 0) {
@@ -57,6 +86,16 @@ static int clamp_lane(const RoadSegment *road, int lane) {
         return lanes - 1;
     }
     return lane;
+}
+
+static float normalize_angle(float angle) {
+    while (angle > 180.0f) {
+        angle -= 360.0f;
+    }
+    while (angle <= -180.0f) {
+        angle += 360.0f;
+    }
+    return angle;
 }
 
 static void road_vertex_counts(const Graph *graph, int *mainCount, int *helperCount) {
@@ -684,11 +723,10 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
 
         RoadSegment *road = &graph->roads[car->road_id];
         int lane = clamp_lane(road, car->lane);
-        int lane_center = road_start_edge(road) + lane;
-        float x1;
-        float y1;
-        float x2;
-        float y2;
+        float lane_center = (float)road_start_edge(road) + lane;
+
+        float car_grid_x;
+        float car_grid_y;
         RoadDirection effective_direction = ROAD_DIR_NONE;
 
         if (road->direction == ROAD_DIR_NONE) {
@@ -703,24 +741,39 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
             effective_direction = road->direction;
         }
 
-        if (road->type == ROAD_HORIZONTAL) {
-            x1 = grid_center_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
-            y1 = grid_center_to_normalized_y(lane_center, graph->chunk_size, graph->padding, graph->window_height);
-            x2 = grid_center_to_normalized_x(road->x2, graph->chunk_size, graph->padding, graph->window_width);
-            y2 = y1;
+        if (car->state == CAR_STATE_TURNING) {
+            float t = smoothstep(car->turn_progress);
+            float path_angle = lerp_angle(car->turn_path_angle_from, car->turn_path_angle_to, t);
+            float delta_angle = normalize_angle(car->turn_path_angle_to - car->turn_path_angle_from);
+            float tangent_offset = (delta_angle >= 0.0f) ? 90.0f : -90.0f;
+            car->angle = normalize_angle(path_angle + tangent_offset);
+            float rad = path_angle * (3.14159265f / 180.0f);
+            car_grid_x = car->turn_center_x + car->turn_radius * cosf(rad);
+            car_grid_y = car->turn_center_y + car->turn_radius * sinf(rad);
+        } else if (road->type == ROAD_HORIZONTAL) {
+            int min_x = road->x1 < road->x2 ? road->x1 : road->x2;
+            int max_x = road->x1 > road->x2 ? road->x1 : road->x2;
+            float start_x = (effective_direction == ROAD_DIR_EAST) ? (float)min_x : (float)max_x;
+            float start_y = lane_center;
+            float travel_fraction = position_to_travel_fraction(road, effective_direction, car->position);
+            float s = (float)road->length * travel_fraction;
+            float d = car->lane_offset;
+            road_local_to_grid(start_x, start_y, effective_direction, s, d, &car_grid_x, &car_grid_y);
         } else if (road->type == ROAD_VERTICAL) {
-            x1 = grid_center_to_normalized_x(lane_center, graph->chunk_size, graph->padding, graph->window_width);
-            y1 = grid_center_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
-            x2 = x1;
-            y2 = grid_center_to_normalized_y(road->y2, graph->chunk_size, graph->padding, graph->window_height);
+            int min_y = road->y1 < road->y2 ? road->y1 : road->y2;
+            int max_y = road->y1 > road->y2 ? road->y1 : road->y2;
+            float start_y = (effective_direction == ROAD_DIR_SOUTH) ? (float)min_y : (float)max_y;
+            float start_x = lane_center;
+            float travel_fraction = position_to_travel_fraction(road, effective_direction, car->position);
+            float s = (float)road->length * travel_fraction;
+            float d = car->lane_offset;
+            road_local_to_grid(start_x, start_y, effective_direction, s, d, &car_grid_x, &car_grid_y);
         } else {
             continue;
         }
 
-        float position = car->position;
-
-        float cx = x1 + (x2 - x1) * position;
-        float cy = y1 + (y2 - y1) * position;
+        float cx = ((car_grid_x + graph->padding) * graph->chunk_size + graph->chunk_size * 0.5f) * 2.0f / graph->window_width - 1.0f;
+        float cy = 1.0f - ((car_grid_y + graph->padding) * graph->chunk_size + graph->chunk_size * 0.5f) * 2.0f / graph->window_height;
 
         float car_width_px = 28.0f;
         float car_height_px = 44.0f;

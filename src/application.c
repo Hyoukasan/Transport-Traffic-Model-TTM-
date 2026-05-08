@@ -139,7 +139,7 @@ void application_update(void){
             }
 
             config.scenario   = SCENARIO_HIGHWAY;
-            config.lane_count = 2;
+            config.lane_count = 4;
             config.max_cars   = 10;
 
             menu_set_state(&menu, MENU_STATE_START_SIMULATION);

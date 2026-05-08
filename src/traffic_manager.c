@@ -7,8 +7,16 @@
 #include "config_manager.h"
 #include "texture.h"
 #include "car.h"
+#include "geometry.h"
 #include "graph.h"
 #include "road_generator.h"
+
+static void traffic_manager_load_car_textures(TrafficManager* manager);
+
+static const Car* traffic_manager_find_front_car(TrafficManager* manager, const Car* car, float search_radius);
+static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car);
+static bool traffic_manager_try_start_lane_change(TrafficManager* manager, Car* car);
+
 
 static void traffic_manager_load_car_textures(TrafficManager* manager) {
     manager->car_textures[CAR_COLOR_YELLOW] =
@@ -98,6 +106,8 @@ static void traffic_manager_spawn_cars(TrafficManager* manager, const ConfigMana
             car->position = travel_position;
         }
 
+        car->angle = direction_to_angle(spawn_direction);
+
         CarColor color = (CarColor)(rand() % 5);
         car->color = color;
         car_set_texture(car, manager->car_textures[color]);
@@ -161,12 +171,66 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
     return 0;
 }
 
+static const Car* traffic_manager_find_front_car(TrafficManager* manager, const Car* car, float search_radius) {
+    if(manager == NULL || car == NULL) {
+        return NULL;
+    }                                            
+}
+
+static bool traffic_manager_try_start_lane_change(TrafficManager* manager, Car* car) {
+
+}
+
+static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car) {
+    if(manager == NULL || manager->graph == NULL || car == NULL) {
+        return false;
+    }
+
+    if (car->road_id < 0 || car->road_id >= manager->graph->road_count) {
+        return false;
+    }
+
+    if(car->state == CAR_STATE_NORMAL && car->target_lane == -1 && !car->at_intersection) {
+        RoadSegment *road = &manager->graph->roads[car->road_id];
+        RoadDirection current_dir = graph_get_lane_direction(road, car->lane);
+
+        int left_lane = car->lane > 0 ? car->lane - 1 : -1;
+        int right_lane = car->lane < road->lanes - 1 ? car->lane + 1 : -1;
+        int desired_lane = -1;
+
+        if(left_lane >= 0 && graph_get_lane_direction(road, left_lane) != current_dir) {
+            left_lane = -1;
+        }
+
+        if(right_lane >= 0 && graph_get_lane_direction(road, right_lane) != current_dir) {
+            right_lane = -1;
+        }
+
+        if(left_lane >= 0 && right_lane >= 0) {
+            desired_lane = (rand() % 2 == 0) ? left_lane : right_lane;
+        } else if(left_lane >= 0) {
+            desired_lane = left_lane;
+        } else {
+            desired_lane = right_lane;
+        }
+
+        if(desired_lane >= 0) {
+            car_start_lane_change(car, desired_lane);
+            return true;
+        } 
+    }
+
+    return false;
+}
+
 int traffic_manager_update(TrafficManager *manager, float dt) {
     if (manager == NULL || manager->graph == NULL) {
         return -1;
     }
 
     for (int i = 0; i < manager->car_count; i++) {
+        traffic_manager_update_lane_change(manager, &manager->cars[i], dt);
+
         car_update(&manager->cars[i], manager->graph, dt);
     }
 

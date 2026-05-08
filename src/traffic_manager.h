@@ -28,11 +28,21 @@ typedef struct {
     bool  active;
 } AccidentDTP;
 
+typedef struct {
+    int road_id;
+    int lane;
+    int car_count;
+    int *car_indices;
+} LaneCarList;
+
 typedef struct TrafficManager { 
     struct Car          *cars;
     unsigned int        car_textures[5];
     int                 car_count;
     int                 max_cars;
+
+    LaneCarList         *lane_lists;
+    int                 lane_list_count;
 
     TrafficLight        *lights;
     int                 light_count;
@@ -54,5 +64,7 @@ int traffic_manager_update(TrafficManager* manager, float dt);
 int traffic_manager_add_accident(TrafficManager* manager, int road_id, int lane, float position, float clear_time);
 const struct Graph* traffic_manager_get_graph(const TrafficManager* manager);
 const struct Car* traffic_manager_get_cars(const TrafficManager* manager, int* out_count);
+
+
 
 #endif

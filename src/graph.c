@@ -207,3 +207,36 @@ void graph_destroy(Graph *g) {
     free(g->roads);
     free(g);
 }
+
+int road_lane_count(const RoadSegment *road) {
+    if (road == NULL) {
+        return 0;
+    }
+
+    int lanes = road->lanes > 0 ? road->lanes : 2;
+    
+    return lanes;
+}
+
+RoadDirection graph_get_lane_direction(const RoadSegment *road, int lane) {
+    if (road == NULL) {
+        return ROAD_DIR_NONE;
+    }
+
+    if (road->direction != ROAD_DIR_NONE) {
+        return road->direction;
+    }
+
+    int lanes = road->lanes > 0 ? road->lanes : 2;
+    int half = lanes / 2;
+    if (road->type == ROAD_HORIZONTAL) {
+        return lane < half ? ROAD_DIR_WEST : ROAD_DIR_EAST;
+    }
+    if (road->type == ROAD_VERTICAL) {
+        return lane < half ? ROAD_DIR_SOUTH : ROAD_DIR_NORTH;
+    }
+
+    return ROAD_DIR_NONE;
+}
+
+
