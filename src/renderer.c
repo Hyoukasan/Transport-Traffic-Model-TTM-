@@ -1,5 +1,6 @@
 #include <GL/glew.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #include <math.h>
 
@@ -310,7 +311,39 @@ void menu_render(Menu_t* menu, int screen_width, int screen_height) {
     glEnd();
 
     for (int i = 0; i < menu->button_count; i++) {
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glEnable(GL_TEXTURE_2D);
         button_render(&menu->buttons[i], menu->x, menu->y, screen_width, screen_height);
+
+        if (menu->buttons[i].profile_text[0] != '\0') {
+            int raw_text_width = stb_easy_font_width(menu->buttons[i].profile_text);
+            float scale = 1.45f;
+            float max_text_width = (float)(menu->buttons[i].width - 52);
+
+            if (raw_text_width > 0 && (float)raw_text_width * scale > max_text_width) {
+                scale = max_text_width / (float)raw_text_width;
+            }
+
+            if (scale < 0.85f) {
+                scale = 0.85f;
+            }
+
+            float text_width = (float)raw_text_width * scale;
+            float text_height = (float)stb_easy_font_height(menu->buttons[i].profile_text) * scale;
+
+            float button_x = (float)(menu->x + menu->buttons[i].x);
+            float button_y = (float)(menu->y + menu->buttons[i].y);
+            float text_x = button_x + ((float)menu->buttons[i].width - text_width) * 0.5f;
+            float text_y = button_y + (float)menu->buttons[i].height - text_height - 10.0f;
+
+            renderer_draw_text(text_x + 1.0f, text_y + 1.0f, menu->buttons[i].profile_text, scale,
+                0.0f, 0.0f, 0.0f, screen_width, screen_height);
+            renderer_draw_text(text_x, text_y, menu->buttons[i].profile_text, scale,
+                1.0f, 1.0f, 1.0f, screen_width, screen_height);
+
+            glColor3f(1.0f, 1.0f, 1.0f);
+            glEnable(GL_TEXTURE_2D);
+        }
     }
 
     glBindTexture(GL_TEXTURE_2D, 0);

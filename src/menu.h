@@ -54,6 +54,7 @@ typedef struct {
 
     MenuState target_state;
     ButtonId button_id;
+    char profile_text[96];
 } MenuButton_t;
 
 typedef struct Menu {
@@ -65,7 +66,6 @@ typedef struct Menu {
     MenuButton_t buttons[4];
     
     int button_count;
-    int selected_index;
     ButtonId last_pressed_button;
 } Menu_t;
 
