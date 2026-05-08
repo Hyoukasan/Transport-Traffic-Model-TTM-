@@ -25,6 +25,21 @@ static ConfigManager config = {0};
 
 static double last_frame_time = 0.0;
 
+static int slot_from_button_id(ButtonId button_id) {
+    switch (button_id) {
+        case BUTTON_ID_SLOT_1:
+            return 1;
+        case BUTTON_ID_SLOT_2:
+            return 2;
+        case BUTTON_ID_SLOT_3:
+            return 3;
+        case BUTTON_ID_SLOT_4:
+            return 4;
+        default:
+            return 0;
+    }
+}
+
 int application_init(const char *title){
     if (!glfwInit()){
         fprintf(stderr, "GLFW initialization failed!\n");
@@ -80,6 +95,7 @@ void application_update(void){
     if (frame <= 0.0f) {
         frame = 1.0f / 60.0f;
     }
+
     last_frame_time = now;
 
     if(menu.current_state != MENU_STATE_SIMULATION_PAUSE && menu.current_state != MENU_STATE_SIMULATION_CONFIG_PAUSE) {
@@ -183,6 +199,14 @@ void application_update(void){
             }
             
             menu_update(&menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
+            int slot = slot_from_button_id(menu.last_pressed_button);
+            if (slot > 0) {
+                float saved_time = 0.0f;
+                if (config_manager_load_profile(&config, slot, &saved_time) == 0) {
+                    menu_set_state(&menu, MENU_STATE_START_SIMULATION);
+                }
+            }
+
             menu_render(&menu, app.screen_width, app.screen_height);
             break;
 
@@ -226,6 +250,12 @@ void application_update(void){
 
         case APP_STATE_SIMULATION_PAUSE:
             menu_update(&menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
+
+            int slot = slot_from_button_id(menu.last_pressed_button);
+            if (slot > 0 && menu.current_state == MENU_STATE_SIMULATION_CONFIG_PAUSE) {
+                config_manager_save_profile(&config, slot, manager.time);
+                menu_set_state(&menu, MENU_STATE_SIMULATION_PAUSE);
+            }
 
             if(menu.current_state == MENU_STATE_IDLE) {
                 app.current_state = APP_STATE_RUNNING_SIMULATION;

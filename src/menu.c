@@ -20,6 +20,7 @@ void menu_init(Menu_t *menu, int screen_width, int screen_height){
     menu->current_state = MENU_STATE_MAIN_MENU;
     menu->button_count = 4;
     menu->selected_index = -1;
+    menu->last_pressed_button = BUTTON_ID_NONE;
 
     menu->background_texture = texture_load("data/textures/background.png", NULL, NULL);
     if(menu->background_texture == 0) {
@@ -47,34 +48,42 @@ static void bind_buttons(MenuButton_t *buttons, ButtonInfo* map, int count_butto
     for (int i = 0; i < count_buttons; i++) {
         buttons[i].texture      = texture_load(map[i].texture_path, NULL, NULL);
         buttons[i].target_state = map[i].target_state;
+        buttons[i].button_id    = map[i].button_id;
     }
 }
 
 static ButtonInfo main_menu_buttons[] = {
-    {"data/textures/start.png",                 MENU_STATE_CREATE_SIMULATION},
-    {"data/textures/config.png",                MENU_STATE_SIMULATION_CONFIG},
-    {"data/textures/about.png",                 MENU_STATE_INFO},
-    {"data/textures/exit.png",                  MENU_STATE_EXIT}
+    {"data/textures/start.png",                 MENU_STATE_CREATE_SIMULATION, BUTTON_ID_START},
+    {"data/textures/config.png",                MENU_STATE_SIMULATION_CONFIG, BUTTON_ID_CONFIG},
+    {"data/textures/about.png",                 MENU_STATE_INFO, BUTTON_ID_ABOUT},
+    {"data/textures/exit.png",                  MENU_STATE_EXIT, BUTTON_ID_EXIT}
 };
 
 static ButtonInfo scenario_menu_buttons[] = {
-    {"data/textures/highway.png",               MENU_STATE_SCENARIO_HIGHWAY},
-    {"data/textures/single_intersection.png",   MENU_STATE_SCENARIO_SINGLE_INTERSECTION},
-    {"data/textures/multi_intersection.png",    MENU_STATE_SCENARIO_MULTI_INTERSECTION},
-    {"data/textures/back.png",                  MENU_STATE_MAIN_MENU}
+    {"data/textures/highway.png",               MENU_STATE_SCENARIO_HIGHWAY, BUTTON_ID_HIGHWAY},
+    {"data/textures/single_intersection.png",   MENU_STATE_SCENARIO_SINGLE_INTERSECTION, BUTTON_ID_SINGLE_INTERSECTION},
+    {"data/textures/multi_intersection.png",    MENU_STATE_SCENARIO_MULTI_INTERSECTION, BUTTON_ID_MULTI_INTERSECTION},
+    {"data/textures/back.png",                  MENU_STATE_MAIN_MENU, BUTTON_ID_BACK}
 };
 
 static ButtonInfo pause_menu_buttons[] = {
-    {"data/textures/resume.png",         MENU_STATE_IDLE},
-    {"data/textures/save_profile.png",   MENU_STATE_SIMULATION_CONFIG_PAUSE},
-    {"data/textures/back.png",           MENU_STATE_MAIN_MENU}
+    {"data/textures/resume.png",         MENU_STATE_IDLE, BUTTON_ID_RESUME},
+    {"data/textures/save_profile.png",   MENU_STATE_SIMULATION_CONFIG_PAUSE, BUTTON_ID_SAVE_PROFILE},
+    {"data/textures/back.png",           MENU_STATE_MAIN_MENU, BUTTON_ID_BACK}
 };
 
-static ButtonInfo profile_menu_buttons[] = {
-    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG_PAUSE},
-    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG_PAUSE},
-    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG_PAUSE},
-    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG_PAUSE}
+static ButtonInfo load_profile_menu_buttons[] = {
+    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG, BUTTON_ID_SLOT_1},
+    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG, BUTTON_ID_SLOT_2},
+    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG, BUTTON_ID_SLOT_3},
+    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG, BUTTON_ID_SLOT_4}
+};
+
+static ButtonInfo save_profile_menu_buttons[] = {
+    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG_PAUSE, BUTTON_ID_SLOT_1},
+    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG_PAUSE, BUTTON_ID_SLOT_2},
+    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG_PAUSE, BUTTON_ID_SLOT_3},
+    {"data/textures/empty.png", MENU_STATE_SIMULATION_CONFIG_PAUSE, BUTTON_ID_SLOT_4}
 };
 
 static void set_buttons(MenuButton_t* buttons, int button_count, int menu_width, int menu_height, int gap) {
@@ -116,12 +125,12 @@ static void menu_load_state(Menu_t* menu) {
         case MENU_STATE_SIMULATION_CONFIG:
             menu->button_count = 4;
             set_buttons(menu->buttons, menu->button_count, menu->width, menu->height, 30);
-            bind_buttons(menu->buttons, profile_menu_buttons, menu->button_count);
+            bind_buttons(menu->buttons, load_profile_menu_buttons, menu->button_count);
             break;
         case MENU_STATE_SIMULATION_CONFIG_PAUSE:
             menu->button_count = 4;
             set_buttons(menu->buttons, menu->button_count, menu->width, menu->height, 30);
-            bind_buttons(menu->buttons, profile_menu_buttons, menu->button_count);
+            bind_buttons(menu->buttons, save_profile_menu_buttons, menu->button_count);
             break;            
         case MENU_STATE_INFO:
             menu->button_count = 0;
@@ -145,6 +154,8 @@ void menu_update(Menu_t* menu, int mx, int my, bool click) {
         return;
     }
 
+    menu->last_pressed_button = BUTTON_ID_NONE;
+
     for (int i = 0; i < menu->button_count; i++) {
         MenuButton_t *button = &menu->buttons[i];
 
@@ -155,6 +166,7 @@ void menu_update(Menu_t* menu, int mx, int my, bool click) {
             my >= y && my <= y + button->height;
 
         if (click && inside) {
+            menu->last_pressed_button = button->button_id;
             menu_set_state(menu, button->target_state);
             break;
         }

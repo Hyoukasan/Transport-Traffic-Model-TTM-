@@ -5,7 +5,7 @@
 #include "config_manager.h"
 
 static void config_manager_get_slot_path(int slot, char* buffer, int buffer_size) {
-    snprintf(buffer, buffer_size, "../data/profiles/profile_%d.cfg", slot);
+    snprintf(buffer, buffer_size, "data/profiles/profile_%d.cfg", slot);
 }
 
 int config_manager_save_profile(const ConfigManager* config, int slot, float time) {
@@ -24,7 +24,7 @@ int config_manager_save_profile(const ConfigManager* config, int slot, float tim
 
     FILE* f = fopen(filename, "w");
     if(f == NULL) {
-        fprintf(stderr, "Error in created file\n");
+        fprintf(stderr, "Error in created file: %s\n", filename);
         return -1;
     }
 
