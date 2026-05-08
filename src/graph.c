@@ -208,7 +208,7 @@ void graph_destroy(Graph *g) {
     free(g);
 }
 
-int road_lane_count(const RoadSegment *road) {
+int graph_road_lane_count(const RoadSegment *road) {
     if (road == NULL) {
         return 0;
     }

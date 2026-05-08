@@ -712,6 +712,9 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
             float travel_fraction = position_to_travel_fraction(road, effective_direction, car->position);
             float s = (float)road->length * travel_fraction;
             float d = car->lane_offset;
+            if (effective_direction == ROAD_DIR_WEST || effective_direction == ROAD_DIR_SOUTH) {
+                d = -d;
+            }
             road_local_to_grid(start_x, start_y, effective_direction, s, d, &car_grid_x, &car_grid_y);
         } else if (road->type == ROAD_VERTICAL) {
             int min_y = road->y1 < road->y2 ? road->y1 : road->y2;
@@ -721,6 +724,9 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
             float travel_fraction = position_to_travel_fraction(road, effective_direction, car->position);
             float s = (float)road->length * travel_fraction;
             float d = car->lane_offset;
+            if (effective_direction == ROAD_DIR_WEST || effective_direction == ROAD_DIR_SOUTH) {
+                d = -d;
+            }
             road_local_to_grid(start_x, start_y, effective_direction, s, d, &car_grid_x, &car_grid_y);
         } else {
             continue;

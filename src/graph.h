@@ -66,7 +66,7 @@ void graph_set_road_direction(Graph *g, int road_id, RoadDirection direction);
 void graph_build_intersections(Graph *g);
 void graph_destroy(Graph *g);
 
-int road_lane_count(const RoadSegment *road);
+int graph_road_lane_count(const RoadSegment *road);
 RoadDirection graph_get_lane_direction(const RoadSegment *road, int lane);
 
 #endif

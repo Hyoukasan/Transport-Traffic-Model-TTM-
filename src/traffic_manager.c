@@ -19,7 +19,7 @@ static LaneCarList* traffic_manager_get_lane_list(TrafficManager* manager, int r
 static void traffic_manager_load_car_textures(TrafficManager* manager);
 
 static const Car* traffic_manager_find_front_car(TrafficManager* manager, const Car* car, float search_radius);
-static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car);
+static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car, float dt);
 static bool traffic_manager_try_start_lane_change(TrafficManager* manager, Car* car);
 
 static void traffic_manager_load_car_textures(TrafficManager* manager) {
@@ -251,6 +251,7 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
 
     traffic_manager_load_car_textures(manager);
     traffic_manager_spawn_cars(manager, config);
+    traffic_manager_update_lane_lists(manager);
 
     return 0;
 }
@@ -265,7 +266,7 @@ static bool traffic_manager_try_start_lane_change(TrafficManager* manager, Car* 
 
 }
 
-static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car) {
+static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car, float dt) {
     if(manager == NULL || manager->graph == NULL || car == NULL) {
         return false;
     }
@@ -275,6 +276,11 @@ static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car
     }
 
     if(car->state == CAR_STATE_NORMAL && car->target_lane == -1 && !car->at_intersection) {
+        car->lane_change_timer -= dt;
+        if (car->lane_change_timer > 0.0f) {
+            return false;
+        }
+
         RoadSegment *road = &manager->graph->roads[car->road_id];
         RoadDirection current_dir = graph_get_lane_direction(road, car->lane);
 
@@ -300,8 +306,11 @@ static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car
 
         if(desired_lane >= 0) {
             car_start_lane_change(car, desired_lane);
+            car->lane_change_timer = (float)(rand() % 301 + 300) / 60.0f;
             return true;
         } 
+
+        car->lane_change_timer = (float)(rand() % 301 + 300) / 60.0f;
     }
 
     return false;
@@ -312,8 +321,10 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
         return -1;
     }
 
+    traffic_manager_update_lane_lists(manager);
+
     for (int i = 0; i < manager->car_count; i++) {
-        traffic_manager_update_lane_change(manager, &manager->cars[i]);
+        traffic_manager_update_lane_change(manager, &manager->cars[i], dt);
 
         car_update(&manager->cars[i], manager->graph, dt);
     }
