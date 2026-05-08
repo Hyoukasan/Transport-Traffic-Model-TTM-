@@ -143,52 +143,6 @@ static void road_vertex_counts(const Graph *graph, int *mainCount, int *helperCo
     }
 }
 
-// static void add_road_vertices(float *vertices, int *index, const Graph *graph, const RoadSegment *road) {
-//     float x1 = grid_edge_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
-//     float y1 = grid_edge_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
-//     float x2 = grid_edge_to_normalized_x(road->x2, graph->chunk_size, graph->padding, graph->window_width);
-//     float y2 = grid_edge_to_normalized_y(road->y2, graph->chunk_size, graph->padding, graph->window_height);
-
-//     vertices[(*index)++] = x1;
-//     vertices[(*index)++] = y1;
-//     vertices[(*index)++] = x2;
-//     vertices[(*index)++] = y2;
-
-//     if (road->lanes > 1) {
-//         if (road->type == ROAD_HORIZONTAL) {
-//             if (road->y1 - 1 >= 0) {
-//                 float offset_y = grid_center_to_normalized_y(road->y1 - 1, graph->chunk_size, graph->padding, graph->window_height);
-//                 vertices[(*index)++] = x1;
-//                 vertices[(*index)++] = offset_y;
-//                 vertices[(*index)++] = x2;
-//                 vertices[(*index)++] = offset_y;
-//             }
-//             if (road->y1 + 1 <= graph->grid_height) {
-//                 float offset_y = grid_center_to_normalized_y(road->y1, graph->chunk_size, graph->padding, graph->window_height);
-//                 vertices[(*index)++] = x1;
-//                 vertices[(*index)++] = offset_y;
-//                 vertices[(*index)++] = x2;
-//                 vertices[(*index)++] = offset_y;
-//             }
-//         } else if (road->type == ROAD_VERTICAL) {
-//             if (road->x1 - 1 >= 0) {
-//                 float offset_x = grid_center_to_normalized_x(road->x1 - 1, graph->chunk_size, graph->padding, graph->window_width);
-//                 vertices[(*index)++] = offset_x;
-//                 vertices[(*index)++] = y1;
-//                 vertices[(*index)++] = offset_x;
-//                 vertices[(*index)++] = y2;
-//             }
-//             if (road->x1 + 1 <= graph->grid_width) {
-//                 float offset_x = grid_center_to_normalized_x(road->x1, graph->chunk_size, graph->padding, graph->window_width);
-//                 vertices[(*index)++] = offset_x;
-//                 vertices[(*index)++] = y1;
-//                 vertices[(*index)++] = offset_x;
-//                 vertices[(*index)++] = y2;
-//             }
-//         }
-//     }
-// }
-
 void renderer_init(void) {
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &roadVBO);

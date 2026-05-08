@@ -11,12 +11,16 @@
 #include "graph.h"
 #include "road_generator.h"
 
+
+static int traffic_manager_init_lane_lists(TrafficManager* manager);
+static void traffic_manager_update_lane_lists(TrafficManager* manager);
+static LaneCarList* traffic_manager_get_lane_list(TrafficManager* manager, int road_id, int lane);
+
 static void traffic_manager_load_car_textures(TrafficManager* manager);
 
 static const Car* traffic_manager_find_front_car(TrafficManager* manager, const Car* car, float search_radius);
 static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car);
 static bool traffic_manager_try_start_lane_change(TrafficManager* manager, Car* car);
-
 
 static void traffic_manager_load_car_textures(TrafficManager* manager) {
     manager->car_textures[CAR_COLOR_YELLOW] =
@@ -147,6 +151,45 @@ static int traffic_manager_init_lane_lists(TrafficManager* manager) {
     }
 
     return 0;
+}
+
+static LaneCarList* traffic_manager_get_lane_list(TrafficManager* manager, int road_id, int lane) {
+    if (manager == NULL || manager->lane_lists == NULL) {
+        return NULL;
+    }
+
+    for(int i = 0; i < manager->lane_list_count; i++) {
+        LaneCarList *list = &manager->lane_lists[i];
+
+        if (list->road_id == road_id && list->lane == lane) {
+            return list;
+        }
+    }
+
+    return NULL;
+}
+
+static void traffic_manager_update_lane_lists(TrafficManager* manager) {
+    if (manager == NULL || manager->lane_lists == NULL) {
+        return;
+    }
+
+    for (size_t i = 0; i < (size_t)manager->lane_list_count; i++) {
+        manager->lane_lists[i].car_count = 0;
+    }
+
+    for (size_t i = 0; i < (size_t)manager->car_count; i++) {
+        Car *car = &manager->cars[i];
+
+        LaneCarList *list = traffic_manager_get_lane_list(manager, car->road_id, car->lane);
+        if (list == NULL) {
+            continue;
+        }
+
+        if (list->car_count < manager->max_cars) {
+            list->car_indices[list->car_count++] = (int)i;
+        }
+    }
 }
 
 int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
