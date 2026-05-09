@@ -64,7 +64,6 @@ Graph* graph_create(int window_width, int window_height, int chunk_size, int pad
         return NULL;
     }
 
-    g->adj_graph = NULL;
     return g;
 }
 // текстурка

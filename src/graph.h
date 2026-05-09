@@ -55,8 +55,6 @@ typedef struct Graph {
     int window_width;
     int window_height;
     int padding;      // отступ от края окна в чанках
-
-    void *adj_graph;  // adjacency graph для поиска пути
 } Graph;
 
 Graph* graph_create(int window_width, int window_height, int chunk_size, int padding, int max_roads);

@@ -24,7 +24,7 @@ static void set_point(Point *point, int x, int y) {
 }
 
 static float random_speed_limit(void) {
-    return 0.8f + (rand() % 5) * 0.1f;
+    return 1.0f + (rand() % 5) * 0.12f;
 }
 
 static void build_roads_range(RoadGenerator *gen, Graph *graph, int start_index, int count, RoadType type) {
@@ -32,7 +32,7 @@ static void build_roads_range(RoadGenerator *gen, Graph *graph, int start_index,
     for (int i = 0; i < count; i++) {
         Point *p = &gen->points[start_index + i];
         if (type == ROAD_HORIZONTAL) {
-            float speed_limit = (gen->scenario == ROAD_SCENARIO_HIGHWAY) ? 1.0f : random_speed_limit();
+            float speed_limit = (gen->scenario == ROAD_SCENARIO_HIGHWAY) ? 1.45f : random_speed_limit();
             int road_id = graph_add_road(graph, 0, p->y, graph->grid_width - 1, p->y, ROAD_HORIZONTAL, ROAD_DIR_NONE, speed_limit, total_lanes);
             if (road_id >= 0) {
                 unsigned int texture = texture_load("data/textures/road132.png", NULL, NULL);
@@ -60,7 +60,7 @@ static RoadGenerator* road_gen_create_internal(int num_roads, int lane_count) {
     }
 
     RoadGenerator *gen = malloc(sizeof(RoadGenerator));
-    if (!gen) {
+    if (gen == NULL) {
         fprintf(stderr, "road_gen_create: не удалось выделить память для RoadGenerator\n");
         return NULL;
     }
@@ -68,7 +68,7 @@ static RoadGenerator* road_gen_create_internal(int num_roads, int lane_count) {
     gen->point_count = num_roads;
     gen->max_points = num_roads;
     gen->points = malloc(sizeof(Point) * num_roads);
-    if (!gen->points) {
+    if (gen->points == NULL) {
         fprintf(stderr, "road_gen_create: не удалось выделить память для точек\n");
         free(gen);
         return NULL;
@@ -89,7 +89,7 @@ RoadGenerator* road_gen_create(int num_roads) {
 RoadGenerator* road_gen_create_with_scenario(int scenario, int lane_count) {
     int num_roads = road_count_for_scenario(scenario);
     RoadGenerator *gen = road_gen_create_internal(num_roads, lane_count);
-    if (!gen) {
+    if (gen == NULL) {
         return NULL;
     }
 
@@ -98,7 +98,7 @@ RoadGenerator* road_gen_create_with_scenario(int scenario, int lane_count) {
 }
 
 void road_gen_generate_points(RoadGenerator *gen, Graph *graph) {
-    if (!gen || !graph || gen->max_points == 0) {
+    if (gen == NULL || graph == NULL || gen->max_points == 0) {
         return;
     }
 
@@ -153,7 +153,7 @@ void road_gen_generate_points(RoadGenerator *gen, Graph *graph) {
 
 // Выполнить полный шаг: выбрать кейс, сгенерировать точки и построить дороги.
 void road_gen_generate_and_build(RoadGenerator *gen, Graph *graph, int scenario) {
-    if (!gen || !graph) {
+    if (gen == NULL || graph == NULL) {
         return;
     }
 
@@ -163,7 +163,7 @@ void road_gen_generate_and_build(RoadGenerator *gen, Graph *graph, int scenario)
 }
 
 void road_gen_build_roads(RoadGenerator *gen, Graph *graph) {
-    if (!gen || !graph) {
+    if (gen == NULL || graph == NULL) {
         return;
     }
 
@@ -180,7 +180,9 @@ void road_gen_build_roads(RoadGenerator *gen, Graph *graph) {
 }
 
 void road_gen_destroy(RoadGenerator *gen) {
-    if (!gen) return;
+    if (gen == NULL) {
+        return;
+    }
     
     free(gen->points);
     free(gen);
