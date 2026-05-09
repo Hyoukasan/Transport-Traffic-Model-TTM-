@@ -215,10 +215,14 @@ void application_update(void){
 
             if(config.max_cars < 10) {
                 config.max_cars = 10;
+            } else if(config.max_cars > 100) {
+                config.max_cars = 100;
             }
 
             if(config.lane_count < 2) {
                 config.lane_count = 2;
+            } else if(config.lane_count > 8) {
+                config.lane_count = 8;
             }
 
             application_update_settings_text();

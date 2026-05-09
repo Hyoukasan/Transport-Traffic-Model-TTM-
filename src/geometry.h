@@ -1,7 +1,7 @@
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
 
-#include "graph.h"  // для RoadDirection
+typedef enum RoadDirection RoadDirection;
 
 float pixel_to_normalized_x(int px, int width);
 float pixel_to_normalized_y(int py, int height);

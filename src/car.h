@@ -2,9 +2,9 @@
 #define CAR_H
 
 #include <stdbool.h>
-#include "graph.h"  // для RoadDirection
 
 struct Graph;
+typedef enum RoadDirection RoadDirection;
 
 typedef enum {
     CAR_STATE_NORMAL,

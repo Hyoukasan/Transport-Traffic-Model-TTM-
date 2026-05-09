@@ -55,6 +55,7 @@ typedef struct TrafficManager {
     struct Graph       *graph;
 
     float               time;
+    float               spawn_timer;
     int                 next_car_id;
 } TrafficManager;
 

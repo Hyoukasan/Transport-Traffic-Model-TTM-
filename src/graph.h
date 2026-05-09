@@ -9,7 +9,7 @@ typedef enum RoadType {
     ROAD_DIAGONAL
 } RoadType;
 
-typedef enum {
+typedef enum RoadDirection {
     ROAD_DIR_NONE,
     ROAD_DIR_EAST,
     ROAD_DIR_WEST,

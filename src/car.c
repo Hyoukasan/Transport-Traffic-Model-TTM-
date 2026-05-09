@@ -330,6 +330,20 @@ void car_set_texture(Car *car, unsigned int texture) {
     car->texture = texture;
 }
 
+void car_destroy(Car *car) {
+    if (car == NULL) {
+        return;
+    }
+
+    memset(car, 0, sizeof(*car));
+    car->road_id = -1;
+    car->target_lane = -1;
+    car->turn_target_road_id = -1;
+    car->turn_target_lane = -1;
+    car->last_turn_x = -1;
+    car->last_turn_y = -1;
+}
+
 
 void car_update(Car *car, const Graph *graph, float dt) {
     if (car == NULL || graph == NULL || car->road_id < 0 || car->road_id >= graph->road_count) {
