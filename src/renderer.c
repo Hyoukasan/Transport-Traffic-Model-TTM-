@@ -560,6 +560,85 @@ static void renderer_draw_road_texture(const Graph *graph, const RoadSegment *ro
     glDisable(GL_TEXTURE_2D);
 }
 
+static const RoadSegment *renderer_find_road_by_id(const Graph *graph, int road_id) {
+    if (graph == NULL) {
+        return NULL;
+    }
+
+    for (int i = 0; i < graph->road_count; i++) {
+        if (graph->roads[i].id == road_id) {
+            return &graph->roads[i];
+        }
+    }
+
+    return NULL;
+}
+
+static void renderer_draw_intersection_blocks(const Graph *graph) {
+    if (graph == NULL || graph->intersection_count <= 0) {
+        return;
+    }
+
+    for (int i = 0; i < graph->intersection_count; i++) {
+        const Intersection *intersection = &graph->intersections[i];
+        int left_edge = intersection->x;
+        int right_edge = intersection->x + 1;
+        int top_edge = intersection->y;
+        int bottom_edge = intersection->y + 1;
+        bool has_vertical_bounds = false;
+        bool has_horizontal_bounds = false;
+
+        for (int j = 0; j < intersection->road_count; j++) {
+            const RoadSegment *road = renderer_find_road_by_id(graph, intersection->roads[j]);
+            if (road == NULL) {
+                continue;
+            }
+
+            int start_edge = road_start_edge(road);
+            int end_edge = start_edge + road_lane_count(road);
+
+            if (road->type == ROAD_VERTICAL) {
+                if (!has_vertical_bounds) {
+                    left_edge = start_edge;
+                    right_edge = end_edge;
+                    has_vertical_bounds = true;
+                } else {
+                    left_edge = coord_min(left_edge, start_edge);
+                    right_edge = coord_max(right_edge, end_edge);
+                }
+            } else if (road->type == ROAD_HORIZONTAL) {
+                if (!has_horizontal_bounds) {
+                    top_edge = start_edge;
+                    bottom_edge = end_edge;
+                    has_horizontal_bounds = true;
+                } else {
+                    top_edge = coord_min(top_edge, start_edge);
+                    bottom_edge = coord_max(bottom_edge, end_edge);
+                }
+            }
+        }
+
+        if (!has_vertical_bounds || !has_horizontal_bounds) {
+            continue;
+        }
+
+        float left = grid_edge_to_normalized_x(left_edge, graph->chunk_size, graph->padding, graph->window_width);
+        float right = grid_edge_to_normalized_x(right_edge, graph->chunk_size, graph->padding, graph->window_width);
+        float top = grid_edge_to_normalized_y(top_edge, graph->chunk_size, graph->padding, graph->window_height);
+        float bottom = grid_edge_to_normalized_y(bottom_edge, graph->chunk_size, graph->padding, graph->window_height);
+
+        glDisable(GL_TEXTURE_2D);
+        glColor3f(0.345f, 0.345f, 0.345f);
+
+        glBegin(GL_QUADS);
+        glVertex2f(left, top);
+        glVertex2f(right, top);
+        glVertex2f(right, bottom);
+        glVertex2f(left, bottom);
+        glEnd();
+    }
+}
+
 void renderer_draw_roads(Graph *graph) {
     if (graph == NULL) {
         return;
@@ -576,7 +655,7 @@ void renderer_draw_roads(Graph *graph) {
         glDrawArrays(GL_LINES, 0, roadMainVertexCount);
         glBindVertexArray(0);
     }
-*/
+
     if (roadHelperVertexCount > 0) {
         glBindVertexArray(helperRoadVAO);
         glLineWidth(1.0f);
@@ -584,7 +663,8 @@ void renderer_draw_roads(Graph *graph) {
         glDrawArrays(GL_LINES, 0, roadHelperVertexCount);
         glBindVertexArray(0);
     }
-
+*/
+    renderer_draw_intersection_blocks(graph);
 
     glLineWidth(1.0f);
     glColor3f(1.0f, 1.0f, 1.0f);
