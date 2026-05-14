@@ -16,7 +16,10 @@ typedef enum {
 typedef struct {
     int        intersection_x;
     int        intersection_y;
-    LightState state_light;
+
+    LightState horizontal_state_light;
+    LightState vertical_state_light;
+
     float      timer;
 } TrafficLight;
 
