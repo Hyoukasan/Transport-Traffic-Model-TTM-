@@ -862,45 +862,65 @@ static void renderer_draw_colored_grid_quad(const Graph *graph, float center_x, 
     glEnd();
 }
 
-static void renderer_draw_light_sprite(float x, float y, float width, float height, float angle, unsigned int texture, const Graph *graph) {
+static void renderer_draw_light_sprite(const Graph *graph, float x, float y, float width, float height, float angle, unsigned int texture) {
     if (texture == 0) {
         return;
     }
 
-    float half_width = width * 0.5f;
-    float half_height = height * 0.5f;
-    float rad = angle * (3.14159265f / 180.0f);
-    float c = cosf(rad);
-    float s = sinf(rad);
-    float local_x[4] = {-half_width, half_width, half_width, -half_width};
-    float local_y[4] = {-half_height, -half_height, half_height, half_height};
-    float vx[4];
-    float vy[4];
+    float draw_width = width;
+    float draw_height = height;
+    float tex_x0 = 0.0f;
+    float tex_y0 = 0.0f;
+    float tex_x1 = 1.0f;
+    float tex_y1 = 0.0f;
+    float tex_x2 = 1.0f;
+    float tex_y2 = 1.0f;
+    float tex_x3 = 0.0f;
+    float tex_y3 = 1.0f;
 
-    for (int i = 0; i < 4; i++) {
-        float rx = local_x[i] * c - local_y[i] * s;
-        float ry = local_x[i] * s + local_y[i] * c;
-        vx[i] = grid_point_to_normalized_x(x + rx, graph);
-        vy[i] = grid_point_to_normalized_y(y + ry, graph);
+    if (angle == 90.0f || angle == -90.0f) {
+        draw_width = height;
+        draw_height = width;
     }
+
+    if (angle == 90.0f) {
+        tex_x0 = 1.0f; tex_y0 = 0.0f;
+        tex_x1 = 1.0f; tex_y1 = 1.0f;
+        tex_x2 = 0.0f; tex_y2 = 1.0f;
+        tex_x3 = 0.0f; tex_y3 = 0.0f;
+    } else if (angle == -90.0f) {
+        tex_x0 = 0.0f; tex_y0 = 1.0f;
+        tex_x1 = 0.0f; tex_y1 = 0.0f;
+        tex_x2 = 1.0f; tex_y2 = 0.0f;
+        tex_x3 = 1.0f; tex_y3 = 1.0f;
+    } else if (angle == 180.0f) {
+        tex_x0 = 1.0f; tex_y0 = 1.0f;
+        tex_x1 = 0.0f; tex_y1 = 1.0f;
+        tex_x2 = 0.0f; tex_y2 = 0.0f;
+        tex_x3 = 1.0f; tex_y3 = 0.0f;
+    }
+
+    float left = grid_point_to_normalized_x(x - draw_width * 0.5f, graph);
+    float right = grid_point_to_normalized_x(x + draw_width * 0.5f, graph);
+    float top = grid_point_to_normalized_y(y - draw_height * 0.5f, graph);
+    float bottom = grid_point_to_normalized_y(y + draw_height * 0.5f, graph);
 
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texture);
-
     glColor3f(1.0f, 1.0f, 1.0f);
 
     glBegin(GL_QUADS);
-    glTexCoord2f(0.0f, 0.0f);
-    glVertex2f(vx[0], vy[0]);
+    glTexCoord2f(tex_x0, tex_y0);
+    glVertex2f(left, top);
 
-    glTexCoord2f(1.0f, 0.0f);
-    glVertex2f(vx[1], vy[1]);
+    glTexCoord2f(tex_x1, tex_y1);
+    glVertex2f(right, top);
 
-    glTexCoord2f(1.0f, 1.0f);
-    glVertex2f(vx[2], vy[2]);
+    glTexCoord2f(tex_x2, tex_y2);
+    glVertex2f(right, bottom);
 
-    glTexCoord2f(0.0f, 1.0f);
-    glVertex2f(vx[3], vy[3]);
+    glTexCoord2f(tex_x3, tex_y3);
+    glVertex2f(left, bottom);
     glEnd();
 
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -925,15 +945,20 @@ void renderer_draw_traffic_lights(Graph *graph, TrafficLight *lights, int light_
         float center_x = ((float)intersection->left_edge + (float)intersection->right_edge) * 0.5f;
         float center_y = ((float)intersection->top_edge + (float)intersection->bottom_edge) * 0.5f;
         float block_size = 1.0f;
-        float light_width = 0.68f;
-        float light_height = 1.5f;
-        float offset = block_size * 0.5f + light_height * 0.5f + 0.08f;
+        float light_height = 1.6f;
+        float light_width = light_height * (98.0f / 235.0f);
+        float horizontal_offset = block_size * 0.5f + light_height * 0.5f;
+        float vertical_offset = block_size * 0.5f + light_height * 0.5f;
 
+        renderer_draw_light_sprite(graph, center_x - horizontal_offset, center_y,
+                                   light_width, light_height, 90.0f, horizontal_texture);
+        renderer_draw_light_sprite(graph, center_x + horizontal_offset, center_y,
+                                   light_width, light_height, -90.0f, horizontal_texture);
+        renderer_draw_light_sprite(graph, center_x, center_y - vertical_offset,
+                                   light_width, light_height, 0.0f, vertical_texture);
+        renderer_draw_light_sprite(graph, center_x, center_y + vertical_offset,
+                                   light_width, light_height, 180.0f, vertical_texture);
         renderer_draw_colored_grid_quad(graph, center_x, center_y, block_size, block_size, 0.02f, 0.02f, 0.02f);
-        renderer_draw_light_sprite(center_x - offset, center_y, light_width, light_height, -90.0f, horizontal_texture, graph);
-        renderer_draw_light_sprite(center_x + offset, center_y, light_width, light_height, 90.0f, horizontal_texture, graph);
-        renderer_draw_light_sprite(center_x, center_y - offset, light_width, light_height, 0.0f, vertical_texture, graph);
-        renderer_draw_light_sprite(center_x, center_y + offset, light_width, light_height, 180.0f, vertical_texture, graph);
     }
 
     glDisable(GL_TEXTURE_2D);
