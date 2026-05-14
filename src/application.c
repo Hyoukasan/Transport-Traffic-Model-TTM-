@@ -299,8 +299,6 @@ void application_update(void){
 
             debug_overlay_draw(&manager, app.screen_width, app.screen_height);
 
-//            glColor3f(1.0f, 0.0f, 0.0f);
-//            renderer_draw_nodes(manager.graph);
             break;
             
         case APP_STATE_CLOSED:

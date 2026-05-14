@@ -813,19 +813,6 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
     glDisable(GL_BLEND);
 }
 
-void renderer_draw_nodes(Graph *graph) {
-    (void)graph;
-    if (nodeVertexCount == 0) {
-        return;
-    }
-
-    glPointSize(10.0f);
-    glBindVertexArray(nodeVAO);
-    glDrawArrays(GL_POINTS, 0, nodeVertexCount);
-    glBindVertexArray(0);
-    glPointSize(1.0f);
-}
-
 void renderer_shutdown(void) {
     if (carVAO != 0) {
         glDeleteVertexArrays(1, &carVAO);

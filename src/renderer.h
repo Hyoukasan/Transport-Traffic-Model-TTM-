@@ -24,8 +24,6 @@ void renderer_draw_grid(Graph *graph);
 void renderer_upload_graph(Graph *graph);
 
 // Рисование узлов/концов сегментов
-void renderer_draw_nodes(Graph *graph);
-
 // Рисование машин на дорогах
 void renderer_draw_cars(Graph *graph, Car *cars, int car_count);
 
