@@ -347,11 +347,6 @@ void menu_render(Menu_t* menu, int screen_width, int screen_height) {
     glBindTexture(GL_TEXTURE_2D, 0);
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_BLEND);
-
-    GLenum err = glGetError();
-    if (err != GL_NO_ERROR) {
-        printf("OpenGL error: %d\n", err);
-    }
 }
 
 void renderer_upload_graph(Graph *graph) {
