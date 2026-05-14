@@ -262,11 +262,6 @@ void button_render(MenuButton_t* button, int offset_x, int offset_y,
     glEnd();
 
     glBindTexture(GL_TEXTURE_2D, 0);
-
-    GLenum err = glGetError();
-    if (err != GL_NO_ERROR) {
-        printf("OpenGL error: %d\n", err);
-    }
 }
 
 void menu_render(Menu_t* menu, int screen_width, int screen_height) {
