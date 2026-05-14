@@ -49,7 +49,6 @@ typedef struct TrafficManager {
 
     TrafficLight        *lights;
     int                 light_count;
-    int                 max_lights;
 
     AccidentDTP         *accidents;
     int                 accident_count;

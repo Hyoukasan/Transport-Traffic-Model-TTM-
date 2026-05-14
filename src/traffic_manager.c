@@ -22,6 +22,10 @@ static bool traffic_manager_spawn_car(TrafficManager* manager, int sequence_inde
 static const Car* traffic_manager_find_front_car(TrafficManager* manager, const Car* car, float search_radius);
 static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car, float dt);
 
+static int traffic_manager_init_lights(TrafficManager *manager);
+static void traffic_manager_update_lights(TrafficManager *manager, float dt);
+static void traffic_light_advance(TrafficLight *light);
+
 static void traffic_manager_load_car_textures(TrafficManager* manager) {
     manager->car_textures[CAR_COLOR_YELLOW] =
         texture_load("data/textures/car_color_yellow.png", NULL, NULL);
@@ -61,6 +65,16 @@ static int traffic_manager_max_roads_for_scenario(ScenarioType scenario) {
             return 6;
         default:
             return 1;
+    }
+}
+
+static int traffic_manager_init_lights(TrafficManager *manager) {
+    if(manager->lights == NULL) {
+        return -1;
+    }
+
+    for(size_t i = 0; i < (size_t)(manager->light_count); i++) {
+        manager->lights[i].
     }
 }
 
@@ -126,7 +140,7 @@ static float traffic_manager_travel_fraction_to_position(const RoadSegment *road
 }
 
 static bool traffic_manager_spawn_area_clear(TrafficManager* manager, int road_id, int lane, float spawn_fraction, float min_gap) {
-    if (manager == NULL || manager->graph == NULL || road_id < 0 || road_id >= manager->graph->road_count) {
+    if (manager->graph == NULL || road_id < 0 || road_id >= manager->graph->road_count) {
         return false;
     }
 
@@ -154,7 +168,7 @@ static bool traffic_manager_spawn_area_clear(TrafficManager* manager, int road_i
 }
 
 static bool traffic_manager_spawn_car(TrafficManager* manager, int sequence_index) {
-    if (manager == NULL || manager->graph == NULL || manager->graph->road_count <= 0 || manager->cars == NULL) {
+    if (manager->graph == NULL || manager->graph->road_count <= 0 || manager->cars == NULL) {
         return false;
     }
 
@@ -200,7 +214,7 @@ static bool traffic_manager_spawn_car(TrafficManager* manager, int sequence_inde
 }
 
 static bool traffic_manager_car_finished(TrafficManager* manager, const Car* car) {
-    if (manager == NULL || manager->graph == NULL || car == NULL) {
+    if (manager->graph == NULL || car == NULL) {
         return false;
     }
 
@@ -216,7 +230,7 @@ static bool traffic_manager_car_finished(TrafficManager* manager, const Car* car
 }
 
 static void traffic_manager_remove_car(TrafficManager* manager, int index) {
-    if (manager == NULL || index < 0 || index >= manager->car_count) {
+    if (index < 0 || index >= manager->car_count) {
         return;
     }
 
@@ -230,7 +244,7 @@ static void traffic_manager_remove_car(TrafficManager* manager, int index) {
 }
 
 static void traffic_manager_spawn_cars(TrafficManager* manager, const ConfigManager* config) {
-    if (manager == NULL || manager->graph == NULL || config == NULL || manager->graph->road_count <= 0) {
+    if (manager->graph == NULL || config == NULL || manager->graph->road_count <= 0) {
         return;
     }
 
@@ -246,7 +260,7 @@ static void traffic_manager_spawn_cars(TrafficManager* manager, const ConfigMana
 }
 
 static int traffic_manager_init_lane_lists(TrafficManager* manager) {
-    if (manager == NULL || manager->graph == NULL || manager->lane_lists == NULL) {
+    if (manager->graph == NULL || manager->lane_lists == NULL) {
         return -1;
     }
 
@@ -279,7 +293,7 @@ static int traffic_manager_init_lane_lists(TrafficManager* manager) {
 }
 
 static LaneCarList* traffic_manager_get_lane_list(TrafficManager* manager, int road_id, int lane) {
-    if (manager == NULL || manager->lane_lists == NULL) {
+    if (manager->lane_lists == NULL) {
         return NULL;
     }
 
@@ -295,7 +309,7 @@ static LaneCarList* traffic_manager_get_lane_list(TrafficManager* manager, int r
 }
 
 static void traffic_manager_update_lane_lists(TrafficManager* manager) {
-    if (manager == NULL || manager->lane_lists == NULL) {
+    if (manager->lane_lists == NULL) {
         return;
     }
 
@@ -361,16 +375,26 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
     }
 
     manager->lane_list_count = manager->graph->road_count * config->lane_count;
-    manager->lane_lists = (LaneCarList*)malloc(sizeof(LaneCarList) * manager->lane_list_count);
+    manager->lane_lists = (LaneCarList*)calloc((size_t)manager->lane_list_count, sizeof(LaneCarList));
     if(traffic_manager_init_lane_lists(manager) != 0) {
         fprintf(stderr, "Lane lists initialization failed!\n");
         traffic_manager_clear(manager);
         return -1;
     }
+    
+    manager->light_count = manager->graph->intersection_count;
+
+    if(manager->light_count > 0) {
+        manager->lights = (TrafficLight*)calloc((size_t)manager->light_count, sizeof(TrafficLight));
+        if(traffic_manager_init_lights(manager) != 0) {
+            fprintf(stderr, "Lights initialization failed!\n");
+            traffic_manager_clear(manager);
+            return -1;
+        }
+    }
 
     manager->car_count = 0;
     manager->accident_count = 0;
-    manager->light_count = 0;
     manager->time = 0.0f;
     manager->spawn_timer = traffic_manager_random_spawn_delay();
     manager->next_car_id = 0;
@@ -383,7 +407,7 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
 }
 
 static const Car* traffic_manager_find_front_car(TrafficManager* manager, const Car* car, float search_radius) {
-    if(manager == NULL || manager->graph == NULL || car == NULL) {
+    if(manager->graph == NULL || car == NULL) {
         return NULL;
     }
 
@@ -434,7 +458,7 @@ static const Car* traffic_manager_find_front_car(TrafficManager* manager, const 
 }
 
 static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car, float dt) {
-    if(manager == NULL || manager->graph == NULL || car == NULL) {
+    if(manager->graph == NULL || car == NULL) {
         return false;
     }
 
@@ -558,7 +582,6 @@ void traffic_manager_clear(TrafficManager *manager) {
     manager->car_count = 0;
     manager->max_cars = 0;
     manager->light_count = 0;
-    manager->max_lights = 0;
     manager->accident_count = 0;
     manager->max_accidents = 0;
     manager->time = 0.0f;
