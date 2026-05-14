@@ -567,52 +567,10 @@ static void renderer_draw_intersection_blocks(const Graph *graph) {
 
     for (int i = 0; i < graph->intersection_count; i++) {
         const Intersection *intersection = &graph->intersections[i];
-        int left_edge = intersection->x;
-        int right_edge = intersection->x + 1;
-        int top_edge = intersection->y;
-        int bottom_edge = intersection->y + 1;
-        bool has_vertical_bounds = false;
-        bool has_horizontal_bounds = false;
-
-        for (int j = 0; j < intersection->road_count; j++) {
-            int road_id = intersection->roads[j];
-            if (road_id < 0 || road_id >= graph->road_count) {
-                continue;
-            }
-
-            const RoadSegment *road = &graph->roads[road_id];
-            int start_edge = road_start_edge(road);
-            int end_edge = start_edge + road_lane_count(road);
-
-            if (road->type == ROAD_VERTICAL) {
-                if (!has_vertical_bounds) {
-                    left_edge = start_edge;
-                    right_edge = end_edge;
-                    has_vertical_bounds = true;
-                } else {
-                    left_edge = coord_min(left_edge, start_edge);
-                    right_edge = coord_max(right_edge, end_edge);
-                }
-            } else if (road->type == ROAD_HORIZONTAL) {
-                if (!has_horizontal_bounds) {
-                    top_edge = start_edge;
-                    bottom_edge = end_edge;
-                    has_horizontal_bounds = true;
-                } else {
-                    top_edge = coord_min(top_edge, start_edge);
-                    bottom_edge = coord_max(bottom_edge, end_edge);
-                }
-            }
-        }
-
-        if (!has_vertical_bounds || !has_horizontal_bounds) {
-            continue;
-        }
-
-        float left = grid_edge_to_normalized_x(left_edge, graph->chunk_size, graph->padding, graph->window_width);
-        float right = grid_edge_to_normalized_x(right_edge, graph->chunk_size, graph->padding, graph->window_width);
-        float top = grid_edge_to_normalized_y(top_edge, graph->chunk_size, graph->padding, graph->window_height);
-        float bottom = grid_edge_to_normalized_y(bottom_edge, graph->chunk_size, graph->padding, graph->window_height);
+        float left = grid_edge_to_normalized_x(intersection->left_edge, graph->chunk_size, graph->padding, graph->window_width);
+        float right = grid_edge_to_normalized_x(intersection->right_edge, graph->chunk_size, graph->padding, graph->window_width);
+        float top = grid_edge_to_normalized_y(intersection->top_edge, graph->chunk_size, graph->padding, graph->window_height);
+        float bottom = grid_edge_to_normalized_y(intersection->bottom_edge, graph->chunk_size, graph->padding, graph->window_height);
 
         glDisable(GL_TEXTURE_2D);
         glColor3f(0.345f, 0.345f, 0.345f);

@@ -88,6 +88,100 @@ static bool point_in_range(int value, int a, int b) {
     return value >= b && value <= a;
 }
 // перекресток
+static int coord_min(int a, int b) {
+    return a < b ? a : b;
+}
+
+static int coord_max(int a, int b) {
+    return a > b ? a : b;
+}
+
+static int graph_lane_count_internal(const RoadSegment *road) {
+    return (road != NULL && road->lanes > 0) ? road->lanes : 2;
+}
+
+static int graph_road_start_edge(const RoadSegment *road) {
+    int lanes = graph_lane_count_internal(road);
+    if (road->type == ROAD_HORIZONTAL) {
+        if (road->direction == ROAD_DIR_EAST) {
+            return road->y1;
+        } else if (road->direction == ROAD_DIR_WEST) {
+            return road->y1 - (lanes - 1);
+        }
+        return road->y1 - (lanes / 2);
+    }
+
+    if (road->type == ROAD_VERTICAL) {
+        if (road->direction == ROAD_DIR_NORTH) {
+            return road->x1;
+        } else if (road->direction == ROAD_DIR_SOUTH) {
+            return road->x1 - (lanes - 1);
+        }
+        return road->x1 - (lanes / 2);
+    }
+
+    return road->x1 - (lanes / 2);
+}
+
+static void graph_update_intersection_bounds(Graph *g, Intersection *intersection) {
+    if (g == NULL || intersection == NULL) {
+        return;
+    }
+
+    int left_edge = intersection->x;
+    int right_edge = intersection->x + 1;
+    int top_edge = intersection->y;
+    int bottom_edge = intersection->y + 1;
+    bool has_vertical_bounds = false;
+    bool has_horizontal_bounds = false;
+
+    for (int i = 0; i < intersection->road_count; i++) {
+        int road_id = intersection->roads[i];
+        if (road_id < 0 || road_id >= g->road_count) {
+            continue;
+        }
+
+        const RoadSegment *road = &g->roads[road_id];
+        int start_edge = graph_road_start_edge(road);
+        int end_edge = start_edge + graph_lane_count_internal(road);
+
+        if (road->type == ROAD_VERTICAL) {
+            if (!has_vertical_bounds) {
+                left_edge = start_edge;
+                right_edge = end_edge;
+                has_vertical_bounds = true;
+            } else {
+                left_edge = coord_min(left_edge, start_edge);
+                right_edge = coord_max(right_edge, end_edge);
+            }
+        } else if (road->type == ROAD_HORIZONTAL) {
+            if (!has_horizontal_bounds) {
+                top_edge = start_edge;
+                bottom_edge = end_edge;
+                has_horizontal_bounds = true;
+            } else {
+                top_edge = coord_min(top_edge, start_edge);
+                bottom_edge = coord_max(bottom_edge, end_edge);
+            }
+        }
+    }
+
+    intersection->left_edge = left_edge;
+    intersection->right_edge = right_edge;
+    intersection->top_edge = top_edge;
+    intersection->bottom_edge = bottom_edge;
+}
+
+static void graph_update_intersections_bounds(Graph *g) {
+    if (g == NULL) {
+        return;
+    }
+
+    for (int i = 0; i < g->intersection_count; i++) {
+        graph_update_intersection_bounds(g, &g->intersections[i]);
+    }
+}
+
 static bool graph_add_intersection(Graph *g, int x, int y, int road_id) {
     if (g == NULL) {
         return false;
@@ -121,6 +215,10 @@ static bool graph_add_intersection(Graph *g, int x, int y, int road_id) {
     Intersection *intersection = &g->intersections[g->intersection_count];
     intersection->x = x;
     intersection->y = y;
+    intersection->left_edge = x;
+    intersection->right_edge = x + 1;
+    intersection->top_edge = y;
+    intersection->bottom_edge = y + 1;
     intersection->road_count = 0;
     intersection->roads[intersection->road_count++] = road_id;
     g->intersection_count++;
@@ -190,6 +288,8 @@ void graph_build_intersections(Graph *g) {
             }
         }
     }
+
+    graph_update_intersections_bounds(g);
 }
 
 void graph_destroy(Graph *g) {
