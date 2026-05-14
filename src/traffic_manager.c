@@ -69,11 +69,24 @@ static int traffic_manager_max_roads_for_scenario(ScenarioType scenario) {
 }
 
 static int traffic_manager_init_lights(TrafficManager *manager) {
-    for(size_t i = 0; i < (size_t)(manager->light_count); i++) {
-        const Intersection = manager->graph->intersections[i];
-
-
+    if(manager->lights == NULL) {
+        return -1;
     }
+
+    for(size_t i = 0; i < (size_t)(manager->light_count); i++) {
+        const Intersection *intersection = &manager->graph->intersections[i];
+
+        manager->lights[i].horizontal_state_light = LIGHT_RED;
+        manager->lights[i].vertical_state_light   = LIGHT_GREEN;
+
+        manager->lights[i].intersection_x = intersection->x;
+        manager->lights[i].intersection_y = intersection->y;
+
+        manager->lights[i].timer = 0.0f;
+    
+    }
+
+    return 0;
 }
 
 static float traffic_manager_random_spawn_delay(void) {
@@ -258,6 +271,10 @@ static void traffic_manager_spawn_cars(TrafficManager* manager, const ConfigMana
 }
 
 static int traffic_manager_init_lane_lists(TrafficManager* manager) {
+    if(manager->lane_lists == NULL) {
+        return -1;
+    }
+
     int index = 0;
 
     for (int road_id = 0; road_id < manager->graph->road_count; road_id++) {
@@ -370,12 +387,6 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
 
     manager->lane_list_count = manager->graph->road_count * config->lane_count;
     manager->lane_lists = (LaneCarList*)calloc((size_t)manager->lane_list_count, sizeof(LaneCarList));
-    if(manager->lane_lists == NULL) {
-        fprintf(stderr, "Lane lists initialization failed!\n");
-        traffic_manager_clear(manager);
-        return -1;
-    }
-
     if(traffic_manager_init_lane_lists(manager) != 0) {
         fprintf(stderr, "Lane lists initialization failed!\n");
         traffic_manager_clear(manager);
@@ -386,12 +397,6 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
 
     if(manager->light_count > 0) {
         manager->lights = (TrafficLight*)calloc((size_t)manager->light_count, sizeof(TrafficLight));
-        if(manager->lights == NULL) {
-            fprintf(stderr, "Lights initialization failed!\n");
-            traffic_manager_clear(manager);
-            return -1;
-        }
-
         if(traffic_manager_init_lights(manager) != 0) {
             fprintf(stderr, "Lights initialization failed!\n");
             traffic_manager_clear(manager);
