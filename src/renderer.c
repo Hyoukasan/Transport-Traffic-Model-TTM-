@@ -560,20 +560,6 @@ static void renderer_draw_road_texture(const Graph *graph, const RoadSegment *ro
     glDisable(GL_TEXTURE_2D);
 }
 
-static const RoadSegment *renderer_find_road_by_id(const Graph *graph, int road_id) {
-    if (graph == NULL) {
-        return NULL;
-    }
-
-    for (int i = 0; i < graph->road_count; i++) {
-        if (graph->roads[i].id == road_id) {
-            return &graph->roads[i];
-        }
-    }
-
-    return NULL;
-}
-
 static void renderer_draw_intersection_blocks(const Graph *graph) {
     if (graph == NULL || graph->intersection_count <= 0) {
         return;
@@ -589,11 +575,12 @@ static void renderer_draw_intersection_blocks(const Graph *graph) {
         bool has_horizontal_bounds = false;
 
         for (int j = 0; j < intersection->road_count; j++) {
-            const RoadSegment *road = renderer_find_road_by_id(graph, intersection->roads[j]);
-            if (road == NULL) {
+            int road_id = intersection->roads[j];
+            if (road_id < 0 || road_id >= graph->road_count) {
                 continue;
             }
 
+            const RoadSegment *road = &graph->roads[road_id];
             int start_edge = road_start_edge(road);
             int end_edge = start_edge + road_lane_count(road);
 
