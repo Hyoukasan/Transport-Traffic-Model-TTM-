@@ -60,6 +60,7 @@ typedef struct TrafficManager {
     float               time;
     float               spawn_timer;
     int                 next_car_id;
+    int                 selected_lane
 } TrafficManager;
 
 int traffic_manager_init(TrafficManager* manager, const struct ConfigManager* config);
