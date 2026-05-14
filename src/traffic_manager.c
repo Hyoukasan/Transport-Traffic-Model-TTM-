@@ -17,6 +17,7 @@ static void traffic_manager_update_lane_lists(TrafficManager* manager);
 static LaneCarList* traffic_manager_get_lane_list(TrafficManager* manager, int road_id, int lane);
 
 static void traffic_manager_load_car_textures(TrafficManager* manager);
+static void traffic_manager_load_light_textures(TrafficManager* manager);
 static bool traffic_manager_spawn_car(TrafficManager* manager, int sequence_index);
 
 static const Car* traffic_manager_find_front_car(TrafficManager* manager, const Car* car, float search_radius);
@@ -41,6 +42,17 @@ static void traffic_manager_load_car_textures(TrafficManager* manager) {
 
     manager->car_textures[CAR_COLOR_BLUE] =
         texture_load("data/textures/car_color_blue.png", NULL, NULL);
+}
+
+static void traffic_manager_load_light_textures(TrafficManager* manager) {
+    manager->light_textures[LIGHT_RED] =
+        texture_load("data/textures/light_red.png", NULL, NULL);
+
+    manager->light_textures[LIGHT_YELLOW] =
+        texture_load("data/textures/light_yellow.png", NULL, NULL);
+
+    manager->light_textures[LIGHT_GREEN] =
+        texture_load("data/textures/light_green.png", NULL, NULL);
 }
 
 static int traffic_manager_build_roads(TrafficManager* manager, int scenario, int lane_count) {
@@ -87,6 +99,32 @@ static int traffic_manager_init_lights(TrafficManager *manager) {
     }
 
     return 0;
+}
+
+static void traffic_manager_update_lights(TrafficManager *manager, float dt) {
+    const float switch_time = 5.0f;
+
+    for(size_t i = 0; i < (size_t)(manager->light_count); i++) {
+        TrafficLight *light = &manager->lights[i];
+
+        light->timer += dt;
+
+        if(light->timer >= switch_time) {
+            traffic_light_advance(light);
+        }
+    }
+}
+
+static void traffic_light_advance(TrafficLight *light) {
+    if(light->horizontal_state_light == LIGHT_GREEN) {
+        light->horizontal_state_light = LIGHT_RED;
+        light->vertical_state_light = LIGHT_GREEN;
+    } else {
+        light->horizontal_state_light = LIGHT_GREEN;
+        light->vertical_state_light = LIGHT_RED;
+    }
+
+    light->timer = 0.0f;
 }
 
 static float traffic_manager_random_spawn_delay(void) {
@@ -411,6 +449,7 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
     manager->next_car_id = 0;
 
     traffic_manager_load_car_textures(manager);
+    traffic_manager_load_light_textures(manager);
     traffic_manager_spawn_cars(manager, config);
     traffic_manager_update_lane_lists(manager);
 
@@ -534,6 +573,8 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
         return -1;
     }
 
+    traffic_manager_update_lights(manager, dt);
+    
     traffic_manager_update_lane_lists(manager);
 
     for (int i = 0; i < manager->car_count; i++) {

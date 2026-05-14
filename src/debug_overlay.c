@@ -34,8 +34,12 @@ void debug_overlay_draw(struct TrafficManager* manager, int screen_width, int sc
     renderer_draw_text(x + 4, y + step*4 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
     renderer_draw_text(x + 2, y + step*4, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
 
-    snprintf(line, sizeof(line), "Accidents: %d", manager->accident_count);
+    snprintf(line, sizeof(line), "Lights: %d", manager->light_count);
     renderer_draw_text(x + 4, y + step*5 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
     renderer_draw_text(x + 2, y + step*5, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
+
+    snprintf(line, sizeof(line), "Accidents: %d", manager->accident_count);
+    renderer_draw_text(x + 4, y + step*6 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
+    renderer_draw_text(x + 2, y + step*6, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
 
 }

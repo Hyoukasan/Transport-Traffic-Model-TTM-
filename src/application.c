@@ -297,6 +297,8 @@ void application_update(void){
 
             renderer_draw_cars(manager.graph, manager.cars, manager.car_count);
 
+            renderer_draw_traffic_lights(manager.graph, manager.lights, manager.light_count, manager.light_textures);
+
             debug_overlay_draw(&manager, app.screen_width, app.screen_height);
 
             break;
@@ -326,6 +328,7 @@ void application_update(void){
 
             renderer_draw_grid(manager.graph);
             renderer_draw_roads(manager.graph);
+            renderer_draw_traffic_lights(manager.graph, manager.lights, manager.light_count, manager.light_textures);
             renderer_draw_cars(manager.graph, manager.cars, manager.car_count);
             debug_overlay_draw(&manager, app.screen_width, app.screen_height);
 

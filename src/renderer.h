@@ -1,6 +1,8 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+#include "traffic_manager.h"
+
 typedef struct Graph Graph;
 typedef struct Car Car;
 typedef struct Menu Menu_t;
@@ -26,6 +28,9 @@ void renderer_upload_graph(Graph *graph);
 // Рисование узлов/концов сегментов
 // Рисование машин на дорогах
 void renderer_draw_cars(Graph *graph, Car *cars, int car_count);
+
+
+void renderer_draw_traffic_lights(Graph *graph, TrafficLight *lights, int light_count, unsigned int light_textures[3]);
 
 
 void renderer_draw_text(float x, float y, char* text, float scale, float r, float g, float b, int screen_width, int screen_height);

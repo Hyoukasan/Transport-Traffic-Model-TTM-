@@ -813,6 +813,133 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
     glDisable(GL_BLEND);
 }
 
+static unsigned int renderer_light_texture(unsigned int light_textures[3], LightState state) {
+    if (state == LIGHT_GREEN) {
+        return light_textures[LIGHT_GREEN];
+    }
+    if (state == LIGHT_YELLOW) {
+        return light_textures[LIGHT_YELLOW];
+    }
+    return light_textures[LIGHT_RED];
+}
+
+static const Intersection *renderer_find_intersection(const Graph *graph, const TrafficLight *light) {
+    for (int i = 0; i < graph->intersection_count; i++) {
+        const Intersection *intersection = &graph->intersections[i];
+        if (intersection->x == light->intersection_x && intersection->y == light->intersection_y) {
+            return intersection;
+        }
+    }
+
+    return NULL;
+}
+
+static float grid_point_to_normalized_x(float grid_x, const Graph *graph) {
+    float pixel = (grid_x + graph->padding) * (float)graph->chunk_size;
+    return (2.0f * pixel / (float)graph->window_width) - 1.0f;
+}
+
+static float grid_point_to_normalized_y(float grid_y, const Graph *graph) {
+    float pixel = (grid_y + graph->padding) * (float)graph->chunk_size;
+    return 1.0f - (2.0f * pixel / (float)graph->window_height);
+}
+
+static void renderer_draw_colored_grid_quad(const Graph *graph, float center_x, float center_y,
+                                            float width, float height, float r, float g, float b) {
+    float left = grid_point_to_normalized_x(center_x - width * 0.5f, graph);
+    float right = grid_point_to_normalized_x(center_x + width * 0.5f, graph);
+    float top = grid_point_to_normalized_y(center_y - height * 0.5f, graph);
+    float bottom = grid_point_to_normalized_y(center_y + height * 0.5f, graph);
+
+    glDisable(GL_TEXTURE_2D);
+    glColor3f(r, g, b);
+
+    glBegin(GL_QUADS);
+    glVertex2f(left, top);
+    glVertex2f(right, top);
+    glVertex2f(right, bottom);
+    glVertex2f(left, bottom);
+    glEnd();
+}
+
+static void renderer_draw_light_sprite(float x, float y, float width, float height, float angle, unsigned int texture, const Graph *graph) {
+    if (texture == 0) {
+        return;
+    }
+
+    float half_width = width * 0.5f;
+    float half_height = height * 0.5f;
+    float rad = angle * (3.14159265f / 180.0f);
+    float c = cosf(rad);
+    float s = sinf(rad);
+    float local_x[4] = {-half_width, half_width, half_width, -half_width};
+    float local_y[4] = {-half_height, -half_height, half_height, half_height};
+    float vx[4];
+    float vy[4];
+
+    for (int i = 0; i < 4; i++) {
+        float rx = local_x[i] * c - local_y[i] * s;
+        float ry = local_x[i] * s + local_y[i] * c;
+        vx[i] = grid_point_to_normalized_x(x + rx, graph);
+        vy[i] = grid_point_to_normalized_y(y + ry, graph);
+    }
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glColor3f(1.0f, 1.0f, 1.0f);
+
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex2f(vx[0], vy[0]);
+
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex2f(vx[1], vy[1]);
+
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex2f(vx[2], vy[2]);
+
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex2f(vx[3], vy[3]);
+    glEnd();
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void renderer_draw_traffic_lights(Graph *graph, TrafficLight *lights, int light_count, unsigned int light_textures[3]) {
+    if (graph == NULL || lights == NULL || light_count <= 0 || light_textures == NULL) {
+        return;
+    }
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    for (int i = 0; i < light_count; i++) {
+        TrafficLight *light = &lights[i];
+        const Intersection *intersection = renderer_find_intersection(graph, light);
+        if (intersection == NULL) {
+            continue;
+        }
+
+        unsigned int horizontal_texture = renderer_light_texture(light_textures, light->horizontal_state_light);
+        unsigned int vertical_texture = renderer_light_texture(light_textures, light->vertical_state_light);
+        float center_x = ((float)intersection->left_edge + (float)intersection->right_edge) * 0.5f;
+        float center_y = ((float)intersection->top_edge + (float)intersection->bottom_edge) * 0.5f;
+        float block_size = 1.0f;
+        float light_width = 0.68f;
+        float light_height = 1.5f;
+        float offset = block_size * 0.5f + light_height * 0.5f + 0.08f;
+
+        renderer_draw_colored_grid_quad(graph, center_x, center_y, block_size, block_size, 0.02f, 0.02f, 0.02f);
+        renderer_draw_light_sprite(center_x - offset, center_y, light_width, light_height, -90.0f, horizontal_texture, graph);
+        renderer_draw_light_sprite(center_x + offset, center_y, light_width, light_height, 90.0f, horizontal_texture, graph);
+        renderer_draw_light_sprite(center_x, center_y - offset, light_width, light_height, 0.0f, vertical_texture, graph);
+        renderer_draw_light_sprite(center_x, center_y + offset, light_width, light_height, 180.0f, vertical_texture, graph);
+    }
+
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_BLEND);
+}
+
 void renderer_shutdown(void) {
     if (carVAO != 0) {
         glDeleteVertexArrays(1, &carVAO);
