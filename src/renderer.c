@@ -285,17 +285,31 @@ void menu_render(Menu_t* menu, int screen_width, int screen_height) {
     glBindTexture(GL_TEXTURE_2D, menu->texture);
 
     glBegin(GL_QUADS);
-    glTexCoord2f(0, 1);
-    glVertex2f(left, top);
+    if (menu->current_state == MENU_STATE_SIMULATION_TOOLS) {
+        glTexCoord2f(0, 0);
+        glVertex2f(left, top);
 
-    glTexCoord2f(1, 1);
-    glVertex2f(right, top);
+        glTexCoord2f(1, 0);
+        glVertex2f(right, top);
 
-    glTexCoord2f(1, 0);
-    glVertex2f(right, bottom);
+        glTexCoord2f(1, 1);
+        glVertex2f(right, bottom);
 
-    glTexCoord2f(0, 0);
-    glVertex2f(left, bottom);
+        glTexCoord2f(0, 1);
+        glVertex2f(left, bottom);
+    } else {
+        glTexCoord2f(0, 1);
+        glVertex2f(left, top);
+
+        glTexCoord2f(1, 1);
+        glVertex2f(right, top);
+
+        glTexCoord2f(1, 0);
+        glVertex2f(right, bottom);
+
+        glTexCoord2f(0, 0);
+        glVertex2f(left, bottom);
+    }
     glEnd();
 
     for (int i = 0; i < menu->button_count; i++) {

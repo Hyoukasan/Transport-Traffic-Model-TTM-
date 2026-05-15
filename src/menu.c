@@ -35,6 +35,41 @@ void menu_init(Menu_t *menu, int screen_width, int screen_height){
     menu_load_state(menu); 
 }
 
+void menu_init_tools_overlay(Menu_t *menu, int screen_width, int screen_height) {
+    if (menu == NULL) {
+        return;
+    }
+    (void)screen_height;
+
+    menu->width = 420;
+    menu->height = 320;
+    menu->x = screen_width - menu->width - 20;
+    menu->y = 20;
+    menu->current_state = MENU_STATE_SIMULATION_TOOLS;
+    menu->button_count = 2;
+    menu->last_pressed_button = BUTTON_ID_NONE;
+    menu->background_texture = 0;
+    menu->texture = texture_load("data/textures/tools.png", NULL, NULL);
+
+    menu->buttons[0].x = 50;
+    menu->buttons[0].y = 80;
+    menu->buttons[0].width = 320;
+    menu->buttons[0].height = 100;
+    menu->buttons[0].texture = texture_load("data/textures/spawn.png", NULL, NULL);
+    menu->buttons[0].target_state = MENU_STATE_SIMULATION_TOOLS;
+    menu->buttons[0].button_id = BUTTON_ID_SPAWN_CAR;
+    menu->buttons[0].profile_text[0] = '\0';
+
+    menu->buttons[1].x = 50;
+    menu->buttons[1].y = 200;
+    menu->buttons[1].width = 320;
+    menu->buttons[1].height = 100;
+    menu->buttons[1].texture = texture_load("data/textures/dtp.png", NULL, NULL);
+    menu->buttons[1].target_state = MENU_STATE_SIMULATION_TOOLS;
+    menu->buttons[1].button_id = BUTTON_ID_DTP;
+    menu->buttons[1].profile_text[0] = '\0';
+}
+
 void menu_set_state(Menu_t* menu, MenuState state) {
     if (menu == NULL) {
         return;
@@ -291,6 +326,8 @@ static void menu_load_state(Menu_t* menu) {
             menu->button_count = 3;
             set_buttons(menu->buttons, menu->button_count, menu->width, menu->height, 30);
             bind_buttons(menu->buttons, pause_menu_buttons, menu->button_count);
+            break;
+        case MENU_STATE_SIMULATION_TOOLS:
             break;
         default:
             menu->button_count = 0;

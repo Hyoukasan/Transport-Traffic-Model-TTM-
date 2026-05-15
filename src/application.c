@@ -19,6 +19,7 @@
 static AppManager app = {0};
 static GLFWwindow* window = NULL;
 static Menu_t menu = {0};
+static Menu_t tools_menu = {0};
 static InputState input = {0};
 static TrafficManager manager = {0};
 static ConfigManager config = {0};
@@ -77,6 +78,7 @@ int application_init(const char *title){
     }
 
     menu_init(&menu, app.screen_width, app.screen_height);
+    menu_init_tools_overlay(&tools_menu, app.screen_width, app.screen_height);
     input_init(&input);
     renderer_init();
 
@@ -288,6 +290,7 @@ void application_update(void){
             }
 
             traffic_manager_update(&manager, frame);
+            menu_update(&tools_menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
 
 //            glColor3f(0.35f, 0.35f, 0.35f);
             renderer_draw_grid(manager.graph);
@@ -300,6 +303,7 @@ void application_update(void){
             renderer_draw_traffic_lights(manager.graph, manager.lights, manager.light_count, manager.light_textures);
 
             debug_overlay_draw(&manager, app.screen_width, app.screen_height);
+            menu_render(&tools_menu, app.screen_width, app.screen_height);
 
             break;
             

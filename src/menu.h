@@ -11,6 +11,7 @@ typedef enum {
     MENU_STATE_SIMULATION_CONFIG_SETTING,
     MENU_STATE_SIMULATION_CONFIG_PAUSE,
     MENU_STATE_SIMULATION_PAUSE,
+    MENU_STATE_SIMULATION_TOOLS,
     MENU_STATE_START_SIMULATION,
     MENU_STATE_CLOSED,
     MENU_STATE_INFO,
@@ -38,6 +39,9 @@ typedef enum {
     BUTTON_ID_SUB_5_CARS,
     
     BUTTON_ID_RESUME,
+    BUTTON_ID_TOOLS,
+    BUTTON_ID_SPAWN_CAR,
+    BUTTON_ID_DTP,
     BUTTON_ID_BACK,
     BUTTON_ID_SAVE_PROFILE,
 
@@ -76,6 +80,7 @@ typedef struct Menu {
 } Menu_t;
 
 void menu_init(Menu_t* menu, int screen_width, int screen_height);
+void menu_init_tools_overlay(Menu_t* menu, int screen_width, int screen_height);
 void menu_set_state(Menu_t* menu, MenuState state);
 void menu_update(Menu_t* menu, int mx, int my, bool click);
 

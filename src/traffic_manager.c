@@ -640,4 +640,3 @@ void traffic_manager_clear(TrafficManager *manager) {
     manager->spawn_timer = 0.0f;
     manager->next_car_id = 0;
 }
-

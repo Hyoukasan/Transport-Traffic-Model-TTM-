@@ -23,6 +23,7 @@ typedef struct {
     int y1;
     int x2;
     int y2;
+
     RoadType type;
     RoadDirection direction;
     int length;        // длина в ячейках
