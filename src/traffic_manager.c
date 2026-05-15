@@ -675,6 +675,25 @@ bool traffic_manager_spawn_car_on_selected_lane(TrafficManager* manager) {
     return true;
 }
 
+bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager) {
+    if(manager == NULL) {
+        return false;
+    }
+
+    int road_id = manager->selected_road_id;
+    int road_lane_id = manager->selected_lane;
+    if (road_id < 0 || road_lane_id < 0) {
+        return false;
+    }    
+
+    LaneCarList* list = traffic_manager_get_lane_list(manager, road_id, road_lane_id);
+    if(list == NULL || list->car_count < 2) {
+        return false;
+    }
+
+    return true;
+}
+
 int traffic_manager_update(TrafficManager *manager, float dt) {
     if (manager == NULL || manager->graph == NULL) {
         return -1;
