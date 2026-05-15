@@ -710,9 +710,17 @@ bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager) {
         int index_car_1 = list->car_indices[i];
         Car* car_1 = &manager->cars[index_car_1];
 
+        if(car_1->state == CAR_STATE_TURNING || car_1->state == CAR_STATE_TURNING) {
+            continue;
+        }
+
         for(size_t j = i + 1; j < (size_t)(list->car_count); j++) {
             int index_car_2 = list->car_indices[j];
             Car* car_2 = &manager->cars[index_car_2];
+
+            if(car_2->state == CAR_STATE_TURNING || car_2->state == CAR_STATE_TURNING) {
+                continue;
+            }
             
             float distant = car_1->position - car_2->position;
             if(distant < 0.0f) {
@@ -734,11 +742,36 @@ bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager) {
     Car* best_car_1 = &manager->cars[best_car_id_1];
     Car* best_car_2 = &manager->cars[best_car_id_2];
 
-    best_car_1->state = CAR_STATE_ACCIDENT;
-    best_car_2->state = CAR_STATE_ACCIDENT;
+    Car* front_car = NULL;
+    Car* back_car = NULL;
 
-    best_car_1->speed = 0.0f;
-    best_car_2->speed = 0.0f;
+    RoadSegment* road = &manager->graph->roads[road_id];
+    RoadDirection dir =  graph_get_lane_direction(road, road_lane_id);
+
+    float car_1_travel = traffic_manager_position_to_travel_fraction(road, dir, best_car_1->position);
+    float car_2_travel = traffic_manager_position_to_travel_fraction(road, dir, best_car_2->position);
+
+    if(car_1_travel > car_2_travel) {
+        front_car = best_car_1;
+        back_car  = best_car_2;
+    } else {
+        front_car = best_car_2;
+        back_car  = best_car_1;
+    }
+
+    front_car->speed = 0.0f;
+    front_car->state = CAR_STATE_BRAKING;
+    back_car->state  = CAR_STATE_ACCIDENT;
+
+    float distant = front_car->position - back_car->position;
+    if (distant < 0.0f) {
+        distant = -distant;
+    }
+
+    if(distant < 0.1f) {
+        back_car->speed = 0.0f;
+        back_car->state = CAR_STATE_BRAKING;        
+    }
 
     AccidentDTP* accident = &manager->accidents[manager->accident_count++];
     accident->road_id = road_id;

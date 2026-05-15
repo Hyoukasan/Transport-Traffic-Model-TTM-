@@ -358,6 +358,11 @@ void car_update(Car *car, const Graph *graph, float dt) {
         return;
     }
 
+    if (car->state == CAR_STATE_BRAKING) {
+        car->speed = 0.0f;
+        return;
+    }
+
     const RoadSegment *road = &graph->roads[car->road_id];
     RoadDirection current_direction = graph_get_lane_direction(road, car->lane);
     float target_speed = car->desired_speed;
@@ -365,12 +370,8 @@ void car_update(Car *car, const Graph *graph, float dt) {
         target_speed = road->speed_limit;
     }
 
-    if (car->state == CAR_STATE_ACCIDENT) {
-        target_speed = 0.0f;
-    } else if (road->accident) {
+    if (car->state != CAR_STATE_ACCIDENT && road->accident) {
         target_speed *= 0.2f;
-    } else if (car->state == CAR_STATE_BRAKING) {
-        target_speed *= 0.5f;
     } else if (car->state == CAR_STATE_OVERTAKING) {
         target_speed *= 1.1f;
         if (target_speed > road->speed_limit) {
@@ -417,6 +418,11 @@ void car_update(Car *car, const Graph *graph, float dt) {
                 car->angle = 0.0f;
                 break;
         }
+    }
+
+    if (car->state == CAR_STATE_ACCIDENT) {
+        car->position = new_position;
+        return;
     }
 
     int chosen_intersection = -1;
