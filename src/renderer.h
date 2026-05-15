@@ -31,7 +31,7 @@ void renderer_upload_graph(Graph *graph);
 void renderer_draw_cars(Graph *graph, Car *cars, int car_count);
 
 
-void renderer_draw_traffic_lights(Graph *graph, TrafficLight *lights, int light_count, unsigned int light_textures[3]);
+void renderer_draw_traffic_lights(Graph *graph, TrafficLight *lights, int light_count, unsigned int light_textures[2]);
 
 
 void renderer_draw_text(float x, float y, char* text, float scale, float r, float g, float b, int screen_width, int screen_height);

@@ -49,9 +49,6 @@ static void traffic_manager_load_light_textures(TrafficManager* manager) {
     manager->light_textures[LIGHT_RED] =
         texture_load("data/textures/light_red.png", NULL, NULL);
 
-    manager->light_textures[LIGHT_YELLOW] =
-        texture_load("data/textures/light_yellow.png", NULL, NULL);
-
     manager->light_textures[LIGHT_GREEN] =
         texture_load("data/textures/light_green.png", NULL, NULL);
 }

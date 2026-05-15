@@ -883,12 +883,9 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
     glDisable(GL_BLEND);
 }
 
-static unsigned int renderer_light_texture(unsigned int light_textures[3], LightState state) {
+static unsigned int renderer_light_texture(unsigned int light_textures[2], LightState state) {
     if (state == LIGHT_GREEN) {
         return light_textures[LIGHT_GREEN];
-    }
-    if (state == LIGHT_YELLOW) {
-        return light_textures[LIGHT_YELLOW];
     }
     return light_textures[LIGHT_RED];
 }
@@ -996,7 +993,7 @@ static void renderer_draw_light_sprite(const Graph *graph, float x, float y, flo
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void renderer_draw_traffic_lights(Graph *graph, TrafficLight *lights, int light_count, unsigned int light_textures[3]) {
+void renderer_draw_traffic_lights(Graph *graph, TrafficLight *lights, int light_count, unsigned int light_textures[2]) {
     if (graph == NULL || lights == NULL || light_count <= 0 || light_textures == NULL) {
         return;
     }

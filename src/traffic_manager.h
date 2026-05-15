@@ -9,7 +9,6 @@ struct ConfigManager;
 
 typedef enum {
     LIGHT_RED,
-    LIGHT_YELLOW,
     LIGHT_GREEN
 } LightState;
 
@@ -41,7 +40,7 @@ typedef struct {
 typedef struct TrafficManager { 
     struct Car          *cars;
     unsigned int        car_textures[5];
-    unsigned int        light_textures[3];
+    unsigned int        light_textures[2];
     int                 car_count;
     int                 max_cars;
 
