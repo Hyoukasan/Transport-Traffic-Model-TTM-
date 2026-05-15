@@ -55,6 +55,11 @@ void debug_overlay_draw(struct TrafficManager* manager, int screen_width, int sc
 
         RoadSegment *road = &manager->graph->roads[manager->selected_road_id];
         RoadDirection dir = graph_get_lane_direction(road, manager->selected_lane);
+        int lane_car_count = 0;
+        int lane_list_index = manager->selected_road_id * road->lanes + manager->selected_lane;
+        if (lane_list_index >= 0 && lane_list_index < manager->lane_list_count) {
+            lane_car_count = manager->lane_lists[lane_list_index].car_count;
+        }
 
         switch (dir)
         {
@@ -81,5 +86,13 @@ void debug_overlay_draw(struct TrafficManager* manager, int screen_width, int sc
         snprintf(line, sizeof(line), "Lane accident: %s", selected_lane_accident_active ? "ACTIVE" : "NONE");
         renderer_draw_text(x + 4, y + step*11 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
         renderer_draw_text(x + 2, y + step*11, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
+
+        snprintf(line, sizeof(line), "Lane cars: %d", lane_car_count);
+        renderer_draw_text(x + 4, y + step*12 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
+        renderer_draw_text(x + 2, y + step*12, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
+
+        snprintf(line, sizeof(line), "Capacity: %.2f / %.2f", road->speed_limit, road->speed_limit * (float)road->lanes);
+        renderer_draw_text(x + 4, y + step*13 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
+        renderer_draw_text(x + 2, y + step*13, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
     }
 }
