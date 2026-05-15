@@ -42,4 +42,38 @@ void debug_overlay_draw(struct TrafficManager* manager, int screen_width, int sc
     renderer_draw_text(x + 4, y + step*6 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
     renderer_draw_text(x + 2, y + step*6, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
 
+    if(manager->selected_road_id != -1 && manager->selected_lane != -1) {
+        snprintf(line, sizeof(line), "Selected road: %d", manager->selected_road_id);
+        renderer_draw_text(x + 4, y + step*8 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
+        renderer_draw_text(x + 2, y + step*8, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
+
+        snprintf(line, sizeof(line), "Selected lane: %d", manager->selected_lane);
+        renderer_draw_text(x + 4, y + step*9 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
+        renderer_draw_text(x + 2, y + step*9, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
+
+        RoadSegment *road = &manager->graph->roads[manager->selected_road_id];
+        RoadDirection dir = graph_get_lane_direction(road, manager->selected_lane);
+
+        switch (dir)
+        {
+            case ROAD_DIR_EAST:
+                snprintf(line, sizeof(line), "Lane dir: EAST");
+                break;
+            case ROAD_DIR_WEST:
+                snprintf(line, sizeof(line), "Lane dir: WEST");
+                break;
+            case ROAD_DIR_NORTH:
+                snprintf(line, sizeof(line), "Lane dir: NORTH");
+                break;
+            case ROAD_DIR_SOUTH:
+                snprintf(line, sizeof(line), "Lane dir: SOUTH");
+                break;
+            default:
+                snprintf(line, sizeof(line), "Lane dir: NONE");
+                break;
+        }
+
+        renderer_draw_text(x + 4, y + step*10 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
+        renderer_draw_text(x + 2, y + step*10, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
+    }
 }
