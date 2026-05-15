@@ -9,6 +9,7 @@ typedef enum RoadDirection RoadDirection;
 typedef enum {
     CAR_STATE_NORMAL,
     CAR_STATE_BRAKING,
+    CAR_STATE_SLOWING,
     CAR_STATE_OVERTAKING,
     CAR_STATE_ACCIDENT,
     CAR_STATE_LANE_CHANGE,  
@@ -39,6 +40,8 @@ typedef struct Car{
     CarState state;
     CarColor color;
     unsigned int texture; // OpenGL texture id
+    bool overtaking;
+    int original_lane;
 
     // Новые поля для плавных манёвров
     float lane_offset;    // d: боковое смещение (0.0 = центр полосы)

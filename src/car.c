@@ -300,6 +300,8 @@ void car_init(Car *car, int id, int road_id, float desired_speed, float length, 
     car->angle = 0.0f;
     car->state = CAR_STATE_NORMAL;
     car->texture = 0;
+    car->overtaking = false;
+    car->original_lane = -1;
 
     // Инициализация новых полей
     car->lane_offset = 0.0f;
@@ -338,6 +340,8 @@ void car_destroy(Car *car) {
     memset(car, 0, sizeof(*car));
     car->road_id = -1;
     car->target_lane = -1;
+    car->overtaking = false;
+    car->original_lane = -1;
     car->turn_target_road_id = -1;
     car->turn_target_lane = -1;
     car->last_turn_x = -1;
@@ -372,6 +376,8 @@ void car_update(Car *car, const Graph *graph, float dt) {
 
     if (car->state != CAR_STATE_ACCIDENT && road->accident) {
         target_speed *= 0.2f;
+    } else if (car->state == CAR_STATE_SLOWING) {
+        target_speed *= 0.5f;
     } else if (car->state == CAR_STATE_OVERTAKING) {
         target_speed *= 1.1f;
         if (target_speed > road->speed_limit) {
