@@ -897,6 +897,7 @@ static float grid_point_to_normalized_y(float grid_y, const Graph *graph) {
 
 static void renderer_draw_colored_grid_quad(const Graph *graph, float center_x, float center_y,
                                             float width, float height, float r, float g, float b) {
+                                                
     float left = grid_point_to_normalized_x(center_x - width * 0.5f, graph);
     float right = grid_point_to_normalized_x(center_x + width * 0.5f, graph);
     float top = grid_point_to_normalized_y(center_y - height * 0.5f, graph);
