@@ -619,6 +619,72 @@ void renderer_draw_roads(Graph *graph) {
     glColor3f(1.0f, 1.0f, 1.0f);
 }
 
+void renderer_draw_selected_lane(Graph *graph, int road_id, int lane) {
+    if (graph == NULL || road_id < 0 || lane < 0) {
+        return;
+    }
+
+    const RoadSegment *road = NULL;
+    for (int i = 0; i < graph->road_count; i++) {
+        if (graph->roads[i].id == road_id) {
+            road = &graph->roads[i];
+            break;
+        }
+    }
+
+    if (road == NULL) {
+        return;
+    }
+
+    int lanes = road_lane_count(road);
+    if (lane >= lanes) {
+        return;
+    }
+
+    int start_edge = road_start_edge(road);
+    float left;
+    float right;
+    float top;
+    float bottom;
+
+    if (road->type == ROAD_HORIZONTAL) {
+        int min_x = coord_min(road->x1, road->x2);
+        int max_x = coord_max(road->x1, road->x2);
+        int lane_y = start_edge + lane;
+
+        left = grid_edge_to_normalized_x(min_x, graph->chunk_size, graph->padding, graph->window_width);
+        right = grid_edge_to_normalized_x(max_x + 1, graph->chunk_size, graph->padding, graph->window_width);
+        top = grid_edge_to_normalized_y(lane_y, graph->chunk_size, graph->padding, graph->window_height);
+        bottom = grid_edge_to_normalized_y(lane_y + 1, graph->chunk_size, graph->padding, graph->window_height);
+    } else if (road->type == ROAD_VERTICAL) {
+        int min_y = coord_min(road->y1, road->y2);
+        int max_y = coord_max(road->y1, road->y2);
+        int lane_x = start_edge + lane;
+
+        left = grid_edge_to_normalized_x(lane_x, graph->chunk_size, graph->padding, graph->window_width);
+        right = grid_edge_to_normalized_x(lane_x + 1, graph->chunk_size, graph->padding, graph->window_width);
+        top = grid_edge_to_normalized_y(min_y, graph->chunk_size, graph->padding, graph->window_height);
+        bottom = grid_edge_to_normalized_y(max_y + 1, graph->chunk_size, graph->padding, graph->window_height);
+    } else {
+        return;
+    }
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_TEXTURE_2D);
+    glColor4f(1.0f, 1.0f, 1.0f, 0.35f);
+
+    glBegin(GL_QUADS);
+    glVertex2f(left, top);
+    glVertex2f(right, top);
+    glVertex2f(right, bottom);
+    glVertex2f(left, bottom);
+    glEnd();
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    glDisable(GL_BLEND);
+}
+
 void renderer_draw_grid(Graph *graph) {
     if (graph == NULL || graph->grid_width <= 0 || graph->grid_height <= 0) {
         return;

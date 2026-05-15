@@ -290,20 +290,37 @@ void application_update(void){
             }
 
             traffic_manager_update(&manager, frame);
-            menu_update(&tools_menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
+
+            bool lane_selected = manager.selected_road_id >= 0 && manager.selected_lane >= 0;
+            if (lane_selected) {
+                menu_update(&tools_menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
+            } else {
+                tools_menu.last_pressed_button = BUTTON_ID_NONE;
+            }
+
+            if (input.lmb_click) {
+                if (lane_selected && tools_menu.last_pressed_button == BUTTON_ID_SPAWN_CAR) {
+                    traffic_manager_spawn_car_on_selected_lane(&manager);
+                } else if (tools_menu.last_pressed_button == BUTTON_ID_NONE) {
+                    traffic_manager_select_lane_at_pixel(&manager, (int)input.mouse_x, (int)input.mouse_y);
+                }
+            }
 
 //            glColor3f(0.35f, 0.35f, 0.35f);
             renderer_draw_grid(manager.graph);
 
 //            glColor3f(1.0f, 0.0f, 0.0f);
             renderer_draw_roads(manager.graph);
+            renderer_draw_selected_lane(manager.graph, manager.selected_road_id, manager.selected_lane);
 
             renderer_draw_cars(manager.graph, manager.cars, manager.car_count);
 
             renderer_draw_traffic_lights(manager.graph, manager.lights, manager.light_count, manager.light_textures);
 
             debug_overlay_draw(&manager, app.screen_width, app.screen_height);
-            menu_render(&tools_menu, app.screen_width, app.screen_height);
+            if (manager.selected_road_id >= 0 && manager.selected_lane >= 0) {
+                menu_render(&tools_menu, app.screen_width, app.screen_height);
+            }
 
             break;
             
@@ -332,6 +349,7 @@ void application_update(void){
 
             renderer_draw_grid(manager.graph);
             renderer_draw_roads(manager.graph);
+            renderer_draw_selected_lane(manager.graph, manager.selected_road_id, manager.selected_lane);
             renderer_draw_traffic_lights(manager.graph, manager.lights, manager.light_count, manager.light_textures);
             renderer_draw_cars(manager.graph, manager.cars, manager.car_count);
             debug_overlay_draw(&manager, app.screen_width, app.screen_height);

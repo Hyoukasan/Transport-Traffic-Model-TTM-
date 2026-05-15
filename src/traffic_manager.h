@@ -59,7 +59,9 @@ typedef struct TrafficManager {
 
     float               time;
     float               spawn_timer;
+    float               manual_spawn_cooldown;
     int                 next_car_id;
+    int                 selected_road_id;
     int                 selected_lane;
 } TrafficManager;
 
@@ -69,6 +71,8 @@ int traffic_manager_update(TrafficManager* manager, float dt);
 int traffic_manager_add_accident(TrafficManager* manager, int road_id, int lane, float position, float clear_time);
 const struct Graph* traffic_manager_get_graph(const TrafficManager* manager);
 const struct Car* traffic_manager_get_cars(const TrafficManager* manager, int* out_count);
+bool traffic_manager_select_lane_at_pixel(TrafficManager* manager, int mouse_x, int mouse_y);
+bool traffic_manager_spawn_car_on_selected_lane(TrafficManager* manager);
 
 
 

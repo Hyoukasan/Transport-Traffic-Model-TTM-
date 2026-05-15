@@ -19,6 +19,7 @@ static LaneCarList* traffic_manager_get_lane_list(TrafficManager* manager, int r
 static void traffic_manager_load_car_textures(TrafficManager* manager);
 static void traffic_manager_load_light_textures(TrafficManager* manager);
 static bool traffic_manager_spawn_car(TrafficManager* manager, int sequence_index);
+static bool traffic_manager_spawn_car_on_lane(TrafficManager* manager, int road_id, int lane, float travel_fraction, bool require_clear_area);
 
 static const Car* traffic_manager_find_front_car(TrafficManager* manager, const Car* car, float search_radius);
 static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car, float dt);
@@ -216,12 +217,73 @@ static bool traffic_manager_spawn_area_clear(TrafficManager* manager, int road_i
     return true;
 }
 
-static bool traffic_manager_spawn_car(TrafficManager* manager, int sequence_index) {
+static int traffic_manager_road_start_edge(const RoadSegment *road) {
+    int lanes = road->lanes > 0 ? road->lanes : 1;
+
+    if (road->type == ROAD_HORIZONTAL) {
+        if (road->direction == ROAD_DIR_EAST) {
+            return road->y1;
+        } else if (road->direction == ROAD_DIR_WEST) {
+            return road->y1 - (lanes - 1);
+        }
+        return road->y1 - (lanes / 2);
+    }
+
+    if (road->type == ROAD_VERTICAL) {
+        if (road->direction == ROAD_DIR_NORTH) {
+            return road->x1;
+        } else if (road->direction == ROAD_DIR_SOUTH) {
+            return road->x1 - (lanes - 1);
+        }
+        return road->x1 - (lanes / 2);
+    }
+
+    return road->x1 - (lanes / 2);
+}
+
+static bool traffic_manager_spawn_car_on_lane(TrafficManager* manager, int road_id, int lane, float travel_fraction, bool require_clear_area) {
     if (manager->graph == NULL || manager->graph->road_count <= 0 || manager->cars == NULL) {
         return false;
     }
 
     if (manager->car_count >= manager->max_cars) {
+        return false;
+    }
+
+    if (road_id < 0 || road_id >= manager->graph->road_count) {
+        return false;
+    }
+
+    RoadSegment *road = &manager->graph->roads[road_id];
+    int lanes = road->lanes > 0 ? road->lanes : 1;
+    if (lane < 0 || lane >= lanes) {
+        return false;
+    }
+
+    float speed_factor = 0.6f + (float)(rand() % 41) / 100.0f;
+    float desired_speed = road->speed_limit * speed_factor;
+    RoadDirection spawn_direction = traffic_manager_spawn_direction(road, lane);
+
+    if (require_clear_area && !traffic_manager_spawn_area_clear(manager, road_id, lane, travel_fraction, 0.10f)) {
+        return false;
+    }
+
+    Car* car = &manager->cars[manager->car_count];
+    car_init(car, manager->next_car_id++, road_id, desired_speed, 1.0f, lane, 0.0f);
+
+    car->position = traffic_manager_travel_fraction_to_position(road, spawn_direction, travel_fraction);
+    car->angle = direction_to_angle(spawn_direction);
+
+    CarColor color = (CarColor)(rand() % 5);
+    car->color = color;
+    car_set_texture(car, manager->car_textures[color]);
+
+    manager->car_count++;
+    return true;
+}
+
+static bool traffic_manager_spawn_car(TrafficManager* manager, int sequence_index) {
+    if (manager->graph == NULL || manager->graph->road_count <= 0) {
         return false;
     }
 
@@ -240,26 +302,7 @@ static bool traffic_manager_spawn_car(TrafficManager* manager, int sequence_inde
         }
     }
 
-    float speed_factor = 0.6f + (float)(rand() % 41) / 100.0f;
-    float desired_speed = road->speed_limit * speed_factor;
-    RoadDirection spawn_direction = traffic_manager_spawn_direction(road, lane);
-
-    if (!traffic_manager_spawn_area_clear(manager, road_id, lane, travel_fraction, 0.10f)) {
-        return false;
-    }
-
-    Car* car = &manager->cars[manager->car_count];
-    car_init(car, manager->next_car_id++, road_id, desired_speed, 1.0f, lane, 0.0f);
-
-    car->position = traffic_manager_travel_fraction_to_position(road, spawn_direction, travel_fraction);
-    car->angle = direction_to_angle(spawn_direction);
-
-    CarColor color = (CarColor)(rand() % 5);
-    car->color = color;
-    car_set_texture(car, manager->car_textures[color]);
-
-    manager->car_count++;
-    return true;
+    return traffic_manager_spawn_car_on_lane(manager, road_id, lane, travel_fraction, true);
 }
 
 static bool traffic_manager_car_finished(TrafficManager* manager, const Car* car) {
@@ -442,10 +485,13 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
         }
     }
 
+    manager->selected_lane    = -1;
+    manager->selected_road_id = -1;
     manager->car_count = 0;
     manager->accident_count = 0;
     manager->time = 0.0f;
     manager->spawn_timer = traffic_manager_random_spawn_delay();
+    manager->manual_spawn_cooldown = 0.0f;
     manager->next_car_id = 0;
 
     traffic_manager_load_car_textures(manager);
@@ -568,12 +614,83 @@ static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car
     return false;
 }
 
+bool traffic_manager_select_lane_at_pixel(TrafficManager* manager, int mouse_x, int mouse_y) {
+    if(manager == NULL || manager->graph == NULL) {
+        return false;
+    }
+
+    float grid_x = (float)mouse_x / (float)manager->graph->chunk_size - (float)manager->graph->padding;
+    float grid_y = (float)mouse_y / (float)manager->graph->chunk_size - (float)manager->graph->padding;
+
+    for(size_t i = 0; i < (size_t)manager->graph->road_count; i++) {
+        const RoadSegment* road = &manager->graph->roads[i];
+        int lanes = road->lanes > 0 ? road->lanes : 1;
+
+        if (road->type == ROAD_HORIZONTAL) {
+            int min_x = coord_min(road->x1, road->x2);
+            int max_x = coord_max(road->x1, road->x2);
+            int start_y = traffic_manager_road_start_edge(road);
+
+            if (grid_x >= min_x && grid_x <= max_x + 1 &&
+                grid_y >= start_y && grid_y < start_y + lanes) {
+                manager->selected_road_id = road->id;
+                manager->selected_lane = (int)(grid_y - start_y);
+                return true;
+            }
+        }
+
+        if (road->type == ROAD_VERTICAL) {
+            int min_y = coord_min(road->y1, road->y2);
+            int max_y = coord_max(road->y1, road->y2);
+            int start_x = traffic_manager_road_start_edge(road);
+
+            if (grid_y >= min_y && grid_y <= max_y + 1 &&
+                grid_x >= start_x && grid_x < start_x + lanes) {
+                manager->selected_road_id = road->id;
+                manager->selected_lane = (int)(grid_x - start_x);
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool traffic_manager_spawn_car_on_selected_lane(TrafficManager* manager) {
+    if (manager == NULL) {
+        return false;
+    }
+
+    if (manager->selected_road_id < 0 || manager->selected_lane < 0) {
+        return false;
+    }
+
+    if (manager->manual_spawn_cooldown > 0.0f) {
+        return false;
+    }
+
+    if (!traffic_manager_spawn_car_on_lane(manager, manager->selected_road_id, manager->selected_lane, 0.005f, false)) {
+        return false;
+    }
+
+    manager->manual_spawn_cooldown = 2.0f;
+    traffic_manager_update_lane_lists(manager);
+    return true;
+}
+
 int traffic_manager_update(TrafficManager *manager, float dt) {
     if (manager == NULL || manager->graph == NULL) {
         return -1;
     }
 
     traffic_manager_update_lights(manager, dt);
+
+    if (manager->manual_spawn_cooldown > 0.0f) {
+        manager->manual_spawn_cooldown -= dt;
+        if (manager->manual_spawn_cooldown < 0.0f) {
+            manager->manual_spawn_cooldown = 0.0f;
+        }
+    }
     
     traffic_manager_update_lane_lists(manager);
 
@@ -638,5 +755,8 @@ void traffic_manager_clear(TrafficManager *manager) {
     manager->max_accidents = 0;
     manager->time = 0.0f;
     manager->spawn_timer = 0.0f;
+    manager->manual_spawn_cooldown = 0.0f;
     manager->next_car_id = 0;
+    manager->selected_lane    = -1;
+    manager->selected_road_id = -1;
 }

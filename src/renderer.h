@@ -18,6 +18,7 @@ void menu_render(Menu_t* menu, int screen_width, int screen_height);
 
 // Рисование всех сегментов дорог
 void renderer_draw_roads(Graph *graph);
+void renderer_draw_selected_lane(Graph *graph, int road_id, int lane);
 
 // Рисование вспомогательной сетки
 void renderer_draw_grid(Graph *graph);
