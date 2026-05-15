@@ -24,7 +24,6 @@ typedef struct {
 
 typedef struct {
     int   road_id;
-    float position;
     int   lane;
     float clear_timer;
     int   released_cars;

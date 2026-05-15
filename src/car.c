@@ -281,7 +281,7 @@ static float road_lane_center(const RoadSegment *road, int lane) {
 }
 
 
-void car_init(Car *car, int id, int road_id, float desired_speed, float length, int lane, float offset) {
+void car_init(Car *car, int id, int road_id, float desired_speed, int lane) {
     if (car == NULL) {
         return;
     }
@@ -291,8 +291,6 @@ void car_init(Car *car, int id, int road_id, float desired_speed, float length, 
     car->position = 0.0f;
     car->speed = 0.0f;
     car->desired_speed = desired_speed;
-    car->length = length;
-    car->offset = offset;
     car->lane = lane;
     car->at_intersection = false;
     car->last_turn_x = -1;
@@ -362,7 +360,7 @@ void car_update(Car *car, const Graph *graph, float dt) {
         return;
     }
 
-    if (car->state == CAR_STATE_BRAKING) {
+    if (car->state == CAR_STATE_BRAKING || car->state == CAR_STATE_TRAFFIC_LIGHT) {
         car->speed = 0.0f;
         return;
     }

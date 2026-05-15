@@ -5,8 +5,7 @@
 
 typedef enum RoadType {
     ROAD_HORIZONTAL,
-    ROAD_VERTICAL,
-    ROAD_DIAGONAL
+    ROAD_VERTICAL
 } RoadType;
 
 typedef enum RoadDirection {

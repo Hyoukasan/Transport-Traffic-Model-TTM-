@@ -13,7 +13,8 @@ typedef enum {
     CAR_STATE_OVERTAKING,
     CAR_STATE_ACCIDENT,
     CAR_STATE_LANE_CHANGE,  
-    CAR_STATE_TURNING       
+    CAR_STATE_TURNING,
+    CAR_STATE_TRAFFIC_LIGHT
 } CarState;
 
 typedef enum {
@@ -30,8 +31,6 @@ typedef struct Car{
     float position;       // 0.0 .. 1.0 вдоль сегмента
     float speed;          // текущая скорость
     float desired_speed;  // желаемая скорость
-    float length;         // длина машины в логических единицах
-    float offset;         // смещение для полосы
     int lane;             // номер полосы
     bool at_intersection; // находится ли машина в зоне пересечения
     int last_turn_x;
@@ -66,7 +65,7 @@ typedef struct Car{
     bool turn_made;             // решено ли делать поворот
 } Car;
 
-void car_init(Car *car, int id, int road_id, float desired_speed, float length, int lane, float offset);
+void car_init(Car *car, int id, int road_id, float desired_speed, int lane);
 void car_set_texture(Car *car, unsigned int texture);
 void car_update(struct Car *car, const struct Graph *graph, float dt);
 void car_destroy(Car *car);

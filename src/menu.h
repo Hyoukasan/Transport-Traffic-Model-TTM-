@@ -39,7 +39,6 @@ typedef enum {
     BUTTON_ID_SUB_5_CARS,
     
     BUTTON_ID_RESUME,
-    BUTTON_ID_TOOLS,
     BUTTON_ID_SPAWN_CAR,
     BUTTON_ID_DTP,
     BUTTON_ID_BACK,

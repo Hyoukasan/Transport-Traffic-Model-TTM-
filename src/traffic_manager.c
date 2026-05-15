@@ -27,6 +27,7 @@ static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car
 static bool traffic_manager_update_overtake_return(TrafficManager* manager, Car* car);
 static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car, float dt);
 static void traffic_manager_update_accidents(TrafficManager* manager, float dt);
+static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, Car* car);
 
 static int traffic_manager_init_lights(TrafficManager *manager);
 static void traffic_manager_update_lights(TrafficManager *manager, float dt);
@@ -129,6 +130,16 @@ static void traffic_light_advance(TrafficLight *light) {
     light->timer = 0.0f;
 }
 
+static float traffic_manager_clampf(float value, float min_value, float max_value) {
+    if (value < min_value) {
+        return min_value;
+    }
+    if (value > max_value) {
+        return max_value;
+    }
+    return value;
+}
+
 static float traffic_manager_random_spawn_delay(void) {
     return 2.0f + (float)(rand() % 250) / 100.0f;
 }
@@ -190,6 +201,44 @@ static float traffic_manager_travel_fraction_to_position(const RoadSegment *road
     return 1.0f - travel_fraction;
 }
 
+static float traffic_manager_coord_to_travel_fraction(const RoadSegment *road, RoadDirection direction, float coord) {
+    if (road == NULL || road->length <= 0) {
+        return 0.0f;
+    }
+
+    if (road->type == ROAD_HORIZONTAL) {
+        int min_x = coord_min(road->x1, road->x2);
+        int max_x = coord_max(road->x1, road->x2);
+        float span = (float)(max_x - min_x);
+        if (span <= 0.0f) {
+            return 0.0f;
+        }
+        if (direction == ROAD_DIR_EAST) {
+            return traffic_manager_clampf((coord - (float)min_x) / span, 0.0f, 1.0f);
+        }
+        if (direction == ROAD_DIR_WEST) {
+            return traffic_manager_clampf(((float)max_x - coord) / span, 0.0f, 1.0f);
+        }
+    }
+
+    if (road->type == ROAD_VERTICAL) {
+        int min_y = coord_min(road->y1, road->y2);
+        int max_y = coord_max(road->y1, road->y2);
+        float span = (float)(max_y - min_y);
+        if (span <= 0.0f) {
+            return 0.0f;
+        }
+        if (direction == ROAD_DIR_SOUTH) {
+            return traffic_manager_clampf((coord - (float)min_y) / span, 0.0f, 1.0f);
+        }
+        if (direction == ROAD_DIR_NORTH) {
+            return traffic_manager_clampf(((float)max_y - coord) / span, 0.0f, 1.0f);
+        }
+    }
+
+    return 0.0f;
+}
+
 static bool traffic_manager_spawn_area_clear(TrafficManager* manager, int road_id, int lane, float spawn_fraction, float min_gap) {
     if (manager->graph == NULL || road_id < 0 || road_id >= manager->graph->road_count) {
         return false;
@@ -216,6 +265,138 @@ static bool traffic_manager_spawn_area_clear(TrafficManager* manager, int road_i
     }
 
     return true;
+}
+
+static const TrafficLight* traffic_manager_find_light_at(TrafficManager* manager, int x, int y) {
+    if (manager == NULL || manager->lights == NULL) {
+        return NULL;
+    }
+
+    for (int i = 0; i < manager->light_count; i++) {
+        const TrafficLight* light = &manager->lights[i];
+        if (light->intersection_x == x && light->intersection_y == y) {
+            return light;
+        }
+    }
+
+    return NULL;
+}
+
+static bool traffic_manager_intersection_on_road(const RoadSegment* road, const Intersection* intersection) {
+    if (road == NULL || intersection == NULL) {
+        return false;
+    }
+
+    if (road->type == ROAD_HORIZONTAL) {
+        return intersection->y == road->y1 && intersection->x >= coord_min(road->x1, road->x2) &&
+            intersection->x <= coord_max(road->x1, road->x2);
+    }
+
+    if (road->type == ROAD_VERTICAL) {
+        return intersection->x == road->x1 &&
+            intersection->y >= coord_min(road->y1, road->y2) && intersection->y <= coord_max(road->y1, road->y2);
+    }
+
+    return false;
+}
+
+static float traffic_manager_stop_travel_fraction(const RoadSegment* road, RoadDirection direction, const Intersection* intersection) {
+    const float stop_gap = 0.85f;
+    float coord = 0.0f;
+
+    if (road->type == ROAD_HORIZONTAL) {
+        coord = (direction == ROAD_DIR_EAST) ? (float)intersection->left_edge - stop_gap : (float)intersection->right_edge + stop_gap;
+    } else if (road->type == ROAD_VERTICAL) {
+        coord = (direction == ROAD_DIR_SOUTH) ? (float)intersection->top_edge - stop_gap : (float)intersection->bottom_edge + stop_gap;
+    }
+
+    return traffic_manager_coord_to_travel_fraction(road, direction, coord);
+}
+
+static LightState traffic_manager_light_state_for_road(const TrafficLight* light, const RoadSegment* road) {
+    if (road->type == ROAD_HORIZONTAL) {
+        return light->horizontal_state_light;
+    }
+    return light->vertical_state_light;
+}
+
+static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, Car* car) {
+    if (manager == NULL || manager->graph == NULL || car == NULL) {
+        return;
+    }
+
+    if (car->state == CAR_STATE_ACCIDENT || car->state == CAR_STATE_BRAKING || car->state == CAR_STATE_TURNING ||
+        car->road_id < 0 || car->road_id >= manager->graph->road_count) {
+        return;
+    }
+
+    RoadSegment* road = &manager->graph->roads[car->road_id];
+    RoadDirection direction = graph_get_lane_direction(road, car->lane);
+    float car_travel = traffic_manager_position_to_travel_fraction(road, direction, car->position);
+    float road_length = (float)road->length;
+    if (road_length <= 0.0f) {
+        road_length = 1.0f;
+    }
+
+    const Intersection* nearest_intersection = NULL;
+    const TrafficLight* nearest_light = NULL;
+    float nearest_stop_travel = 0.0f;
+    float nearest_distance = 9999.0f;
+
+    for (int i = 0; i < manager->graph->intersection_count; i++) {
+        const Intersection* intersection = &manager->graph->intersections[i];
+        if (!traffic_manager_intersection_on_road(road, intersection)) {
+            continue;
+        }
+
+        const TrafficLight* light = traffic_manager_find_light_at(manager, intersection->x, intersection->y);
+        if (light == NULL) {
+            continue;
+        }
+
+        float stop_travel = traffic_manager_stop_travel_fraction(road, direction, intersection);
+        float distance = (stop_travel - car_travel) * road_length;
+        if (distance >= -0.05f && distance < nearest_distance) {
+            nearest_distance = distance;
+            nearest_stop_travel = stop_travel;
+            nearest_intersection = intersection;
+            nearest_light = light;
+        }
+    }
+
+    if (nearest_intersection == NULL || nearest_light == NULL) {
+        if (car->state == CAR_STATE_TRAFFIC_LIGHT) {
+            car->state = CAR_STATE_NORMAL;
+        }
+        return;
+    }
+
+    LightState light_state = traffic_manager_light_state_for_road(nearest_light, road);
+    if (light_state == LIGHT_GREEN) {
+        if (car->state == CAR_STATE_TRAFFIC_LIGHT) {
+            car->state = CAR_STATE_NORMAL;
+        }
+        return;
+    }
+
+    const float slow_distance = 4.0f;
+    float stop_distance = 0.20f + car->speed * 0.20f;
+    if (nearest_distance <= stop_distance) {
+        car->position = traffic_manager_travel_fraction_to_position(road, direction, nearest_stop_travel);
+        car->speed = 0.0f;
+        car->state = CAR_STATE_TRAFFIC_LIGHT;
+    } else if (nearest_distance <= slow_distance) {
+        float speed_factor = nearest_distance / slow_distance;
+        float max_speed = road->speed_limit * traffic_manager_clampf(speed_factor, 0.15f, 1.0f);
+        if (car->speed > max_speed) {
+            car->speed = max_speed;
+        }
+        if (car->state == CAR_STATE_NORMAL || car->state == CAR_STATE_OVERTAKING) {
+            car->state = CAR_STATE_SLOWING;
+        }
+    } else if (car->state == CAR_STATE_TRAFFIC_LIGHT) {
+        car->state = CAR_STATE_NORMAL;
+    }
 }
 
 static int traffic_manager_road_start_edge(const RoadSegment *road) {
@@ -270,7 +451,7 @@ static bool traffic_manager_spawn_car_on_lane(TrafficManager* manager, int road_
     }
 
     Car* car = &manager->cars[manager->car_count];
-    car_init(car, manager->next_car_id++, road_id, desired_speed, 1.0f, lane, 0.0f);
+    car_init(car, manager->next_car_id++, road_id, desired_speed, lane);
 
     car->position = traffic_manager_travel_fraction_to_position(road, spawn_direction, travel_fraction);
     car->angle = direction_to_angle(spawn_direction);
@@ -628,6 +809,7 @@ static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car
 
     if (car->state == CAR_STATE_BRAKING ||
         car->state == CAR_STATE_ACCIDENT ||
+        car->state == CAR_STATE_TRAFFIC_LIGHT ||
         car->state == CAR_STATE_TURNING ||
         car->target_lane != -1) {
         return;
@@ -1057,7 +1239,6 @@ bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager) {
     AccidentDTP* accident = &manager->accidents[manager->accident_count++];
     accident->road_id = road_id;
     accident->lane = road_lane_id;
-    accident->position = (best_car_1->position + best_car_2->position) * 0.5f;
     accident->clear_timer = 0.0f;
     accident->released_cars = 0;
     accident->active = true;
@@ -1082,19 +1263,24 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     traffic_manager_update_lane_lists(manager);
 
     for (int i = 0; i < manager->car_count; i++) {
-        if(!traffic_manager_update_overtake_return(manager, &manager->cars[i])) {
-            traffic_manager_update_lane_change(manager, &manager->cars[i], dt);
+        Car* car = &manager->cars[i];
+
+        if (car->state != CAR_STATE_TRAFFIC_LIGHT) {
+            if(!traffic_manager_update_overtake_return(manager, car)) {
+                traffic_manager_update_lane_change(manager, car, dt);
+            }
+
+            traffic_manager_keep_safe_distance(manager, car);
         }
 
-        traffic_manager_keep_safe_distance(manager, &manager->cars[i]);
-        car_update(&manager->cars[i], manager->graph, dt);
+        traffic_manager_update_traffic_light_stop(manager, car);
+        car_update(car, manager->graph, dt);
 
-        Car* back_car = &manager->cars[i];
-        if (back_car->state == CAR_STATE_ACCIDENT) {
-            const Car* front_car = traffic_manager_find_front_car(manager, back_car, 1.0f);
+        if (car->state == CAR_STATE_ACCIDENT) {
+            const Car* front_car = traffic_manager_find_front_car(manager, car, 1.0f);
             if (front_car != NULL && front_car->state == CAR_STATE_BRAKING) {
-                back_car->speed = 0.0f;
-                back_car->state = CAR_STATE_BRAKING;
+                car->speed = 0.0f;
+                car->state = CAR_STATE_BRAKING;
             }
         }
     }
