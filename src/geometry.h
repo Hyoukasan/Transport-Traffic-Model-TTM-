@@ -15,7 +15,6 @@ int coord_max(int a, int b);
 // Новые функции для манёвров
 float direction_to_angle(RoadDirection dir);
 float lerp_angle(float a, float b, float t);
-float approach_angle(float current, float target, float speed, float dt);
 float lerp(float a, float b, float t);
 float smoothstep(float t);
 void road_get_basis(RoadDirection dir, int *dir_x, int *dir_y, int *right_x, int *right_y);

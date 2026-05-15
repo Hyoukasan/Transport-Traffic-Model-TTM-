@@ -73,7 +73,6 @@ void car_destroy(Car *car);
 // Новые функции для манёвров
 void car_start_lane_change(Car *car, int target_lane);
 void car_update_lane_change(Car *car, float dt);
-void car_start_turn(Car *car, RoadDirection new_dir);
 void car_update_turn(Car *car, float dt);
 
 #endif

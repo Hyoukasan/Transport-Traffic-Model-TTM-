@@ -700,21 +700,6 @@ void car_update_lane_change(Car *car, float dt) {
     }
 }
 
-void car_start_turn(Car *car, RoadDirection new_dir) {
-    if (car == NULL || new_dir == ROAD_DIR_NONE) {
-        return;
-    }
-
-    float target_angle = direction_to_angle(new_dir);
-    if (car->angle == target_angle) {
-        return;
-    }
-
-    car->angle_from = car->angle;
-    car->angle_to = target_angle;
-    car->turn_progress = 0.0f;
-}
-
 void car_update_turn(Car *car, float dt) {
     if (car == NULL || car->state != CAR_STATE_TURNING) {
         return;

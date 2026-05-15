@@ -1320,12 +1320,6 @@ void traffic_manager_clear(TrafficManager *manager) {
         manager->graph = NULL;
     }
 
-    if(manager->cars != NULL) {
-        //for(int i = 0; i < manager->car_count; i++) {
-        //    car_destroy(&manager->cars[i]);
-        //}
-    }
-    
     free(manager->cars);
     manager->cars = NULL;
 

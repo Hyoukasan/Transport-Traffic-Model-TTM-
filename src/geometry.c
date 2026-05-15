@@ -59,11 +59,6 @@ float lerp_angle(float a, float b, float t) {
     return a + diff * t;
 }
 
-float approach_angle(float current, float target, float speed, float dt) {
-    float diff = normalize_angle(target - current);
-    return current + diff * speed * dt;
-}
-
 float lerp(float a, float b, float t) {
     return a + (b - a) * t;
 }

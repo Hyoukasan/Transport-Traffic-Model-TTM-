@@ -74,12 +74,6 @@ void graph_set_road_texture(Graph *g, int road_id, unsigned int texture) {
     g->roads[road_id].texture = texture;
 }
 //направление
-void graph_set_road_direction(Graph *g, int road_id, RoadDirection direction) {
-    if (g == NULL || road_id < 0 || road_id >= g->road_count) {
-        return;
-    }
-    g->roads[road_id].direction = direction;
-}
 // скорость на дороге 
 static bool point_in_range(int value, int a, int b) {
     if (a <= b) {
@@ -305,16 +299,6 @@ void graph_destroy(Graph *g) {
     free(g->intersections);
     free(g->roads);
     free(g);
-}
-
-int graph_road_lane_count(const RoadSegment *road) {
-    if (road == NULL) {
-        return 0;
-    }
-
-    int lanes = road->lanes > 0 ? road->lanes : 2;
-    
-    return lanes;
 }
 
 RoadDirection graph_get_lane_direction(const RoadSegment *road, int lane) {

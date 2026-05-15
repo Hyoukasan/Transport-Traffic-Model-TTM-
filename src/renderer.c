@@ -597,22 +597,6 @@ void renderer_draw_roads(Graph *graph) {
         renderer_draw_road_texture(graph, &graph->roads[i]);
     }
 
-/*    if (roadMainVertexCount > 0) {
-        glBindVertexArray(VAO);
-        glLineWidth(2.5f);
-        glColor3f(0.85f, 0.15f, 0.15f);
-        glDrawArrays(GL_LINES, 0, roadMainVertexCount);
-        glBindVertexArray(0);
-    }
-
-    if (roadHelperVertexCount > 0) {
-        glBindVertexArray(helperRoadVAO);
-        glLineWidth(1.0f);
-        glColor3f(0.95f, 0.85f, 0.2f);
-        glDrawArrays(GL_LINES, 0, roadHelperVertexCount);
-        glBindVertexArray(0);
-    }
-*/
     renderer_draw_intersection_blocks(graph);
 
     glLineWidth(1.0f);
