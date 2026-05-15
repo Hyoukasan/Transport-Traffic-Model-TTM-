@@ -87,7 +87,7 @@ void debug_overlay_draw(struct TrafficManager* manager, int screen_width, int sc
         renderer_draw_text(x + 4, y + step*10 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
         renderer_draw_text(x + 2, y + step*10, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
 
-        snprintf(line, sizeof(line), "Lane accident: %s", selected_lane_accident_active ? "ACTIVE" : "none");
+        snprintf(line, sizeof(line), "Lane accident: %s", selected_lane_accident_active ? "ACTIVE" : "NONE");
         renderer_draw_text(x + 4, y + step*11 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
         renderer_draw_text(x + 2, y + step*11, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
     }
