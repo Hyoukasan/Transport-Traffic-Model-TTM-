@@ -23,6 +23,7 @@ static bool traffic_manager_spawn_car_on_lane(TrafficManager* manager, int road_
 
 static const Car* traffic_manager_find_front_car(TrafficManager* manager, const Car* car, float search_radius);
 static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car, float dt);
+static void traffic_manager_update_accidents(TrafficManager* manager, float dt);
 
 static int traffic_manager_init_lights(TrafficManager *manager);
 static void traffic_manager_update_lights(TrafficManager *manager, float dt);
@@ -611,6 +612,87 @@ static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car
     return false;
 }
 
+static void traffic_manager_update_accidents(TrafficManager* manager, float dt) {
+    if (manager == NULL || manager->graph == NULL) {
+        return;
+    }
+
+    for (int i = 0; i < manager->accident_count;) {
+        AccidentDTP* accident = &manager->accidents[i];
+
+        if (!accident->active) {
+            manager->accidents[i] = manager->accidents[manager->accident_count - 1];
+            manager->accident_count--;
+            continue;
+        }
+
+        bool accident_waiting_car = false;
+        for (int j = 0; j < manager->car_count; j++) {
+            Car* car = &manager->cars[j];
+
+            if (car->road_id == accident->road_id &&
+                car->lane == accident->lane &&
+                car->state == CAR_STATE_ACCIDENT) {
+                accident_waiting_car = true;
+                break;
+            }
+        }
+
+        if (accident_waiting_car) {
+            accident->clear_timer = 0.0f;
+            i++;
+            continue;
+        }
+
+        accident->clear_timer += dt;
+
+        if (accident->released_cars == 0 && accident->clear_timer >= 5.0f) {
+            RoadSegment* road = &manager->graph->roads[accident->road_id];
+            RoadDirection dir = graph_get_lane_direction(road, accident->lane);
+            Car* front_car = NULL;
+            float best_travel = -1.0f;
+
+            for (int j = 0; j < manager->car_count; j++) {
+                Car* car = &manager->cars[j];
+
+                if (car->road_id == accident->road_id &&
+                    car->lane == accident->lane &&
+                    car->state == CAR_STATE_BRAKING) {
+                    float car_travel = traffic_manager_position_to_travel_fraction(road, dir, car->position);
+
+                    if (car_travel > best_travel) {
+                        best_travel = car_travel;
+                        front_car = car;
+                    }
+                }
+            }
+
+            if (front_car != NULL) {
+                front_car->state = CAR_STATE_NORMAL;
+                accident->released_cars = 1;
+            }
+        }
+
+        if (accident->released_cars == 1 && accident->clear_timer >= 7.0f) {
+            for (int j = 0; j < manager->car_count; j++) {
+                Car* car = &manager->cars[j];
+
+                if (car->road_id == accident->road_id &&
+                    car->lane == accident->lane &&
+                    car->state == CAR_STATE_BRAKING) {
+                    car->state = CAR_STATE_NORMAL;
+                }
+            }
+
+            manager->accidents[i] = manager->accidents[manager->accident_count - 1];
+            manager->accident_count--;
+            continue;
+        }
+
+        i++;
+    }
+}
+
 bool traffic_manager_select_lane_at_pixel(TrafficManager* manager, int mouse_x, int mouse_y) {
     if(manager == NULL || manager->graph == NULL) {
         return false;
@@ -673,6 +755,32 @@ bool traffic_manager_spawn_car_on_selected_lane(TrafficManager* manager) {
     manager->manual_spawn_cooldown = 2.0f;
     traffic_manager_update_lane_lists(manager);
     return true;
+}
+
+bool traffic_manager_selected_lane_has_accident(const TrafficManager* manager) {
+    if (manager == NULL || manager->selected_road_id < 0 || manager->selected_lane < 0) {
+        return false;
+    }
+
+    for (int i = 0; i < manager->accident_count; i++) {
+        const AccidentDTP* accident = &manager->accidents[i];
+        if (accident->active &&
+            accident->road_id == manager->selected_road_id &&
+            accident->lane == manager->selected_lane) {
+            return true;
+        }
+    }
+
+    for (int i = 0; i < manager->car_count; i++) {
+        const Car* car = &manager->cars[i];
+        if (car->road_id == manager->selected_road_id &&
+            car->lane == manager->selected_lane &&
+            (car->state == CAR_STATE_ACCIDENT || car->state == CAR_STATE_BRAKING)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager) {
@@ -778,6 +886,7 @@ bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager) {
     accident->lane = road_lane_id;
     accident->position = (best_car_1->position + best_car_2->position) * 0.5f;
     accident->clear_timer = 0.0f;
+    accident->released_cars = 0;
     accident->active = true;
 
     return true;
@@ -814,6 +923,10 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
                 back_car->state = CAR_STATE_BRAKING;
             }
         }
+    }
+
+    if (manager->accident_count > 0) {
+        traffic_manager_update_accidents(manager, dt);
     }
 
     for (int i = manager->car_count - 1; i >= 0; i--) {

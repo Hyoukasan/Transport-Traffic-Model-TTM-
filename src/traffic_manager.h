@@ -27,6 +27,7 @@ typedef struct {
     float position;
     int   lane;
     float clear_timer;
+    int   released_cars;
     bool  active;
 } AccidentDTP;
 
@@ -72,6 +73,7 @@ const struct Car* traffic_manager_get_cars(const TrafficManager* manager, int* o
 bool traffic_manager_select_lane_at_pixel(TrafficManager* manager, int mouse_x, int mouse_y);
 bool traffic_manager_spawn_car_on_selected_lane(TrafficManager* manager);
 bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager);
+bool traffic_manager_selected_lane_has_accident(const TrafficManager* manager);
 
 
 
