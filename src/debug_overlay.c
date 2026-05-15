@@ -38,11 +38,22 @@ void debug_overlay_draw(struct TrafficManager* manager, int screen_width, int sc
     renderer_draw_text(x + 4, y + step*5 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
     renderer_draw_text(x + 2, y + step*5, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
 
-    snprintf(line, sizeof(line), "Accidents: %d", manager->accident_count);
+    snprintf(line, sizeof(line), "Accidents: %d / %d", manager->accident_count, manager->max_accidents);
     renderer_draw_text(x + 4, y + step*6 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
     renderer_draw_text(x + 2, y + step*6, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
 
     if(manager->selected_road_id != -1 && manager->selected_lane != -1) {
+        bool selected_lane_accident_active = false;
+        for (int i = 0; i < manager->accident_count; i++) {
+            AccidentDTP* accident = &manager->accidents[i];
+            if (accident->active &&
+                accident->road_id == manager->selected_road_id &&
+                accident->lane == manager->selected_lane) {
+                selected_lane_accident_active = true;
+                break;
+            }
+        }
+
         snprintf(line, sizeof(line), "Selected road: %d", manager->selected_road_id);
         renderer_draw_text(x + 4, y + step*8 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
         renderer_draw_text(x + 2, y + step*8, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
@@ -75,5 +86,9 @@ void debug_overlay_draw(struct TrafficManager* manager, int screen_width, int sc
 
         renderer_draw_text(x + 4, y + step*10 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
         renderer_draw_text(x + 2, y + step*10, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
+
+        snprintf(line, sizeof(line), "Lane accident: %s", selected_lane_accident_active ? "ACTIVE" : "none");
+        renderer_draw_text(x + 4, y + step*11 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
+        renderer_draw_text(x + 2, y + step*11, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
     }
 }

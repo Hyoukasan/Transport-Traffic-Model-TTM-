@@ -805,6 +805,15 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
         }
 
         car_update(&manager->cars[i], manager->graph, dt);
+
+        Car* back_car = &manager->cars[i];
+        if (back_car->state == CAR_STATE_ACCIDENT) {
+            const Car* front_car = traffic_manager_find_front_car(manager, back_car, 1.0f);
+            if (front_car != NULL && front_car->state == CAR_STATE_BRAKING) {
+                back_car->speed = 0.0f;
+                back_car->state = CAR_STATE_BRAKING;
+            }
+        }
     }
 
     for (int i = manager->car_count - 1; i >= 0; i--) {
