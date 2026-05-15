@@ -365,7 +365,9 @@ void car_update(Car *car, const Graph *graph, float dt) {
         target_speed = road->speed_limit;
     }
 
-    if (road->accident || car->state == CAR_STATE_ACCIDENT) {
+    if (car->state == CAR_STATE_ACCIDENT) {
+        target_speed = 0.0f;
+    } else if (road->accident) {
         target_speed *= 0.2f;
     } else if (car->state == CAR_STATE_BRAKING) {
         target_speed *= 0.5f;

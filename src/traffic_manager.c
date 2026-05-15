@@ -691,6 +691,62 @@ bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager) {
         return false;
     }
 
+    for (int i = 0; i < manager->accident_count; i++) {
+        AccidentDTP* accident = &manager->accidents[i];
+        if (accident->active && accident->road_id == road_id && accident->lane == road_lane_id) {
+            return false;
+        }
+    }
+
+    if (manager->accident_count >= manager->max_accidents) {
+        return false;
+    }
+
+    int best_car_id_1 = -1;
+    int best_car_id_2 = -1;
+    float best_distance = 9999.0f;
+
+    for(size_t i = 0; i < (size_t)(list->car_count); i++) {
+        int index_car_1 = list->car_indices[i];
+        Car* car_1 = &manager->cars[index_car_1];
+
+        for(size_t j = i + 1; j < (size_t)(list->car_count); j++) {
+            int index_car_2 = list->car_indices[j];
+            Car* car_2 = &manager->cars[index_car_2];
+            
+            float distant = car_1->position - car_2->position;
+            if(distant < 0.0f) {
+                distant = -distant;
+            }
+
+            if(distant < best_distance) {
+                best_distance = distant;
+                best_car_id_1 = index_car_1;
+                best_car_id_2 = index_car_2;
+            }
+        }
+    }
+
+    if(best_car_id_1 == -1 || best_car_id_2 == -1) {
+        return false;
+    }
+
+    Car* best_car_1 = &manager->cars[best_car_id_1];
+    Car* best_car_2 = &manager->cars[best_car_id_2];
+
+    best_car_1->state = CAR_STATE_ACCIDENT;
+    best_car_2->state = CAR_STATE_ACCIDENT;
+
+    best_car_1->speed = 0.0f;
+    best_car_2->speed = 0.0f;
+
+    AccidentDTP* accident = &manager->accidents[manager->accident_count++];
+    accident->road_id = road_id;
+    accident->lane = road_lane_id;
+    accident->position = (best_car_1->position + best_car_2->position) * 0.5f;
+    accident->clear_timer = 0.0f;
+    accident->active = true;
+
     return true;
 }
 

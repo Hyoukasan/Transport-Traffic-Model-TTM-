@@ -301,6 +301,8 @@ void application_update(void){
             if (input.lmb_click) {
                 if (lane_selected && tools_menu.last_pressed_button == BUTTON_ID_SPAWN_CAR) {
                     traffic_manager_spawn_car_on_selected_lane(&manager);
+                } else if (lane_selected && tools_menu.last_pressed_button == BUTTON_ID_DTP) {
+                    traffic_manager_add_accident_on_selected_lane(&manager);
                 } else if (tools_menu.last_pressed_button == BUTTON_ID_NONE) {
                     traffic_manager_select_lane_at_pixel(&manager, (int)input.mouse_x, (int)input.mouse_y);
                 }
