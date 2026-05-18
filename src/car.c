@@ -365,8 +365,6 @@ static void car_speed_update(Car* car, const RoadSegment* road, float dt) {
     switch (cur_state)
     {
     case CAR_STATE_ACCIDENT:
-        target_speed = target_speed;
-        break;
 
     case CAR_STATE_BRAKING:
         target_speed = 0.0f;
@@ -390,8 +388,16 @@ static void car_speed_update(Car* car, const RoadSegment* road, float dt) {
     }
 
     float accel = 2.5f;
+    float k = accel * dt;
+    if (k > 1.0f) {
+        k = 1.0f;
+    }
 
-    car->speed += (target_speed - car->speed) * accel * dt;
+    car->speed += (target_speed - car->speed) * k;
+
+    if(car->speed < 0.0f) {
+        car->speed = 0.0f;
+    }
 }
 
 
