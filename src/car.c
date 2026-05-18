@@ -426,7 +426,8 @@ typedef struct {
     int y;
 } CrossedIntersection;
 
-/*Функция car_find_crossed_intersection проодится по каждому перекрестку */
+/*Функция car_find_crossed_intersection проодится по каждому перекрестку 
+и по направлению дороги определяет расстояние авто до перекрестка*/
 
 static CrossedIntersection car_find_crossed_intersection(
     const Car* car,
@@ -450,7 +451,7 @@ static CrossedIntersection car_find_crossed_intersection(
                 continue;
             }
         } else if(road->type == ROAD_VERTICAL) {
-            if (!point_in_range(ix, road->x1, road->x2) || iy != road->y1) {
+            if (!point_in_range(iy, road->y1, road->y2) || ix != road->x1) {
                 continue;
             }     
         } else {
@@ -496,6 +497,8 @@ static CrossedIntersection car_find_crossed_intersection(
         }
 
     }
+
+    return crossed;
 }
 
 void car_update(Car *car, const Graph *graph, float dt) {
@@ -539,6 +542,17 @@ void car_update(Car *car, const Graph *graph, float dt) {
         return;
     }
 
+    CrossedIntersection crossed = car_find_crossed_intersection(car, graph, road, current_direction, old_coord, current_coord);
+
+    if (crossed.idx < 0) {
+        car->last_turn_x = -1;
+        car->last_turn_y = -1;
+        car->turn_decided = false;
+        car->turn_made = false;
+        car->position = new_position;
+        return;
+    }
+
     int left_road_id = -1;
     int right_road_id = -1;
     RoadDirection left_target = ROAD_DIR_NONE;
@@ -566,7 +580,7 @@ void car_update(Car *car, const Graph *graph, float dt) {
             break;
     }
 
-    Intersection *intersection = &graph->intersections[chosen_intersection];
+    const Intersection *intersection = &graph->intersections[crossed.idx];
     for (int j = 0; j < intersection->road_count; j++) {
         int candidate_id = intersection->roads[j];
         if (candidate_id == car->road_id) {
@@ -592,7 +606,7 @@ void car_update(Car *car, const Graph *graph, float dt) {
     }
 
     // Решение о повороте при подъезде к пересечению
-    if (!car->turn_decided && new_travel_fraction >= chosen_fraction - 0.1f) {
+    if (!car->turn_decided && new_travel_fraction >= crossed.fraction - 0.1f) {
         car->turn_decided = true;
         int roll = rand() % 100;
         if (left_road_id >= 0 && roll < 20) {
@@ -618,39 +632,39 @@ void car_update(Car *car, const Graph *graph, float dt) {
             float target_lane_center = road_lane_center(new_road, new_lane);
 
             float offset_current = (road->type == ROAD_HORIZONTAL)
-                ? fabsf(current_lane_center - (float)chosen_iy)
-                : fabsf(current_lane_center - (float)chosen_ix);
+                ? fabsf(current_lane_center - (float)crossed.y)
+                : fabsf(current_lane_center - (float)crossed.x);
             float offset_target = (new_road->type == ROAD_HORIZONTAL)
-                ? fabsf(target_lane_center - (float)chosen_iy)
-                : fabsf(target_lane_center - (float)chosen_ix);
+                ? fabsf(target_lane_center - (float)crossed.y)
+                : fabsf(target_lane_center - (float)crossed.x);
 
             float turn_offset = fmaxf(fmaxf(offset_current, offset_target), 1.0f);
             float turn_radius = turn_offset;
 
             float start_x, start_y;
             if (road->type == ROAD_HORIZONTAL) {
-                start_x = (float)chosen_ix;
+                start_x = (float)crossed.x;
                 start_y = current_lane_center;
             } else {
                 start_x = current_lane_center;
-                start_y = (float)chosen_iy;
+                start_y = (float)crossed.y;
             }
 
             float end_x, end_y;
             if (new_road->type == ROAD_HORIZONTAL) {
-                end_x = (float)chosen_ix;
+                end_x = (float)crossed.x;
                 end_y = target_lane_center;
             } else {
                 end_x = target_lane_center;
-                end_y = (float)chosen_iy;
+                end_y = (float)crossed.y;
             }
 
             car->turn_start_fraction = clampf(coordinate_fraction_for_direction(road, current_direction, start_x, start_y), 0.0f, 1.0f);
             float end_fraction = clampf(coordinate_fraction_for_direction(new_road, chosen_target, end_x, end_y), 0.0f, 1.0f);
             car->turn_target_position = clampf(travel_fraction_to_position(new_road, chosen_target, end_fraction), 0.0f, 1.0f);
             car->turn_target_lane = new_lane;
-            car->turn_center_x = (float)chosen_ix + ((current_direction == ROAD_DIR_EAST || chosen_target == ROAD_DIR_EAST) ? turn_radius : -turn_radius);
-            car->turn_center_y = (float)chosen_iy + ((current_direction == ROAD_DIR_SOUTH || chosen_target == ROAD_DIR_SOUTH) ? turn_radius : -turn_radius);
+            car->turn_center_x = (float)crossed.x + ((current_direction == ROAD_DIR_EAST || chosen_target == ROAD_DIR_EAST) ? turn_radius : -turn_radius);
+            car->turn_center_y = (float)crossed.y + ((current_direction == ROAD_DIR_SOUTH || chosen_target == ROAD_DIR_SOUTH) ? turn_radius : -turn_radius);
             car->turn_radius = turn_radius;
         }
     }
@@ -691,7 +705,7 @@ void car_update(Car *car, const Graph *graph, float dt) {
         car->state = CAR_STATE_TURNING;
     }
 
-    bool crossed_intersection = new_travel_fraction > chosen_fraction;
+    bool crossed_intersection = new_travel_fraction > crossed.fraction;
     if (crossed_intersection && car->turn_decided && !car->turn_made) {
         car->turn_decided = false;
         car->turn_made = false;
