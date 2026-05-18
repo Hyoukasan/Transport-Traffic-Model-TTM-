@@ -370,6 +370,10 @@ static void car_speed_update(Car* car, const RoadSegment* road, float dt) {
         target_speed = 0.0f;
         break;
 
+    case CAR_STATE_TRAFFIC_LIGHT:
+        target_speed = 0.0f;
+        break;
+
     case CAR_STATE_OVERTAKING:
         target_speed *= 1.1f;
         target_speed = speed_control(speed_limit, target_speed);
