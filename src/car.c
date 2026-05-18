@@ -501,6 +501,36 @@ static CrossedIntersection car_find_crossed_intersection(
     return crossed;
 }
 
+static void car_get_turn_targets(RoadDirection current_direction, RoadDirection* left_target, RoadDirection* right_target){
+    *left_target = ROAD_DIR_NONE;
+    *right_target = ROAD_DIR_NONE;
+
+    switch (current_direction) {
+        case ROAD_DIR_EAST:
+            *left_target = ROAD_DIR_NORTH;
+            *right_target = ROAD_DIR_SOUTH;
+            break;
+
+        case ROAD_DIR_WEST:
+            *left_target = ROAD_DIR_SOUTH;
+            *right_target = ROAD_DIR_NORTH;
+            break;
+
+        case ROAD_DIR_NORTH:
+            *left_target = ROAD_DIR_WEST;
+            *right_target = ROAD_DIR_EAST;
+            break;
+
+        case ROAD_DIR_SOUTH:
+            *left_target = ROAD_DIR_EAST;
+            *right_target = ROAD_DIR_WEST;
+            break;
+
+        default:
+            break;
+    }
+}
+
 void car_update(Car *car, const Graph *graph, float dt) {
     if (car == NULL || graph == NULL || car->road_id < 0 || car->road_id >= graph->road_count) {
         return;
@@ -559,26 +589,7 @@ void car_update(Car *car, const Graph *graph, float dt) {
     RoadDirection right_target = ROAD_DIR_NONE;
     RoadDirection chosen_target = ROAD_DIR_NONE;
 
-    switch (current_direction) {
-        case ROAD_DIR_EAST:
-            left_target = ROAD_DIR_NORTH;
-            right_target = ROAD_DIR_SOUTH;
-            break;
-        case ROAD_DIR_WEST:
-            left_target = ROAD_DIR_SOUTH;
-            right_target = ROAD_DIR_NORTH;
-            break;
-        case ROAD_DIR_NORTH:
-            left_target = ROAD_DIR_WEST;
-            right_target = ROAD_DIR_EAST;
-            break;
-        case ROAD_DIR_SOUTH:
-            left_target = ROAD_DIR_EAST;
-            right_target = ROAD_DIR_WEST;
-            break;
-        default:
-            break;
-    }
+    car_get_turn_targets(road->direction, &left_target, &right_target);
 
     const Intersection *intersection = &graph->intersections[crossed.idx];
     for (int j = 0; j < intersection->road_count; j++) {
