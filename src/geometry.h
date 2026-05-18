@@ -1,6 +1,8 @@
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
 
+#include <stdbool.h>
+
 typedef enum RoadDirection RoadDirection;
 
 float pixel_to_normalized_x(int px, int width);
@@ -11,6 +13,7 @@ float grid_edge_to_normalized_x(int grid_x, int chunk_size, int padding, int wid
 float grid_edge_to_normalized_y(int grid_y, int chunk_size, int padding, int height);
 int coord_min(int a, int b);
 int coord_max(int a, int b);
+bool point_in_range(int value, int a, int b);
 
 // Новые функции для манёвров
 float direction_to_angle(RoadDirection dir);

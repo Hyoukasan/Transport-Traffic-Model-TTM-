@@ -37,6 +37,13 @@ int coord_max(int a, int b) {
     return a > b ? a : b;
 }
 
+bool point_in_range(int value, int a, int b) {
+    int min = (a < b) ? a : b;
+    int max = (a > b) ? a : b;
+
+    return value >= min && value <= max;
+}
+
 // Новые функции для манёвров
 float direction_to_angle(RoadDirection dir) {
     switch (dir) {
