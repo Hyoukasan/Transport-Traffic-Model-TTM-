@@ -365,6 +365,7 @@ static void car_speed_update(Car* car, const RoadSegment* road, float dt) {
     switch (cur_state)
     {
     case CAR_STATE_ACCIDENT:
+        break;
 
     case CAR_STATE_BRAKING:
         target_speed = 0.0f;
@@ -425,30 +426,11 @@ void car_update(Car *car, const Graph *graph, float dt) {
 
     const RoadSegment *road = &graph->roads[car->road_id];
     RoadDirection current_direction = graph_get_lane_direction(road, car->lane);
-    float target_speed = car->desired_speed;
-    if (target_speed > road->speed_limit) {
-        target_speed = road->speed_limit;
-    }
 
-    if (car->state != CAR_STATE_ACCIDENT && road->accident) {
-        target_speed *= 0.2f;
-    } else if (car->state == CAR_STATE_SLOWING) {
-        target_speed *= 0.5f;
-    } else if (car->state == CAR_STATE_OVERTAKING) {
-        target_speed *= 1.1f;
-        if (target_speed > road->speed_limit) {
-            target_speed = road->speed_limit;
-        }
-    }
+    car_speed_update(car, road, dt);
 
-    float accel = 2.5f;
     float old_position = car->position;
     float old_travel_fraction = position_to_travel_fraction(road, current_direction, old_position);
-
-    car->speed += (target_speed - car->speed) * accel * dt;
-    if (car->speed < 0.0f) {
-        car->speed = 0.0f;
-    }
 
     float segment_length = (float)road->length;
     if (segment_length <= 0.0f) {
