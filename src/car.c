@@ -365,6 +365,7 @@ static void car_speed_update(Car* car, const RoadSegment* road, float dt) {
     switch (cur_state)
     {
     case CAR_STATE_ACCIDENT:
+        // Состояние аварии запрещает перестроени
         break;
 
     case CAR_STATE_BRAKING:
@@ -405,7 +406,7 @@ static void car_speed_update(Car* car, const RoadSegment* road, float dt) {
     }
 }
 
-void car_angle_update(Car* car, RoadDirection current_direction)
+static void car_angle_update(Car* car, RoadDirection current_direction)
 {
     switch (current_direction) {
         case ROAD_DIR_EAST:
