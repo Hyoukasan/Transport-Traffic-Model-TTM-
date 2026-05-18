@@ -405,6 +405,26 @@ static void car_speed_update(Car* car, const RoadSegment* road, float dt) {
     }
 }
 
+void car_angle_update(Car* car, RoadDirection current_direction)
+{
+    switch (current_direction) {
+        case ROAD_DIR_EAST:
+            car->angle = 90.0f;
+            break;
+        case ROAD_DIR_WEST:
+            car->angle = -90.0f;
+            break;
+        case ROAD_DIR_NORTH:
+            car->angle = 180.0f;
+            break;
+        case ROAD_DIR_SOUTH:
+            car->angle = 0.0f;
+            break;
+        default:
+            car->angle = 0.0f;
+            break;
+    }
+}
 
 void car_update(Car *car, const Graph *graph, float dt) {
     if (car == NULL || graph == NULL || car->road_id < 0 || car->road_id >= graph->road_count) {
@@ -444,25 +464,8 @@ void car_update(Car *car, const Graph *graph, float dt) {
     float current_coord = coordinate_at_travel_position(road, current_direction, new_position);
     float old_coord = coordinate_at_travel_position(road, current_direction, old_position);
     car->at_intersection = false;
-    if (car->state != CAR_STATE_TURNING) {
-        switch (current_direction) {
-            case ROAD_DIR_EAST:
-                car->angle = 90.0f;
-                break;
-            case ROAD_DIR_WEST:
-                car->angle = -90.0f;
-                break;
-            case ROAD_DIR_NORTH:
-                car->angle = 180.0f;
-                break;
-            case ROAD_DIR_SOUTH:
-                car->angle = 0.0f;
-                break;
-            default:
-                car->angle = 0.0f;
-                break;
-        }
-    }
+
+    car_angle_update(car, current_direction);
 
     if (car->state == CAR_STATE_ACCIDENT) {
         car->position = new_position;
