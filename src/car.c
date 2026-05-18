@@ -346,6 +346,54 @@ void car_destroy(Car *car) {
     car->last_turn_y = -1;
 }
 
+static float speed_control(float speed_limit, float target_speed)
+{
+    return (target_speed > speed_limit) ? speed_limit : target_speed;
+}
+
+/*Функция car_speed_update изменяет текущую скорость для текущего автомобиля в зависимости от его состояния
+Также учитывается ограничется скорости на линии. Формула расчета идет через коэфицент сглаживания*/
+
+static void car_speed_update(Car* car, const RoadSegment* road, float dt) {
+    float target_speed = car->desired_speed;
+    float speed_limit = road->speed_limit;
+
+    target_speed = speed_control(speed_limit, target_speed);
+
+    CarState cur_state = car->state;
+
+    switch (cur_state)
+    {
+    case CAR_STATE_ACCIDENT:
+        target_speed = target_speed;
+        break;
+
+    case CAR_STATE_BRAKING:
+        target_speed = 0.0f;
+        break;
+
+    case CAR_STATE_OVERTAKING:
+        target_speed *= 1.1f;
+        target_speed = speed_control(speed_limit, target_speed);
+        break;
+        
+    case CAR_STATE_SLOWING:
+        target_speed *= 0.5f;
+        break;
+    
+    default:
+        if(road->accident) {
+            target_speed *= 0.2f;
+        }
+
+        break;
+    }
+
+    float accel = 2.5f;
+
+    car->speed += (target_speed - car->speed) * accel * dt;
+}
+
 
 void car_update(Car *car, const Graph *graph, float dt) {
     if (car == NULL || graph == NULL || car->road_id < 0 || car->road_id >= graph->road_count) {
