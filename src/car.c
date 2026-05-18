@@ -18,10 +18,6 @@ static bool road_supports_direction(const RoadSegment *road, RoadDirection direc
         return false;
     }
 
-    if (road->direction != ROAD_DIR_NONE) {
-        return road->direction == direction;
-    }
-
     if (road->type == ROAD_HORIZONTAL) {
         return direction == ROAD_DIR_EAST || direction == ROAD_DIR_WEST;
     }
@@ -35,10 +31,6 @@ static bool road_supports_direction(const RoadSegment *road, RoadDirection direc
 static int direction_lane_start(const RoadSegment *road, RoadDirection direction) {
     int lanes = road->lanes > 0 ? road->lanes : 1;
     int half = lanes / 2;
-
-    if (road->direction != ROAD_DIR_NONE) {
-        return 0;
-    }
 
     if (road->type == ROAD_HORIZONTAL) {
         if (direction == ROAD_DIR_WEST) {
@@ -62,10 +54,6 @@ static int direction_lane_start(const RoadSegment *road, RoadDirection direction
 static int direction_lane_count(const RoadSegment *road, RoadDirection direction) {
     int lanes = road->lanes > 0 ? road->lanes : 1;
     int half = lanes / 2;
-
-    if (road->direction != ROAD_DIR_NONE) {
-        return lanes;
-    }
 
     if (road->type == ROAD_HORIZONTAL) {
         if (direction == ROAD_DIR_WEST) {
@@ -224,11 +212,6 @@ static int choose_lane_for_direction(const RoadSegment *road, RoadDirection desi
         return 0;
     }
 
-    if (road->direction != ROAD_DIR_NONE) {
-        int lane_index = preferred_lane >= 0 && preferred_lane < lanes ? preferred_lane : rand() % lanes;
-        return lane_index;
-    }
-
     int local_index = preferred_lane - lane_start;
     if (local_index < 0 || local_index >= lane_count) {
         local_index = 0;
@@ -255,22 +238,10 @@ static float road_lane_center(const RoadSegment *road, int lane) {
     int half = lanes / 2;
 
     if (road->type == ROAD_HORIZONTAL) {
-        if (road->direction == ROAD_DIR_EAST) {
-            return (float)(road->y1 + lane);
-        }
-        if (road->direction == ROAD_DIR_WEST) {
-            return (float)(road->y1 - (lanes - 1) + lane);
-        }
         return (float)(road->y1 - half + lane);
     }
 
     if (road->type == ROAD_VERTICAL) {
-        if (road->direction == ROAD_DIR_NORTH) {
-            return (float)(road->x1 + lane);
-        }
-        if (road->direction == ROAD_DIR_SOUTH) {
-            return (float)(road->x1 - (lanes - 1) + lane);
-        }
         return (float)(road->x1 - half + lane);
     }
 
@@ -531,6 +502,34 @@ static void car_get_turn_targets(RoadDirection current_direction, RoadDirection*
     }
 }
 
+static void car_find_turn_roads(
+    const Car* car,
+    const Graph* graph,
+    const RoadSegment* road,
+    const Intersection* intersection,
+    int* left_road_id,
+    int* right_road_id) 
+{
+    *left_road_id = -1;
+    *right_road_id = -1;
+
+    for (size_t i = 0; i < (size_t)intersection->road_count; i++) {
+        int candidate_id = intersection->roads[i];
+        if (candidate_id == car->road_id) {
+            continue;
+        }
+
+        const RoadSegment* candidate = &graph->roads[candidate_id];
+        if(road->type == ROAD_HORIZONTAL && candidate->type == ROAD_VERTICAL) {
+            *left_road_id = candidate_id;
+            *right_road_id = candidate_id;
+        } else if(road->type == ROAD_VERTICAL && candidate->type == ROAD_HORIZONTAL) {
+            *left_road_id = candidate_id;
+            *right_road_id = candidate_id;
+        }
+    }
+}
+
 void car_update(Car *car, const Graph *graph, float dt) {
     if (car == NULL || graph == NULL || car->road_id < 0 || car->road_id >= graph->road_count) {
         return;
@@ -589,32 +588,10 @@ void car_update(Car *car, const Graph *graph, float dt) {
     RoadDirection right_target = ROAD_DIR_NONE;
     RoadDirection chosen_target = ROAD_DIR_NONE;
 
-    car_get_turn_targets(road->direction, &left_target, &right_target);
+    car_get_turn_targets(current_direction, &left_target, &right_target);
 
     const Intersection *intersection = &graph->intersections[crossed.idx];
-    for (int j = 0; j < intersection->road_count; j++) {
-        int candidate_id = intersection->roads[j];
-        if (candidate_id == car->road_id) {
-            continue;
-        }
-
-        const RoadSegment *candidate = &graph->roads[candidate_id];
-        if (road->type == ROAD_HORIZONTAL && candidate->type == ROAD_VERTICAL) {
-            if (candidate->direction == left_target || candidate->direction == ROAD_DIR_NONE) {
-                left_road_id = candidate_id;
-            }
-            if (candidate->direction == right_target || candidate->direction == ROAD_DIR_NONE) {
-                right_road_id = candidate_id;
-            }
-        } else if (road->type == ROAD_VERTICAL && candidate->type == ROAD_HORIZONTAL) {
-            if (candidate->direction == left_target || candidate->direction == ROAD_DIR_NONE) {
-                left_road_id = candidate_id;
-            }
-            if (candidate->direction == right_target || candidate->direction == ROAD_DIR_NONE) {
-                right_road_id = candidate_id;
-            }
-        }
-    }
+    car_find_turn_roads(car, graph, road, intersection, &left_road_id, &right_road_id);
 
     // Решение о повороте при подъезде к пересечению
     if (!car->turn_decided && new_travel_fraction >= crossed.fraction - 0.1f) {
