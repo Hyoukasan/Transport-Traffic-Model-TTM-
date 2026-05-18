@@ -13,20 +13,6 @@ static float speed_control(float speed_limit, float target_speed)
     return (target_speed > speed_limit) ? speed_limit : target_speed;
 }
 
-static bool road_supports_direction(const RoadSegment *road, RoadDirection direction) {
-    if (road == NULL) {
-        return false;
-    }
-
-    if (road->type == ROAD_HORIZONTAL) {
-        return direction == ROAD_DIR_EAST || direction == ROAD_DIR_WEST;
-    }
-    if (road->type == ROAD_VERTICAL) {
-        return direction == ROAD_DIR_NORTH || direction == ROAD_DIR_SOUTH;
-    }
-    return false;
-}
-
 // функция определния выбора полосы при повороте на перекрестке
 static int direction_lane_start(const RoadSegment *road, RoadDirection direction) {
     int lanes = road->lanes > 0 ? road->lanes : 1;
@@ -194,33 +180,6 @@ static float coordinate_at_travel_position(const RoadSegment *road, RoadDirectio
 static float coordinate_fraction_for_direction(const RoadSegment *road, RoadDirection direction, int x, int y) {
     float frac = coordinate_fraction_along_road(road, x, y);
     return position_to_travel_fraction(road, direction, frac);
-}
-
-static int choose_lane_for_direction(const RoadSegment *road, RoadDirection desired, int preferred_lane) {
-    if (road == NULL) {
-        return 0;
-    }
-
-    int lanes = road->lanes > 0 ? road->lanes : 1;
-    if (lanes == 1) {
-        return 0;
-    }
-
-    int lane_start = direction_lane_start(road, desired);
-    int lane_count = direction_lane_count(road, desired);
-    if (lane_count <= 0) {
-        return 0;
-    }
-
-    int local_index = preferred_lane - lane_start;
-    if (local_index < 0 || local_index >= lane_count) {
-        local_index = 0;
-    }
-    if (local_index >= lane_count) {
-        local_index = lane_count - 1;
-    }
-
-    return lane_start + local_index;
 }
 
 static float clampf(float value, float min_value, float max_value) {
@@ -612,9 +571,6 @@ void car_update(Car *car, const Graph *graph, float dt) {
         if (car->turn_made) {
             const RoadSegment *new_road = &graph->roads[car->turn_target_road_id];
             int new_lane = map_lane_to_direction(road, current_direction, car->lane, new_road, chosen_target);
-            if (!road_supports_direction(new_road, chosen_target)) {
-                new_lane = choose_lane_for_direction(new_road, chosen_target, new_lane);
-            }
 
             float current_lane_center = road_lane_center(road, car->lane);
             float target_lane_center = road_lane_center(new_road, new_lane);
