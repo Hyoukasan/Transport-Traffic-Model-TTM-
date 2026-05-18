@@ -427,6 +427,47 @@ static void car_angle_update(Car* car, RoadDirection current_direction)
     }
 }
 
+typedef struct {
+    int idx;
+    float fraction;
+    int x;
+    int y;
+} CrossedIntersection;
+
+static CrossedIntersection car_find_crossed_intersection(
+    const Car* car,
+    const Graph* graph,
+    const RoadSegment* road,
+    RoadDirection direction,
+    float old_coord,
+    float current_coord) 
+
+{
+    CrossedIntersection crossed = {-1, 0.0f, -1, -1};
+    // Если машина пересекает несколько перекрестков, ищем ближайший
+    float best_distance = INFINITY;
+
+    for(size_t i = 0; i < (size_t)graph->intersection_count; i++) {
+        int ix = graph->intersections[i].x;
+        int iy = graph->intersections[i].y;
+
+        if(road->type == ROAD_HORIZONTAL) {
+            if (!point_in_range(ix, road->x1, road->x2) || iy != road->y1) {
+                continue;
+            }
+        } else if(road->type == ROAD_VERTICAL) {
+            if (!point_in_range(ix, road->x1, road->x2) || iy != road->y1) {
+                continue;
+            }     
+        } else {
+            continue;
+        }
+
+        float intersection_coord = (road->type == ROAD_HORIZONTAL) ? (float)ix : (float)iy;
+
+    }
+}
+
 void car_update(Car *car, const Graph *graph, float dt) {
     if (car == NULL || graph == NULL || car->road_id < 0 || car->road_id >= graph->road_count) {
         return;
@@ -437,11 +478,6 @@ void car_update(Car *car, const Graph *graph, float dt) {
 
     if (car->state == CAR_STATE_TURNING) {
         car_update_turn(car, dt);
-        return;
-    }
-
-    if (car->state == CAR_STATE_BRAKING || car->state == CAR_STATE_TRAFFIC_LIGHT) {
-        car->speed = 0.0f;
         return;
     }
 
@@ -469,79 +505,6 @@ void car_update(Car *car, const Graph *graph, float dt) {
     car_angle_update(car, current_direction);
 
     if (car->state == CAR_STATE_ACCIDENT) {
-        car->position = new_position;
-        return;
-    }
-
-    int chosen_intersection = -1;
-    float chosen_fraction = 0.0f;
-    int chosen_ix = -1;
-    int chosen_iy = -1;
-    float best_distance = INFINITY;
-
-    for (int i = 0; i < graph->intersection_count; i++) {
-        int ix = graph->intersections[i].x;
-        int iy = graph->intersections[i].y;
-
-        if (road->type == ROAD_HORIZONTAL) {
-            if (!point_in_range(ix, road->x1, road->x2) || iy != road->y1) {
-                continue;
-            }
-        } else if (road->type == ROAD_VERTICAL) {
-            if (!point_in_range(iy, road->y1, road->y2) || ix != road->x1) {
-                continue;
-            }
-        } else {
-            continue;
-        }
-
-        float intersection_coord = (road->type == ROAD_HORIZONTAL) ? (float)ix : (float)iy;
-        float gap = 0.0f;
-        bool ahead = false;
-
-        switch (current_direction) {
-            case ROAD_DIR_EAST:
-                ahead = old_coord < intersection_coord && intersection_coord <= current_coord;
-                gap = intersection_coord - old_coord;
-                break;
-            case ROAD_DIR_WEST:
-                ahead = old_coord > intersection_coord && intersection_coord >= current_coord;
-                gap = old_coord - intersection_coord;
-                break;
-            case ROAD_DIR_SOUTH:
-                ahead = old_coord < intersection_coord && intersection_coord <= current_coord;
-                gap = intersection_coord - old_coord;
-                break;
-            case ROAD_DIR_NORTH:
-                ahead = old_coord > intersection_coord && intersection_coord >= current_coord;
-                gap = old_coord - intersection_coord;
-                break;
-            default:
-                break;
-        }
-
-        if (!ahead || gap <= 0.0f) {
-            continue;
-        }
-
-        if (car->last_turn_x == ix && car->last_turn_y == iy) {
-            continue;
-        }
-
-        if (gap < best_distance) {
-            best_distance = gap;
-            chosen_intersection = i;
-            chosen_ix = ix;
-            chosen_iy = iy;
-            chosen_fraction = coordinate_fraction_for_direction(road, current_direction, ix, iy);
-        }
-    }
-
-    if (chosen_intersection < 0) {
-        car->last_turn_x = -1;
-        car->last_turn_y = -1;
-        car->turn_decided = false;
-        car->turn_made = false;
         car->position = new_position;
         return;
     }
