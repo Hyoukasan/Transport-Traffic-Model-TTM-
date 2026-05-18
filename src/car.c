@@ -8,13 +8,10 @@
 #include "graph.h"
 #include "geometry.h"
 
-static bool point_in_range(int value, int a, int b) {
-    if (a <= b) {
-        return value >= a && value <= b;
-    }
-    return value >= b && value <= a;
+static float speed_control(float speed_limit, float target_speed)
+{
+    return (target_speed > speed_limit) ? speed_limit : target_speed;
 }
-
 
 static bool road_supports_direction(const RoadSegment *road, RoadDirection direction) {
     if (road == NULL) {
@@ -346,11 +343,6 @@ void car_destroy(Car *car) {
     car->last_turn_y = -1;
 }
 
-static float speed_control(float speed_limit, float target_speed)
-{
-    return (target_speed > speed_limit) ? speed_limit : target_speed;
-}
-
 /*Функция car_speed_update изменяет текущую скорость для текущего автомобиля в зависимости от его состояния
 Также учитывается ограничется скорости на линии. Формула расчета идет через коэфицент сглаживания*/
 
@@ -434,6 +426,8 @@ typedef struct {
     int y;
 } CrossedIntersection;
 
+/*Функция car_find_crossed_intersection проодится по каждому перекрестку */
+
 static CrossedIntersection car_find_crossed_intersection(
     const Car* car,
     const Graph* graph,
@@ -464,6 +458,42 @@ static CrossedIntersection car_find_crossed_intersection(
         }
 
         float intersection_coord = (road->type == ROAD_HORIZONTAL) ? (float)ix : (float)iy;
+        // gap - вспомогательная переменная: растояние позиции со старого кадра до перекрестка
+        float gap = 0.0f;
+        bool ahead = false;
+
+        switch (direction) {
+            case ROAD_DIR_EAST:
+            case ROAD_DIR_SOUTH:
+                ahead = old_coord < intersection_coord && intersection_coord <= current_coord;
+                gap = intersection_coord - old_coord;
+                break;
+
+            case ROAD_DIR_WEST:
+            case ROAD_DIR_NORTH:
+                ahead = old_coord > intersection_coord && intersection_coord >= current_coord;
+                gap = old_coord - intersection_coord;
+                break;
+
+            default:
+                break;
+        }       
+        
+        if (!ahead || gap <= 0.0f) {
+            continue;
+        }
+
+        if (car->last_turn_x == ix && car->last_turn_y == iy) {
+            continue;
+        }
+
+        if (gap < best_distance) {
+            best_distance = gap;
+            crossed.idx = (int)i;
+            crossed.x = ix;
+            crossed.y = iy;
+            crossed.fraction = coordinate_fraction_for_direction(road, direction, ix, iy);
+        }
 
     }
 }
