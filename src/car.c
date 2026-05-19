@@ -538,12 +538,16 @@ static void car_prepare_turn(
 
     //Расчитываем начальные и конечные точки поворота на линии
     //Временно берем фиксированные границы перекрестка, чтобы проверить движение по дуге
-    float left_edge = (float)crossed.x - 1.5f;
-    float right_edge = (float)crossed.x + 1.5f;
-    float top_edge = (float)crossed.y - 1.5f;
-    float bottom_edge = (float)crossed.y + 1.5f;
+    float current_half_width = (float)(road->lanes > 0 ? road->lanes : 1) * 0.5f;
+    float target_half_width = (float)(new_road->lanes > 0 ? new_road->lanes : 1) * 0.5f;
+    float intersection_half_width = fmaxf(current_half_width, target_half_width);
 
-    float right_turn_start_offset = 1.0f;
+    float left_edge = (float)crossed.x - intersection_half_width;
+    float right_edge = (float)crossed.x + intersection_half_width;
+    float top_edge = (float)crossed.y - intersection_half_width;
+    float bottom_edge = (float)crossed.y + intersection_half_width;
+
+    float right_turn_start_offset = 0.5f;
     float right_turn_end_offset = 1.2f;
     float left_turn_start_offset = 0.0f;
     float left_turn_end_offset = 0.0f;
@@ -614,7 +618,7 @@ static void car_prepare_turn(
         radius = 1.0f;
     }
 
-    radius *= 1.2f;
+    radius *= 1.4f;
 
     int dir_x = 0;
     int dir_y = 0;
@@ -798,7 +802,7 @@ void car_update_turn(Car *car, float dt) {
         return;
     }
 
-    car->turn_progress += dt * 0.8f;  // скорость поворота по дуге
+    car->turn_progress += dt * 0.45f;  // скорость поворота по дуге
     if (car->turn_progress > 1.0f) {
         car->turn_progress = 1.0f;
     }
