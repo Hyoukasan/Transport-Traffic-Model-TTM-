@@ -243,6 +243,7 @@ void car_init(Car *car, int id, int road_id, float desired_speed, int lane) {
     car->turn_target_road_id = -1;
     car->turn_target_lane = -1;
     car->turn_target_direction = ROAD_DIR_NONE;
+    car->turn_type = CAR_TURN_NONE;
     car->turn_target_position = 0.0f;
     car->turn_start_fraction = 0.0f;
     car->turn_decided = false;
@@ -269,6 +270,7 @@ void car_destroy(Car *car) {
     car->turn_target_road_id = -1;
     car->turn_target_lane = -1;
     car->turn_target_direction = ROAD_DIR_NONE;
+    car->turn_type = CAR_TURN_NONE;
     car->last_turn_x = -1;
     car->last_turn_y = -1;
 }
@@ -388,6 +390,7 @@ static CrossedIntersection car_find_crossed_intersection(
         }
 
         float intersection_coord = (road->type == ROAD_HORIZONTAL) ? (float)ix : (float)iy;
+
         // gap - вспомогательная переменная: растояние позиции со старого кадра до перекрестка
         float gap = 0.0f;
         bool ahead = false;
@@ -430,33 +433,26 @@ static CrossedIntersection car_find_crossed_intersection(
     return crossed;
 }
 
-static void car_get_turn_targets(RoadDirection current_direction, RoadDirection* left_target, RoadDirection* right_target){
-    *left_target = ROAD_DIR_NONE;
-    *right_target = ROAD_DIR_NONE;
+static RoadDirection car_turn_target_direction(RoadDirection current_direction, CarTurnType turn_type) {
+    if(turn_type == CAR_TURN_NONE) {
+        return ROAD_DIR_NONE;
+    }
 
-    switch (current_direction) {
+    switch(current_direction) {
         case ROAD_DIR_EAST:
-            *left_target = ROAD_DIR_NORTH;
-            *right_target = ROAD_DIR_SOUTH;
-            break;
+            return (turn_type == CAR_TURN_LEFT) ? ROAD_DIR_NORTH : ROAD_DIR_SOUTH;
 
         case ROAD_DIR_WEST:
-            *left_target = ROAD_DIR_SOUTH;
-            *right_target = ROAD_DIR_NORTH;
-            break;
+            return (turn_type == CAR_TURN_LEFT) ? ROAD_DIR_SOUTH : ROAD_DIR_NORTH;
 
         case ROAD_DIR_NORTH:
-            *left_target = ROAD_DIR_WEST;
-            *right_target = ROAD_DIR_EAST;
-            break;
+            return (turn_type == CAR_TURN_LEFT) ? ROAD_DIR_WEST : ROAD_DIR_EAST;
 
         case ROAD_DIR_SOUTH:
-            *left_target = ROAD_DIR_EAST;
-            *right_target = ROAD_DIR_WEST;
-            break;
+            return (turn_type == CAR_TURN_LEFT) ? ROAD_DIR_EAST : ROAD_DIR_WEST;
 
         default:
-            break;
+            return ROAD_DIR_NONE;
     }
 }
 
@@ -490,32 +486,27 @@ static void car_find_turn_roads(
 
 /*Функция car_choose_turn выбирает будет ли автомобиль поворачивать на перекрестке.*/
 /*Шансы: Прямо - 40%, налево - 30%, направо - 30%*/
-static RoadDirection car_choose_turn(Car* car, int left_road_id, int right_road_id, RoadDirection left_target, RoadDirection right_target) {
+static RoadDirection car_choose_turn(Car* car, int left_road_id, int right_road_id, RoadDirection current_direction) {
     int roll = rand() % 100;
 
     if(left_road_id >= 0 && roll < 10) {
         car->turn_made = true;
+        car->turn_type = CAR_TURN_LEFT;
         car->turn_target_road_id = left_road_id;
-        return left_target;
+        return car_turn_target_direction(current_direction, car->turn_type);
     } else if(right_road_id >= 0 && roll >= 10 && roll < 90) {
         car->turn_made = true;
+        car->turn_type = CAR_TURN_RIGHT;
         car->turn_target_road_id = right_road_id;
-        return right_target;
+        return car_turn_target_direction(current_direction, car->turn_type);
     } else {
         car->turn_made = false;
+        car->turn_type = CAR_TURN_NONE;
         car->turn_target_road_id = -1;
-        return ROAD_DIR_NONE;
+        return car_turn_target_direction(current_direction, car->turn_type);
     }
 }
 
-
-static bool is_right_turn(RoadDirection from, RoadDirection to)
-{
-    return (from == ROAD_DIR_EAST  && to == ROAD_DIR_SOUTH) ||
-           (from == ROAD_DIR_SOUTH && to == ROAD_DIR_WEST)  ||
-           (from == ROAD_DIR_WEST  && to == ROAD_DIR_NORTH) ||
-           (from == ROAD_DIR_NORTH && to == ROAD_DIR_EAST);
-}
 
 static void car_prepare_turn( 
     Car* car,
@@ -523,7 +514,8 @@ static void car_prepare_turn(
     const RoadSegment* road,
     RoadDirection current_direction,
     CrossedIntersection crossed,
-    RoadDirection chosen_target) 
+    RoadDirection chosen_target,
+    float start_fraction) 
 {
     if(!car->turn_made) {
         return;
@@ -551,25 +543,34 @@ static void car_prepare_turn(
     float top_edge = (float)crossed.y - 1.5f;
     float bottom_edge = (float)crossed.y + 1.5f;
 
+    float right_turn_start_offset = 1.0f;
+    float right_turn_end_offset = 1.2f;
+    float left_turn_start_offset = 0.0f;
+    float left_turn_end_offset = 0.0f;
+    bool right_turn = car->turn_type == CAR_TURN_RIGHT;
+
+    float start_offset = right_turn ? right_turn_start_offset : left_turn_start_offset;
+    float end_offset = right_turn ? right_turn_end_offset : left_turn_end_offset;
+
     switch(current_direction) {
         case ROAD_DIR_EAST:
-            start_x = left_edge;
+            start_x = left_edge - start_offset;
             start_y = current_lane_center;
             break;
 
         case ROAD_DIR_WEST:
-            start_x = right_edge;
+            start_x = right_edge + start_offset;
             start_y = current_lane_center;
             break;
 
         case ROAD_DIR_SOUTH:
             start_x = current_lane_center;
-            start_y = top_edge;
+            start_y = top_edge - start_offset;
             break;
 
         case ROAD_DIR_NORTH:
             start_x = current_lane_center;
-            start_y = bottom_edge;
+            start_y = bottom_edge + start_offset;
             break;
 
         default:
@@ -580,23 +581,23 @@ static void car_prepare_turn(
 
     switch(chosen_target) {
         case ROAD_DIR_EAST:
-            end_x = right_edge;
+            end_x = right_edge + end_offset;
             end_y = target_lane_center;
             break;
 
         case ROAD_DIR_WEST:
-            end_x = left_edge;
+            end_x = left_edge - end_offset;
             end_y = target_lane_center;
             break;
 
         case ROAD_DIR_SOUTH:
             end_x = target_lane_center;
-            end_y = bottom_edge;
+            end_y = bottom_edge + end_offset;
             break;
 
         case ROAD_DIR_NORTH:
             end_x = target_lane_center;
-            end_y = top_edge;
+            end_y = top_edge - end_offset;
             break;
 
         default:
@@ -626,8 +627,6 @@ static void car_prepare_turn(
         default: 
             break;
     } 
-
-    bool right_turn = is_right_turn(current_direction, chosen_target);
 
     float normal_x = 0.0f;
     float normal_y = 0.0f;
@@ -724,11 +723,7 @@ void car_update(Car *car, const Graph *graph, float dt) {
 
     int left_road_id = -1;
     int right_road_id = -1;
-    RoadDirection left_target = ROAD_DIR_NONE;
-    RoadDirection right_target = ROAD_DIR_NONE;
     RoadDirection chosen_target = ROAD_DIR_NONE;
-
-    car_get_turn_targets(current_direction, &left_target, &right_target);
 
     const Intersection *intersection = &graph->intersections[crossed.idx];
     car_find_turn_roads(car, graph, road, intersection, &left_road_id, &right_road_id);
@@ -737,10 +732,10 @@ void car_update(Car *car, const Graph *graph, float dt) {
     if (!car->turn_decided && new_travel_fraction >= crossed.fraction - 0.1f) {
         car->turn_decided = true;
 
-        chosen_target = car_choose_turn(car, left_road_id, right_road_id, left_target, right_target);
+        chosen_target = car_choose_turn(car, left_road_id, right_road_id, current_direction);
         if(car->turn_made) {
             // Подготавливаем параметры дуги поворота до входа машины в перекресток
-            car_prepare_turn(car, graph, road, current_direction, crossed, chosen_target);
+            car_prepare_turn(car, graph, road, current_direction, crossed, chosen_target, new_travel_fraction);
         }
     }
 
@@ -821,6 +816,8 @@ void car_update_turn(Car *car, float dt) {
         car->position = clampf(car->turn_target_position, 0.0f, 1.0f);
         car->turn_target_road_id = -1;
         car->turn_target_lane = -1;
+        car->turn_target_direction = ROAD_DIR_NONE;
+        car->turn_type = CAR_TURN_NONE;
         car->turn_center_x = 0.0f;
         car->turn_center_y = 0.0f;
         car->turn_radius = 0.0f;

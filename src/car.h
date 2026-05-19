@@ -24,6 +24,12 @@ typedef enum {
     CAR_COLOR_BLACK
 } CarColor;
 
+typedef enum {
+    CAR_TURN_NONE,
+    CAR_TURN_LEFT,
+    CAR_TURN_RIGHT
+} CarTurnType;
+
 typedef struct Car{
     int id;
     int road_id;          // индекс сегмента дороги
@@ -58,6 +64,7 @@ typedef struct Car{
     int turn_target_road_id;
     int turn_target_lane;
     int turn_target_direction;
+    CarTurnType turn_type;
     float turn_target_position;
     float turn_start_fraction;  // позиция начала поворота
     bool turn_decided;          // решено ли поворачивать
