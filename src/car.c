@@ -488,14 +488,15 @@ static void car_find_turn_roads(
 }
 
 /*Функция car_choose_turn выбирает будет ли автомобиль поворачивать на перекрестке.*/
+/*Шансы: Прямо - 40%, налево - 30%, направо - 30%*/
 static RoadDirection car_choose_turn(Car* car, int left_road_id, int right_road_id, RoadDirection left_target, RoadDirection right_target) {
     int roll = rand() % 100;
 
-    if(left_road_id >= 0 && roll < 20) {
+    if(left_road_id >= 0 && roll < 30) {
         car->turn_made = true;
         car->turn_target_road_id = left_road_id;
         return left_target;
-    } else if(right_road_id >= 0 && roll >= 20 && roll < 40) {
+    } else if(right_road_id >= 0 && roll >= 30 && roll < 60) {
         car->turn_made = true;
         car->turn_target_road_id = right_road_id;
         return right_target;
@@ -572,18 +573,8 @@ void car_update(Car *car, const Graph *graph, float dt) {
     // Решение о повороте при подъезде к пересечению
     if (!car->turn_decided && new_travel_fraction >= crossed.fraction - 0.1f) {
         car->turn_decided = true;
-        int roll = rand() % 100;
-        if (left_road_id >= 0 && roll < 20) {
-            car->turn_made = true;
-            car->turn_target_road_id = left_road_id;
-            chosen_target = left_target;
-        } else if (right_road_id >= 0 && roll < 40) {
-            car->turn_made = true;
-            car->turn_target_road_id = right_road_id;
-            chosen_target = right_target;
-        } else {
-            car->turn_made = false;
-        }
+
+        chosen_target = car_choose_turn(car, left_road_id, right_road_id, left_target, right_target);
 
         if (car->turn_made) {
             const RoadSegment *new_road = &graph->roads[car->turn_target_road_id];
