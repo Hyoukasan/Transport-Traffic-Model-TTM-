@@ -789,9 +789,6 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
         if (car->state == CAR_STATE_TURNING) {
             float t = smoothstep(car->turn_progress);
             float path_angle = lerp_angle(car->turn_path_angle_from, car->turn_path_angle_to, t);
-            float delta_angle = normalize_angle(car->turn_path_angle_to - car->turn_path_angle_from);
-            float tangent_offset = (delta_angle >= 0.0f) ? 90.0f : -90.0f;
-            car->angle = normalize_angle(path_angle + tangent_offset);
             float rad = path_angle * (3.14159265f / 180.0f);
             car_grid_x = car->turn_center_x + car->turn_radius * cosf(rad);
             car_grid_y = car->turn_center_y + car->turn_radius * sinf(rad);
@@ -832,7 +829,7 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
 
         float car_width_px = 28.0f;
         float car_height_px = 44.0f;
-        if (road->type == ROAD_HORIZONTAL) {
+        if (car->state != CAR_STATE_TURNING && road->type == ROAD_HORIZONTAL) {
             car_width_px = 44.0f;
             car_height_px = 28.0f;
         }

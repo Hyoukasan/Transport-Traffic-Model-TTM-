@@ -493,11 +493,11 @@ static void car_find_turn_roads(
 static RoadDirection car_choose_turn(Car* car, int left_road_id, int right_road_id, RoadDirection left_target, RoadDirection right_target) {
     int roll = rand() % 100;
 
-    if(left_road_id >= 0 && roll < 30) {
+    if(left_road_id >= 0 && roll < 10) {
         car->turn_made = true;
         car->turn_target_road_id = left_road_id;
         return left_target;
-    } else if(right_road_id >= 0 && roll >= 30 && roll < 60) {
+    } else if(right_road_id >= 0 && roll >= 10 && roll < 90) {
         car->turn_made = true;
         car->turn_target_road_id = right_road_id;
         return right_target;
@@ -602,6 +602,14 @@ static void car_prepare_turn(
     float start_angle = atan2f(start_y - center_y, start_x - center_x) * (180.0f / 3.14159265f);
     float end_angle   = atan2f(end_y - center_y, end_x - center_x) * (180.0f / 3.14159265f);
 
+    while(end_angle - start_angle > 180.0f) {
+        end_angle -= 360.0f;
+    }
+
+    while(end_angle - start_angle < -180.0f) {
+        end_angle += 360.0f;
+    }
+
     car->turn_start_fraction = clampf(coordinate_fraction_for_direction(road, current_direction, (int)start_x, (int)start_y), 0.0f, 1.0f);
 
     float end_fraction = clampf(coordinate_fraction_for_direction(new_road, chosen_target, (int)end_x, (int)end_y), 0.0f, 1.0f);
@@ -684,42 +692,18 @@ void car_update(Car *car, const Graph *graph, float dt) {
     // Решение о повороте при подъезде к пересечению
     if (!car->turn_decided && new_travel_fraction >= crossed.fraction - 0.1f) {
         car->turn_decided = true;
-        
+
         chosen_target = car_choose_turn(car, left_road_id, right_road_id, left_target, right_target);
+        if(car->turn_made) {
+            // Подготавливаем параметры дуги поворота до входа машины в перекресток
+            car_prepare_turn(car, graph, road, current_direction, crossed, chosen_target);
+        }
     }
 
     // Начало поворота при достижении края
     if (car->turn_decided && car->turn_made && new_travel_fraction >= car->turn_start_fraction && car->state != CAR_STATE_TURNING) {
-        const RoadSegment *new_road = &graph->roads[car->turn_target_road_id];
-        float current_lane_center = road_lane_center(road, car->lane);
-        float target_lane_center = road_lane_center(new_road, car->turn_target_lane);
-
-        float start_x, start_y;
-        if (road->type == ROAD_HORIZONTAL) {
-            start_x = coordinate_at_travel_position(road, current_direction, car->turn_start_fraction);
-            start_y = current_lane_center;
-        } else {
-            start_x = current_lane_center;
-            start_y = coordinate_at_travel_position(road, current_direction, car->turn_start_fraction);
-        }
-
-        float end_x, end_y;
-        if (new_road->type == ROAD_HORIZONTAL) {
-            end_x = coordinate_at_travel_position(new_road, chosen_target, car->turn_target_position);
-            end_y = target_lane_center;
-        } else {
-            end_x = target_lane_center;
-            end_y = coordinate_at_travel_position(new_road, chosen_target, car->turn_target_position);
-        }
-
-        float start_angle = atan2f(start_y - car->turn_center_y, start_x - car->turn_center_x) * (180.0f / 3.14159265f);
-        float end_angle = atan2f(end_y - car->turn_center_y, end_x - car->turn_center_x) * (180.0f / 3.14159265f);
-
+        //Запускаем поворот по заранее рассчитанной дуге
         car->position = travel_fraction_to_position(road, current_direction, car->turn_start_fraction);
-        car->turn_path_angle_from = start_angle;
-        car->turn_path_angle_to = end_angle;
-        car->angle_from = direction_to_angle(current_direction);
-        car->angle_to = direction_to_angle(chosen_target);
         car->turn_progress = 0.0f;
         car->state = CAR_STATE_TURNING;
     }
