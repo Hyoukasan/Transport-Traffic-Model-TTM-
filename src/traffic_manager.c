@@ -478,7 +478,7 @@ static bool traffic_manager_spawn_car(TrafficManager* manager, int sequence_inde
 
     if (sequence_index >= 0) {
         int road_car_index = sequence_index / roads;
-        travel_fraction += (float)road_car_index * 0.08f;
+        travel_fraction += (float)road_car_index * 0.04f;
         if (travel_fraction > 0.45f) {
             travel_fraction = 0.45f;
         }

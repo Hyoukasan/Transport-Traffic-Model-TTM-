@@ -358,7 +358,6 @@ typedef struct {
 
 /*Функция car_find_crossed_intersection проодится по каждому перекрестку 
 и по направлению дороги определяет расстояние авто до перекрестка*/
-
 static CrossedIntersection car_find_crossed_intersection(
     const Car* car,
     const Graph* graph,
@@ -509,6 +508,116 @@ static RoadDirection car_choose_turn(Car* car, int left_road_id, int right_road_
     }
 }
 
+
+static bool is_right_turn(RoadDirection from, RoadDirection to)
+{
+    return (from == ROAD_DIR_EAST  && to == ROAD_DIR_SOUTH) ||
+           (from == ROAD_DIR_SOUTH && to == ROAD_DIR_WEST)  ||
+           (from == ROAD_DIR_WEST  && to == ROAD_DIR_NORTH) ||
+           (from == ROAD_DIR_NORTH && to == ROAD_DIR_EAST);
+}
+
+static void car_prepare_turn( 
+    Car* car,
+    const Graph* graph,
+    const RoadSegment* road,
+    RoadDirection current_direction,
+    CrossedIntersection crossed,
+    RoadDirection chosen_target) 
+{
+    if(!car->turn_made) {
+        return;
+    }
+
+    float start_x;
+    float start_y;
+
+    float end_x;
+    float end_y;
+
+    float center_x;
+    float center_y;
+
+    const RoadSegment* new_road = &graph->roads[car->turn_target_road_id];
+    int new_lane = map_lane_to_direction(road, current_direction, car->lane, new_road, chosen_target);
+
+    float current_lane_center = road_lane_center(road, car->lane);
+    float target_lane_center = road_lane_center(new_road, new_lane);
+
+    //Расчитываем начальные и конечные точки поворота на линии
+    if(road->type == ROAD_HORIZONTAL) {
+        start_x = (float)crossed.x;
+        start_y = current_lane_center;
+    } else {
+        start_x = current_lane_center;
+        start_y = (float)crossed.y;
+    }
+
+    if(new_road->type == ROAD_HORIZONTAL) {
+        end_x = (float)crossed.x;
+        end_y = target_lane_center;
+    } else {
+        end_x = target_lane_center;
+        end_y = (float)crossed.y;
+    }
+
+    float offset_current = (road->type == ROAD_HORIZONTAL) ? fabsf(current_lane_center - (float)crossed.y) : fabsf(current_lane_center - (float)crossed.x);
+    float offset_target  = (new_road->type == ROAD_HORIZONTAL) ? fabsf(target_lane_center  - (float)crossed.y)  : fabsf(target_lane_center - (float)crossed.x);
+
+    float radius = fmaxf(offset_current, offset_target);
+    if (radius < 1.0f) {
+        radius = 1.0f;
+    }
+
+    radius *= 1.2f;
+
+    int dir_x = 0;
+    int dir_y = 0;
+
+    switch (current_direction) {
+        case ROAD_DIR_EAST:  dir_x = 1;  dir_y = 0;  break;
+        case ROAD_DIR_WEST:  dir_x = -1; dir_y = 0;  break;
+        case ROAD_DIR_SOUTH: dir_x = 0;  dir_y = 1;  break;
+        case ROAD_DIR_NORTH: dir_x = 0;  dir_y = -1; break;
+        default: 
+            break;
+    } 
+
+    bool right_turn = is_right_turn(current_direction, chosen_target);
+
+    float normal_x = 0.0f;
+    float normal_y = 0.0f;
+
+    if (right_turn) {
+        normal_x = (float)dir_y * (-1.0f);
+        normal_y = (float)dir_x;
+    } else {
+        normal_x = (float)dir_y;
+        normal_y = (float)dir_x * (-1.0f);
+    }
+
+    center_x = start_x + normal_x * radius;
+    center_y = start_y + normal_y * radius;
+
+    float start_angle = atan2f(start_y - center_y, start_x - center_x) * (180.0f / 3.14159265f);
+    float end_angle   = atan2f(end_y - center_y, end_x - center_x) * (180.0f / 3.14159265f);
+
+    car->turn_start_fraction = clampf(coordinate_fraction_for_direction(road, current_direction, (int)start_x, (int)start_y), 0.0f, 1.0f);
+
+    float end_fraction = clampf(coordinate_fraction_for_direction(new_road, chosen_target, (int)end_x, (int)end_y), 0.0f, 1.0f);
+    car->turn_target_position = clampf(travel_fraction_to_position(new_road, chosen_target, end_fraction), 0.0f, 1.0f);
+
+    car->turn_target_lane = new_lane;
+    car->turn_target_direction = chosen_target;
+    car->turn_center_x = center_x;
+    car->turn_center_y = center_y;
+    car->turn_radius = radius;
+    car->turn_path_angle_from = start_angle;
+    car->turn_path_angle_to = end_angle;
+    car->angle_from = direction_to_angle(current_direction);
+    car->angle_to = direction_to_angle(chosen_target);
+}
+
 void car_update(Car *car, const Graph *graph, float dt) {
     if (car == NULL || graph == NULL || car->road_id < 0 || car->road_id >= graph->road_count) {
         return;
@@ -575,52 +684,8 @@ void car_update(Car *car, const Graph *graph, float dt) {
     // Решение о повороте при подъезде к пересечению
     if (!car->turn_decided && new_travel_fraction >= crossed.fraction - 0.1f) {
         car->turn_decided = true;
-
+        
         chosen_target = car_choose_turn(car, left_road_id, right_road_id, left_target, right_target);
-
-        if (car->turn_made) {
-            const RoadSegment *new_road = &graph->roads[car->turn_target_road_id];
-            int new_lane = map_lane_to_direction(road, current_direction, car->lane, new_road, chosen_target);
-
-            float current_lane_center = road_lane_center(road, car->lane);
-            float target_lane_center = road_lane_center(new_road, new_lane);
-
-            float offset_current = (road->type == ROAD_HORIZONTAL)
-                ? fabsf(current_lane_center - (float)crossed.y)
-                : fabsf(current_lane_center - (float)crossed.x);
-            float offset_target = (new_road->type == ROAD_HORIZONTAL)
-                ? fabsf(target_lane_center - (float)crossed.y)
-                : fabsf(target_lane_center - (float)crossed.x);
-
-            float turn_offset = fmaxf(fmaxf(offset_current, offset_target), 1.0f);
-            float turn_radius = turn_offset;
-
-            float start_x, start_y;
-            if (road->type == ROAD_HORIZONTAL) {
-                start_x = (float)crossed.x;
-                start_y = current_lane_center;
-            } else {
-                start_x = current_lane_center;
-                start_y = (float)crossed.y;
-            }
-
-            float end_x, end_y;
-            if (new_road->type == ROAD_HORIZONTAL) {
-                end_x = (float)crossed.x;
-                end_y = target_lane_center;
-            } else {
-                end_x = target_lane_center;
-                end_y = (float)crossed.y;
-            }
-
-            car->turn_start_fraction = clampf(coordinate_fraction_for_direction(road, current_direction, start_x, start_y), 0.0f, 1.0f);
-            float end_fraction = clampf(coordinate_fraction_for_direction(new_road, chosen_target, end_x, end_y), 0.0f, 1.0f);
-            car->turn_target_position = clampf(travel_fraction_to_position(new_road, chosen_target, end_fraction), 0.0f, 1.0f);
-            car->turn_target_lane = new_lane;
-            car->turn_center_x = (float)crossed.x + ((current_direction == ROAD_DIR_EAST || chosen_target == ROAD_DIR_EAST) ? turn_radius : -turn_radius);
-            car->turn_center_y = (float)crossed.y + ((current_direction == ROAD_DIR_SOUTH || chosen_target == ROAD_DIR_SOUTH) ? turn_radius : -turn_radius);
-            car->turn_radius = turn_radius;
-        }
     }
 
     // Начало поворота при достижении края

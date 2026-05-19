@@ -4,7 +4,6 @@
 #include <stdbool.h>
 
 struct Graph;
-typedef enum RoadDirection RoadDirection;
 
 typedef enum {
     CAR_STATE_NORMAL,
@@ -58,7 +57,7 @@ typedef struct Car{
     float turn_path_angle_to;
     int turn_target_road_id;
     int turn_target_lane;
-    RoadDirection turn_target_direction;
+    int turn_target_direction;
     float turn_target_position;
     float turn_start_fraction;  // позиция начала поворота
     bool turn_decided;          // решено ли поворачивать
