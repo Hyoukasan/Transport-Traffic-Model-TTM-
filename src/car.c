@@ -242,6 +242,7 @@ void car_init(Car *car, int id, int road_id, float desired_speed, int lane) {
     car->turn_path_angle_to = 0.0f;
     car->turn_target_road_id = -1;
     car->turn_target_lane = -1;
+    car->turn_target_direction = ROAD_DIR_NONE;
     car->turn_target_position = 0.0f;
     car->turn_start_fraction = 0.0f;
     car->turn_decided = false;
@@ -267,6 +268,7 @@ void car_destroy(Car *car) {
     car->original_lane = -1;
     car->turn_target_road_id = -1;
     car->turn_target_lane = -1;
+    car->turn_target_direction = ROAD_DIR_NONE;
     car->last_turn_x = -1;
     car->last_turn_y = -1;
 }
