@@ -843,13 +843,13 @@ static bool traffic_manager_update_overtake_return(TrafficManager* manager, Car*
         return false;
     }
 
-    if (!car->overtaking || car->target_lane != -1) {
+    if (car->state != CAR_STATE_OVERTAKING || car->target_lane != -1) {
         return false;
     }
 
     if (car->road_id < 0 || car->road_id >= manager->graph->road_count) {
-        car->overtaking = false;
         car->original_lane = -1;
+        car->state = CAR_STATE_NORMAL;
         return false;
     }
 
@@ -858,13 +858,12 @@ static bool traffic_manager_update_overtake_return(TrafficManager* manager, Car*
     float travel_fraction = traffic_manager_position_to_travel_fraction(road, dir, car->position);
 
     if (travel_fraction > 0.85f || car->original_lane < 0 || car->original_lane >= road->lanes) {
-        car->overtaking = false;
         car->original_lane = -1;
+        car->state = CAR_STATE_NORMAL;
         return false;
     }
 
     if (car->lane == car->original_lane) {
-        car->overtaking = false;
         car->original_lane = -1;
         car->state = CAR_STATE_NORMAL;
         return false;
@@ -876,7 +875,6 @@ static bool traffic_manager_update_overtake_return(TrafficManager* manager, Car*
 
     car->state = CAR_STATE_NORMAL;
     car_start_lane_change(car, car->original_lane);
-    car->overtaking = false;
     car->original_lane = -1;
     car->lane_change_timer = (float)(rand() % 121 + 120) / 60.0f;
     return true;
@@ -891,7 +889,7 @@ static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car
         return false;
     }
 
-    if((car->state == CAR_STATE_NORMAL || car->state == CAR_STATE_SLOWING) && !car->overtaking && car->target_lane == -1 && !car->at_intersection) {
+    if((car->state == CAR_STATE_NORMAL || car->state == CAR_STATE_SLOWING) && car->target_lane == -1 && !car->at_intersection) {
         car->lane_change_timer -= dt;
         if (car->lane_change_timer > 0.0f) {
             return false;
@@ -951,7 +949,6 @@ static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car
         }
 
         if(desired_lane >= 0) {
-            car->overtaking = true;
             car->original_lane = car->lane;
             car->state = CAR_STATE_NORMAL;
             car_start_lane_change(car, desired_lane);

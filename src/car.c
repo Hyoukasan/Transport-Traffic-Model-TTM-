@@ -225,7 +225,6 @@ void car_init(Car *car, int id, int road_id, float desired_speed, int lane) {
     car->angle = 0.0f;
     car->state = CAR_STATE_NORMAL;
     car->texture = 0;
-    car->overtaking = false;
     car->original_lane = -1;
 
     // Инициализация новых полей
@@ -265,7 +264,6 @@ void car_destroy(Car *car) {
     memset(car, 0, sizeof(*car));
     car->road_id = -1;
     car->target_lane = -1;
-    car->overtaking = false;
     car->original_lane = -1;
     car->turn_target_road_id = -1;
     car->turn_target_lane = -1;
@@ -486,6 +484,25 @@ static void car_find_turn_roads(
             *left_road_id = candidate_id;
             *right_road_id = candidate_id;
         }
+    }
+}
+
+/*Функция car_choose_turn выбирает будет ли автомобиль поворачивать на перекрестке.*/
+static RoadDirection car_choose_turn(Car* car, int left_road_id, int right_road_id, RoadDirection left_target, RoadDirection right_target) {
+    int roll = rand() % 100;
+
+    if(left_road_id >= 0 && roll < 20) {
+        car->turn_made = true;
+        car->turn_target_road_id = left_road_id;
+        return left_target;
+    } else if(right_road_id >= 0 && roll >= 20 && roll < 40) {
+        car->turn_made = true;
+        car->turn_target_road_id = right_road_id;
+        return right_target;
+    } else {
+        car->turn_made = false;
+        car->turn_target_road_id = -1;
+        return ROAD_DIR_NONE;
     }
 }
 
@@ -729,4 +746,3 @@ void car_update_turn(Car *car, float dt) {
         car->turn_made = false;
     }
 }
-

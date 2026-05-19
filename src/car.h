@@ -39,7 +39,6 @@ typedef struct Car{
     CarState state;
     CarColor color;
     unsigned int texture; // OpenGL texture id
-    bool overtaking;
     int original_lane;
 
     // Новые поля для плавных манёвров
