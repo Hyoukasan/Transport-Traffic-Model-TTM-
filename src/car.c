@@ -338,10 +338,10 @@ static void car_angle_update(Car* car, RoadDirection current_direction)
             car->angle = -90.0f;
             break;
         case ROAD_DIR_NORTH:
-            car->angle = 180.0f;
+            car->angle = 0.0f;
             break;
         case ROAD_DIR_SOUTH:
-            car->angle = 0.0f;
+            car->angle = 180.0f;
             break;
         default:
             car->angle = 0.0f;
@@ -546,10 +546,10 @@ static void car_prepare_turn(
 
     //Расчитываем начальные и конечные точки поворота на линии
     //Временно берем фиксированные границы перекрестка, чтобы проверить движение по дуге
-    float left_edge = (float)crossed.x - 2.0f;
-    float right_edge = (float)crossed.x + 2.0f;
-    float top_edge = (float)crossed.y - 2.0f;
-    float bottom_edge = (float)crossed.y + 2.0f;
+    float left_edge = (float)crossed.x - 1.5f;
+    float right_edge = (float)crossed.x + 1.5f;
+    float top_edge = (float)crossed.y - 1.5f;
+    float bottom_edge = (float)crossed.y + 1.5f;
 
     switch(current_direction) {
         case ROAD_DIR_EAST:

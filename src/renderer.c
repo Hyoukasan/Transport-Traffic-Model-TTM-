@@ -824,18 +824,11 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
             continue;
         }
 
-        float cx = ((car_grid_x + graph->padding) * graph->chunk_size + graph->chunk_size * 0.5f) * 2.0f / graph->window_width - 1.0f;
-        float cy = 1.0f - ((car_grid_y + graph->padding) * graph->chunk_size + graph->chunk_size * 0.5f) * 2.0f / graph->window_height;
+        float cx = (car_grid_x + graph->padding) * graph->chunk_size + graph->chunk_size * 0.5f;
+        float cy = (car_grid_y + graph->padding) * graph->chunk_size + graph->chunk_size * 0.5f;
 
         float car_width_px = 28.0f;
         float car_height_px = 44.0f;
-        if (car->state != CAR_STATE_TURNING && road->type == ROAD_HORIZONTAL) {
-            car_width_px = 44.0f;
-            car_height_px = 28.0f;
-        }
-
-        float scale_x = (car_width_px * 2.0f) / (float)graph->window_width;
-        float scale_y = (car_height_px * 2.0f) / (float)graph->window_height;
 
         if (car->texture != 0) {
             glEnable(GL_TEXTURE_2D);
@@ -846,11 +839,20 @@ void renderer_draw_cars(Graph *graph, Car *cars, int car_count) {
 
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0.0, graph->window_width, graph->window_height, 0.0, -1.0, 1.0);
+
+        glMatrixMode(GL_MODELVIEW);
         glTranslatef(cx, cy, 0.0f);
         glRotatef(car->angle, 0.0f, 0.0f, 1.0f);
-        glScalef(scale_x, scale_y, 1.0f);
+        glScalef(car_width_px, car_height_px, 1.0f);
         glColor3f(1.0f, 1.0f, 1.0f);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
         glPopMatrix();
 
         glBindTexture(GL_TEXTURE_2D, 0);

@@ -49,8 +49,8 @@ float direction_to_angle(RoadDirection dir) {
     switch (dir) {
         case ROAD_DIR_EAST: return 90.0f;
         case ROAD_DIR_WEST: return -90.0f;
-        case ROAD_DIR_NORTH: return 180.0f;
-        case ROAD_DIR_SOUTH: return 0.0f;
+        case ROAD_DIR_NORTH: return 0.0f;
+        case ROAD_DIR_SOUTH: return 180.0f;
         default: return 0.0f;
     }
 }
