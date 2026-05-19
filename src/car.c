@@ -182,16 +182,6 @@ static float coordinate_fraction_for_direction(const RoadSegment *road, RoadDire
     return position_to_travel_fraction(road, direction, frac);
 }
 
-static float clampf(float value, float min_value, float max_value) {
-    if (value < min_value) {
-        return min_value;
-    }
-    if (value > max_value) {
-        return max_value;
-    }
-    return value;
-}
-
 static float road_lane_center(const RoadSegment *road, int lane) {
     int lanes = road->lanes > 0 ? road->lanes : 1;
     int half = lanes / 2;

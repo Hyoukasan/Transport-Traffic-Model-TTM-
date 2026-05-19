@@ -45,6 +45,16 @@ bool point_in_range(int value, int a, int b) {
 }
 
 // Новые функции для манёвров
+float clampf(float value, float min_value, float max_value) {
+    if (value < min_value) {
+        return min_value;
+    }
+    if (value > max_value) {
+        return max_value;
+    }
+    return value;
+}
+
 float direction_to_angle(RoadDirection dir) {
     switch (dir) {
         case ROAD_DIR_EAST: return 90.0f;

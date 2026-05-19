@@ -14,6 +14,7 @@ float grid_edge_to_normalized_y(int grid_y, int chunk_size, int padding, int hei
 int coord_min(int a, int b);
 int coord_max(int a, int b);
 bool point_in_range(int value, int a, int b);
+float clampf(float value, float min_value, float max_value);
 
 // Новые функции для манёвров
 float direction_to_angle(RoadDirection dir);
