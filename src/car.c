@@ -545,20 +545,64 @@ static void car_prepare_turn(
     float target_lane_center = road_lane_center(new_road, new_lane);
 
     //Расчитываем начальные и конечные точки поворота на линии
-    if(road->type == ROAD_HORIZONTAL) {
-        start_x = (float)crossed.x;
-        start_y = current_lane_center;
-    } else {
-        start_x = current_lane_center;
-        start_y = (float)crossed.y;
+    //Временно берем фиксированные границы перекрестка, чтобы проверить движение по дуге
+    float left_edge = (float)crossed.x - 2.0f;
+    float right_edge = (float)crossed.x + 2.0f;
+    float top_edge = (float)crossed.y - 2.0f;
+    float bottom_edge = (float)crossed.y + 2.0f;
+
+    switch(current_direction) {
+        case ROAD_DIR_EAST:
+            start_x = left_edge;
+            start_y = current_lane_center;
+            break;
+
+        case ROAD_DIR_WEST:
+            start_x = right_edge;
+            start_y = current_lane_center;
+            break;
+
+        case ROAD_DIR_SOUTH:
+            start_x = current_lane_center;
+            start_y = top_edge;
+            break;
+
+        case ROAD_DIR_NORTH:
+            start_x = current_lane_center;
+            start_y = bottom_edge;
+            break;
+
+        default:
+            start_x = (float)crossed.x;
+            start_y = (float)crossed.y;
+            break;
     }
 
-    if(new_road->type == ROAD_HORIZONTAL) {
-        end_x = (float)crossed.x;
-        end_y = target_lane_center;
-    } else {
-        end_x = target_lane_center;
-        end_y = (float)crossed.y;
+    switch(chosen_target) {
+        case ROAD_DIR_EAST:
+            end_x = right_edge;
+            end_y = target_lane_center;
+            break;
+
+        case ROAD_DIR_WEST:
+            end_x = left_edge;
+            end_y = target_lane_center;
+            break;
+
+        case ROAD_DIR_SOUTH:
+            end_x = target_lane_center;
+            end_y = bottom_edge;
+            break;
+
+        case ROAD_DIR_NORTH:
+            end_x = target_lane_center;
+            end_y = top_edge;
+            break;
+
+        default:
+            end_x = (float)crossed.x;
+            end_y = (float)crossed.y;
+            break;
     }
 
     float offset_current = (road->type == ROAD_HORIZONTAL) ? fabsf(current_lane_center - (float)crossed.y) : fabsf(current_lane_center - (float)crossed.x);
