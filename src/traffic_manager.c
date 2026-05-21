@@ -71,7 +71,7 @@ static int traffic_manager_build_roads(TrafficManager* manager, int scenario, in
 }
 
 static int traffic_manager_max_roads_for_scenario(ScenarioType scenario) {
-    switch (scenario) {
+    switch(scenario) {
         case SCENARIO_HIGHWAY:
             return 1;
         case SCENARIO_SINGLE_INTERSECTION:
@@ -140,6 +140,7 @@ static float traffic_manager_clampf(float value, float min_value, float max_valu
     return value;
 }
 
+/*от 2.0 до 4.49 секунд~*/
 static float traffic_manager_random_spawn_delay(void) {
     return 2.0f + (float)(rand() % 250) / 100.0f;
 }

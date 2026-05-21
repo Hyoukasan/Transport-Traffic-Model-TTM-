@@ -148,6 +148,7 @@ void application_update(void){
             config.scenario   = SCENARIO_HIGHWAY;
             config.lane_count = 4;
             config.max_cars   = 10;
+            config.time = 0.0f;
 
             menu_set_state(&menu, MENU_STATE_SIMULATION_CONFIG_SETTING);
             break;
@@ -161,6 +162,7 @@ void application_update(void){
             config.scenario   = SCENARIO_SINGLE_INTERSECTION;
             config.lane_count = 4;
             config.max_cars   = 10;
+            config.time = 0.0f;
 
             menu_set_state(&menu, MENU_STATE_SIMULATION_CONFIG_SETTING);
             break;
@@ -174,6 +176,7 @@ void application_update(void){
             config.scenario   = SCENARIO_MULTI_INTERSECTION;
             config.lane_count = 4;
             config.max_cars   = 10;
+            config.time = 0.0f;
 
             menu_set_state(&menu, MENU_STATE_SIMULATION_CONFIG_SETTING);
             break;
@@ -233,6 +236,7 @@ void application_update(void){
 
         case MENU_STATE_START_SIMULATION:
             if(traffic_manager_init(&manager, &config) == 0) {
+                manager.time = config.time;
                 renderer_upload_graph(manager.graph);
                 app.current_state = APP_STATE_RUNNING_SIMULATION;
                 menu_set_state(&menu, MENU_STATE_IDLE);
@@ -261,8 +265,7 @@ void application_update(void){
             menu_update(&menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
             int slot = slot_from_button_id(menu.last_pressed_button);
             if (slot > 0) {
-                float saved_time = 0.0f;
-                if (config_manager_load_profile(&config, slot, &saved_time) == 0) {
+                if (config_manager_load_profile(&config, slot, NULL) == 0) {
                     menu_set_state(&menu, MENU_STATE_START_SIMULATION);
                 }
             }

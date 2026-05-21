@@ -100,6 +100,7 @@ int config_manager_load_profile(ConfigManager* config, int slot, float* out_time
     config->scenario = (ScenarioType)scenario;
     config->lane_count = lane_count;
     config->max_cars = max_cars;
+    config->time = time;
 
     if (out_time != NULL) {
         *out_time = time;

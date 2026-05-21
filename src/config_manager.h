@@ -13,6 +13,7 @@ typedef struct ConfigManager {
     ScenarioType scenario;
     int lane_count;
     int max_cars;
+    float time;
 } ConfigManager;
 
 int config_manager_save_profile(const ConfigManager* config, int slot, float time);
