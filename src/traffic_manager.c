@@ -105,7 +105,7 @@ static int traffic_manager_init_lights(TrafficManager *manager) {
 }
 
 static void traffic_manager_update_lights(TrafficManager *manager, float dt) {
-    const float switch_time = 5.0f;
+    float switch_time = 5.0f + (float)manager->graph->roads[0].lanes * 0.8f;
 
     for(size_t i = 0; i < (size_t)(manager->light_count); i++) {
         TrafficLight *light = &manager->lights[i];
