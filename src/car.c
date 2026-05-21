@@ -479,12 +479,12 @@ static void car_find_turn_roads(
 static RoadDirection car_choose_turn(Car* car, int left_road_id, int right_road_id, RoadDirection current_direction) {
     int roll = rand() % 100;
 
-    if(left_road_id >= 0 && roll < 10) {
+    if(left_road_id >= 0 && roll < 30) {
         car->turn_made = true;
         car->turn_type = CAR_TURN_LEFT;
         car->turn_target_road_id = left_road_id;
         return car_turn_target_direction(current_direction, car->turn_type);
-    } else if(right_road_id >= 0 && roll >= 10 && roll < 90) {
+    } else if(right_road_id >= 0 && roll >= 30 && roll < 60) {
         car->turn_made = true;
         car->turn_type = CAR_TURN_RIGHT;
         car->turn_target_road_id = right_road_id;
@@ -624,6 +624,7 @@ if(!car->turn_made) {
     float start_angle = atan2f(start_y - center_y, start_x - center_x) * (180.0f / 3.14159265f);
     float end_angle   = atan2f(end_y - center_y, end_x - center_x) * (180.0f / 3.14159265f);
 
+    // Эффеки волчка: поиск кратчайшего пути
     while(end_angle - start_angle > 180.0f) {
         end_angle -= 360.0f;
     }
@@ -755,7 +756,7 @@ void car_start_lane_change(Car *car, int target_lane) {
 void car_update_lane_change(Car *car, float dt) {
     if (car == NULL || car->target_lane < 0) return;
 
-    car->lane_shift += dt * 2.0f;  // скорость перестроения
+    car->lane_shift += dt * 1.5f;  // скорость перестроения
     if (car->lane_shift > 1.0f) {
         car->lane_shift = 1.0f;
     }
@@ -763,7 +764,7 @@ void car_update_lane_change(Car *car, float dt) {
     float lane_diff = (float)(car->target_lane - car->lane);
     car->lane_offset = lane_diff * smoothstep(car->lane_shift);
 
-    if (car->lane_shift >= 1.0f) {
+    if(car->lane_shift >= 1.0f) {
         car->lane += (int)lane_diff;
         car->target_lane = -1;
         car->lane_shift = 0.0f;
