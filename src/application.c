@@ -149,6 +149,7 @@ void application_update(void){
             config.lane_count = 4;
             config.max_cars   = 10;
             config.time = 0.0f;
+            config.car_count = 0;
 
             menu_set_state(&menu, MENU_STATE_SIMULATION_CONFIG_SETTING);
             break;
@@ -163,6 +164,7 @@ void application_update(void){
             config.lane_count = 4;
             config.max_cars   = 10;
             config.time = 0.0f;
+            config.car_count = 0;
 
             menu_set_state(&menu, MENU_STATE_SIMULATION_CONFIG_SETTING);
             break;
@@ -177,6 +179,7 @@ void application_update(void){
             config.lane_count = 4;
             config.max_cars   = 10;
             config.time = 0.0f;
+            config.car_count = 0;
 
             menu_set_state(&menu, MENU_STATE_SIMULATION_CONFIG_SETTING);
             break;
@@ -335,6 +338,22 @@ void application_update(void){
 
             int slot = slot_from_button_id(menu.last_pressed_button);
             if (slot > 0 && menu.current_state == MENU_STATE_SIMULATION_CONFIG_PAUSE) {
+                config.time = manager.time;
+                config.car_count = 0;
+
+                if (manager.cars != NULL && manager.car_count > 0) {
+                    config.car_count = manager.car_count;
+                    if (config.car_count > manager.max_cars) {
+                        config.car_count = manager.max_cars;
+                    }
+                    if (config.car_count > 100) {
+                        config.car_count = 100;
+                    }
+
+                    for (int i = 0; i < config.car_count; i++) {
+                        config.cars[i] = manager.cars[i];
+                    }
+                }
                 config_manager_save_profile(&config, slot, manager.time);
                 menu_set_state(&menu, MENU_STATE_SIMULATION_PAUSE);
             }

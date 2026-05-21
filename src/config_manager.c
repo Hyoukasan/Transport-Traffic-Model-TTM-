@@ -2,6 +2,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "car.h"
+
 #include "config_manager.h"
 
 static void config_manager_get_slot_path(int slot, char* buffer, int buffer_size) {
@@ -33,6 +35,21 @@ int config_manager_save_profile(const ConfigManager* config, int slot, float tim
     fprintf(f, "lane_count %d\n", config->lane_count);
     fprintf(f, "max_cars %d\n", config->max_cars);
     fprintf(f, "time %.2f\n", time);
+    fprintf(f, "car_count %d\n", config->car_count);
+
+    for (int i = 0; i < config->car_count && i < config->max_cars && i < 100; i++) {
+        const Car *car = &config->cars[i];
+        fprintf(f, "car %d %d %.4f %.4f %.4f %d %d %d %.4f\n",
+            car->id,
+            car->road_id,
+            car->position,
+            car->speed,
+            car->desired_speed,
+            car->lane,
+            (int)car->state,
+            (int)car->color,
+            car->angle);
+    }
 
     fclose(f);
     return 0;
@@ -82,6 +99,9 @@ int config_manager_load_profile(ConfigManager* config, int slot, float* out_time
     int lane_count = 0;
     int max_cars = 0;
     float time = 0.0f;
+    int car_count = 0;
+    config->car_count = 0;
+    memset(config->cars, 0, sizeof(config->cars));
 
     while(fscanf(f, "%31s", key) == 1) {
         if(strcmp(key, "scenario") == 0) {
@@ -92,6 +112,35 @@ int config_manager_load_profile(ConfigManager* config, int slot, float* out_time
             fscanf(f, "%d", &max_cars);
         } else if(strcmp(key, "time") == 0) {
             fscanf(f, "%f", &time);
+        } else if(strcmp(key, "car_count") == 0) {
+            fscanf(f, "%d", &car_count);
+            if (car_count < 0) {
+                car_count = 0;
+            } else if (car_count > 100) {
+                car_count = 100;
+            }
+        } else if(strcmp(key, "car") == 0) {
+            if (config->car_count < 100) {
+                Car *car = &config->cars[config->car_count];
+                int state = 0;
+                int color = 0;
+                fscanf(f, "%d %d %f %f %f %d %d %d %f",
+                    &car->id,
+                    &car->road_id,
+                    &car->position,
+                    &car->speed,
+                    &car->desired_speed,
+                    &car->lane,
+                    &state,
+                    &color,
+                    &car->angle);
+                car->state = (CarState)state;
+                car->color = (CarColor)color;
+                car->texture = 0;
+                car->target_lane = -1;
+                car->original_lane = -1;
+                config->car_count++;
+            }
         }
     }
 
@@ -101,6 +150,7 @@ int config_manager_load_profile(ConfigManager* config, int slot, float* out_time
     config->lane_count = lane_count;
     config->max_cars = max_cars;
     config->time = time;
+    (void)car_count;
 
     if (out_time != NULL) {
         *out_time = time;

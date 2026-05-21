@@ -3,6 +3,9 @@
 
 #include <stdbool.h>
 
+#include "config_manager.h"
+#include "car.h"
+
 typedef enum {
     SCENARIO_HIGHWAY = 1,
     SCENARIO_SINGLE_INTERSECTION,
@@ -14,6 +17,8 @@ typedef struct ConfigManager {
     int lane_count;
     int max_cars;
     float time;
+    int car_count;
+    Car cars[100];
 } ConfigManager;
 
 int config_manager_save_profile(const ConfigManager* config, int slot, float time);

@@ -14,6 +14,7 @@
 
 static int traffic_manager_init_lane_lists(TrafficManager* manager);
 static void traffic_manager_update_lane_lists(TrafficManager* manager);
+static void traffic_manager_restore_cars(TrafficManager* manager, const ConfigManager* config);
 static LaneCarList* traffic_manager_get_lane_list(TrafficManager* manager, int road_id, int lane);
 
 static void traffic_manager_load_car_textures(TrafficManager* manager);
@@ -679,10 +680,68 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
 
     traffic_manager_load_car_textures(manager);
     traffic_manager_load_light_textures(manager);
-    traffic_manager_spawn_cars(manager, config);
+
+    if (config->car_count > 0) {
+        traffic_manager_restore_cars(manager, config);
+    } else {
+        traffic_manager_spawn_cars(manager, config);
+    }
+
     traffic_manager_update_lane_lists(manager);
 
     return 0;
+}
+
+static void traffic_manager_restore_cars(TrafficManager* manager, const ConfigManager* config) {
+    if (manager == NULL || config == NULL || manager->cars == NULL) {
+        return;
+    }
+
+    int car_count = config->car_count;
+    if (car_count < 0) {
+        car_count = 0;
+    } else if (car_count > manager->max_cars) {
+        car_count = manager->max_cars;
+    }
+
+    manager->car_count = car_count;
+    manager->next_car_id = 0;
+
+    for (int i = 0; i < car_count; i++) {
+        manager->cars[i] = config->cars[i];
+
+        if (manager->cars[i].road_id < 0 || manager->cars[i].road_id >= manager->graph->road_count) {
+            manager->cars[i].road_id = 0;
+        }
+
+        RoadSegment *road = &manager->graph->roads[manager->cars[i].road_id];
+        int lanes = road->lanes > 0 ? road->lanes : 1;
+        if (manager->cars[i].lane < 0 || manager->cars[i].lane >= lanes) {
+            manager->cars[i].lane = 0;
+        }
+
+        if (manager->cars[i].color < CAR_COLOR_YELLOW || manager->cars[i].color > CAR_COLOR_BLACK) {
+            manager->cars[i].color = CAR_COLOR_YELLOW;
+        }
+
+        if (manager->cars[i].state == CAR_STATE_TURNING ||
+            manager->cars[i].state == CAR_STATE_LANE_CHANGE ||
+            manager->cars[i].state == CAR_STATE_TRAFFIC_LIGHT) {
+            manager->cars[i].state = CAR_STATE_NORMAL;
+            manager->cars[i].target_lane = -1;
+            manager->cars[i].lane_offset = 0.0f;
+            manager->cars[i].lane_shift = 0.0f;
+            manager->cars[i].turn_progress = 0.0f;
+        }
+
+        car_set_texture(&manager->cars[i], manager->car_textures[manager->cars[i].color]);
+
+        if (manager->cars[i].id >= manager->next_car_id) {
+            manager->next_car_id = manager->cars[i].id + 1;
+        }
+    }
+
+    traffic_manager_update_lane_lists(manager);
 }
 
 static const Car* traffic_manager_find_front_car(TrafficManager* manager, const Car* car, float search_radius) {
