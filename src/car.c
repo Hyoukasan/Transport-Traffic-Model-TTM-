@@ -507,134 +507,119 @@ static void car_prepare_turn(
     RoadDirection chosen_target,
     float start_fraction) 
 {
-    if(!car->turn_made) {
+if(!car->turn_made) {
         return;
     }
-
-    float start_x;
-    float start_y;
-
-    float end_x;
-    float end_y;
-
-    float center_x;
-    float center_y;
 
     const RoadSegment* new_road = &graph->roads[car->turn_target_road_id];
     int new_lane = map_lane_to_direction(road, current_direction, car->lane, new_road, chosen_target);
 
+    if (car->turn_type == CAR_TURN_LEFT) {
+        new_lane -= 1;
+        
+        // Защита, чтобы индекс не ушел на встречную полосу
+        int target_start_lane = direction_lane_start(new_road, chosen_target);
+        if (new_lane < target_start_lane) {
+            new_lane = target_start_lane;
+        }
+    }
+
     float current_lane_center = road_lane_center(road, car->lane);
     float target_lane_center = road_lane_center(new_road, new_lane);
 
-    //Расчитываем начальные и конечные точки поворота на линии
-    //Временно берем фиксированные границы перекрестка, чтобы проверить движение по дуге
-    float current_half_width = (float)(road->lanes > 0 ? road->lanes : 1) * 0.5f;
-    float target_half_width = (float)(new_road->lanes > 0 ? new_road->lanes : 1) * 0.5f;
-    float intersection_half_width = fmaxf(current_half_width, target_half_width);
+    float intersect_x = (road->type == ROAD_VERTICAL) ? current_lane_center : target_lane_center;
+    float intersect_y = (road->type == ROAD_HORIZONTAL) ? current_lane_center : target_lane_center;
 
-    float left_edge = (float)crossed.x - intersection_half_width;
-    float right_edge = (float)crossed.x + intersection_half_width;
-    float top_edge = (float)crossed.y - intersection_half_width;
-    float bottom_edge = (float)crossed.y + intersection_half_width;
+    // Вычисляем половину ширины перекрестка
+    float intersection_half = (float)(road->lanes > 0 ? road->lanes : 1) * 0.5f;
 
-    float right_turn_start_offset = 0.5f;
-    float right_turn_end_offset = 1.2f;
-    float left_turn_start_offset = 0.0f;
-    float left_turn_end_offset = 0.0f;
-    bool right_turn = car->turn_type == CAR_TURN_RIGHT;
+    float radius_in = 0.0f;
+    float radius_out = 0.0f;
 
-    float start_offset = right_turn ? right_turn_start_offset : left_turn_start_offset;
-    float end_offset = right_turn ? right_turn_end_offset : left_turn_end_offset;
-
+    // Считаем доступное расстояние на входе (от угла до въезда на перекресток)
     switch(current_direction) {
-        case ROAD_DIR_EAST:
-            start_x = left_edge - start_offset;
-            start_y = current_lane_center;
+        case ROAD_DIR_EAST:  
+            radius_in = intersect_x - ((float)crossed.x - intersection_half); 
             break;
-
-        case ROAD_DIR_WEST:
-            start_x = right_edge + start_offset;
-            start_y = current_lane_center;
+        case ROAD_DIR_WEST:  
+            radius_in = ((float)crossed.x + intersection_half) - intersect_x; 
             break;
-
-        case ROAD_DIR_SOUTH:
-            start_x = current_lane_center;
-            start_y = top_edge - start_offset;
+        case ROAD_DIR_SOUTH: 
+            radius_in = intersect_y - ((float)crossed.y - intersection_half); 
             break;
-
-        case ROAD_DIR_NORTH:
-            start_x = current_lane_center;
-            start_y = bottom_edge + start_offset;
+        case ROAD_DIR_NORTH: 
+            radius_in = ((float)crossed.y + intersection_half) - intersect_y; 
             break;
-
-        default:
-            start_x = (float)crossed.x;
-            start_y = (float)crossed.y;
-            break;
+        default: 
+            radius_in = intersection_half; break;
     }
 
+    // Считаем доступное расстояние на выходе (от угла до выезда с перекрестка)
     switch(chosen_target) {
         case ROAD_DIR_EAST:
-            end_x = right_edge + end_offset;
-            end_y = target_lane_center;
+            radius_out = ((float)crossed.x + intersection_half) - intersect_x; 
             break;
-
         case ROAD_DIR_WEST:
-            end_x = left_edge - end_offset;
-            end_y = target_lane_center;
+            radius_out = intersect_x - ((float)crossed.x - intersection_half);
             break;
-
-        case ROAD_DIR_SOUTH:
-            end_x = target_lane_center;
-            end_y = bottom_edge + end_offset;
+        case ROAD_DIR_SOUTH: 
+            radius_out = ((float)crossed.y + intersection_half) - intersect_y; 
             break;
-
-        case ROAD_DIR_NORTH:
-            end_x = target_lane_center;
-            end_y = top_edge - end_offset;
+        case ROAD_DIR_NORTH: 
+            radius_out = intersect_y - ((float)crossed.y - intersection_half); 
             break;
-
-        default:
-            end_x = (float)crossed.x;
-            end_y = (float)crossed.y;
-            break;
+        default: 
+            radius_out = intersection_half; 
+                break;
     }
 
-    float offset_current = (road->type == ROAD_HORIZONTAL) ? fabsf(current_lane_center - (float)crossed.y) : fabsf(current_lane_center - (float)crossed.x);
-    float offset_target  = (new_road->type == ROAD_HORIZONTAL) ? fabsf(target_lane_center  - (float)crossed.y)  : fabsf(target_lane_center - (float)crossed.x);
-
-    float radius = fmaxf(offset_current, offset_target);
+    float radius = fminf(radius_in, radius_out);
     if (radius < 1.0f) {
         radius = 1.0f;
     }
 
-    radius *= 1.4f;
+    //Точки старта и конца дуги (отступаем от intersect на величину радиуса назад и вперед)
+    float start_x = intersect_x;
+    float start_y = intersect_y;
+    float end_x = intersect_x;
+    float end_y = intersect_y;
 
-    int dir_x = 0;
-    int dir_y = 0;
-
-    switch (current_direction) {
-        case ROAD_DIR_EAST:  dir_x = 1;  dir_y = 0;  break;
-        case ROAD_DIR_WEST:  dir_x = -1; dir_y = 0;  break;
-        case ROAD_DIR_SOUTH: dir_x = 0;  dir_y = 1;  break;
-        case ROAD_DIR_NORTH: dir_x = 0;  dir_y = -1; break;
+    switch(current_direction) {
+        case ROAD_DIR_EAST:  
+            start_x -= radius; 
+            break;
+        case ROAD_DIR_WEST:  
+            start_x += radius; 
+            break;
+        case ROAD_DIR_SOUTH: 
+            start_y -= radius; 
+            break;
+        case ROAD_DIR_NORTH: 
+            start_y += radius; 
+            break;
         default: 
             break;
-    } 
-
-    float normal_x = 0.0f;
-    float normal_y = 0.0f;
-
-    if (right_turn) {
-        normal_x = (float)dir_y * (-1.0f);
-        normal_y = (float)dir_x;
-    } else {
-        normal_x = (float)dir_y;
-        normal_y = (float)dir_x * (-1.0f);
     }
 
-    center_x = start_x + normal_x * radius;
-    center_y = start_y + normal_y * radius;
+    switch(chosen_target) {
+        case ROAD_DIR_EAST:  
+            end_x += radius; 
+            break;
+        case ROAD_DIR_WEST:  
+            end_x -= radius; 
+            break;
+        case ROAD_DIR_SOUTH: 
+            end_y += radius; 
+            break;
+        case ROAD_DIR_NORTH: 
+            end_y -= radius; 
+            break;
+        default: 
+            break;
+    }
+
+    float center_x = start_x + (end_x - intersect_x);
+    float center_y = start_y + (end_y - intersect_y);
 
     float start_angle = atan2f(start_y - center_y, start_x - center_x) * (180.0f / 3.14159265f);
     float end_angle   = atan2f(end_y - center_y, end_x - center_x) * (180.0f / 3.14159265f);
@@ -642,13 +627,13 @@ static void car_prepare_turn(
     while(end_angle - start_angle > 180.0f) {
         end_angle -= 360.0f;
     }
-
     while(end_angle - start_angle < -180.0f) {
         end_angle += 360.0f;
     }
 
+    //Обновление состояния автомобиля
     car->turn_start_fraction = clampf(coordinate_fraction_for_direction(road, current_direction, (int)start_x, (int)start_y), 0.0f, 1.0f);
-
+    
     float end_fraction = clampf(coordinate_fraction_for_direction(new_road, chosen_target, (int)end_x, (int)end_y), 0.0f, 1.0f);
     car->turn_target_position = clampf(travel_fraction_to_position(new_road, chosen_target, end_fraction), 0.0f, 1.0f);
 
