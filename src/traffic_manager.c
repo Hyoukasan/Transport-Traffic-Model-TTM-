@@ -401,16 +401,22 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
 
     LightState light_state = traffic_manager_light_state_for_road(nearest_light, road);
     if (light_state == LIGHT_GREEN) {
-        if (car->state == CAR_STATE_TRAFFIC_LIGHT) {
-            car->state = CAR_STATE_NORMAL;
-        }
+        if (car->state == CAR_STATE_TRAFFIC_LIGHT || car->state == CAR_STATE_INTERSECTION_WAIT) {
+
+            if (car->state == CAR_STATE_INTERSECTION_WAIT && car->turn_decided && car->turn_made) {
+                car->state = CAR_STATE_TURNING;
+                car->turn_progress = 0.0f;
+            } else {
+                car->state = CAR_STATE_NORMAL;
+                car->speed = car->desired_speed;
+            }
+        }    
         return;
     }
 
-    const float slow_distance = 4.0f;
-    float stop_distance = 0.20f + car->speed * 0.20f;
-
     if(light_state == LIGHT_RED) {
+        const float slow_distance = 3.0f;
+        float stop_distance = 0.20f + car->speed * 0.20f;
         if (nearest_distance <= stop_distance) {
             car->position = traffic_manager_travel_fraction_to_position(road, direction, nearest_stop_travel);
             car->speed = 0.0f;
