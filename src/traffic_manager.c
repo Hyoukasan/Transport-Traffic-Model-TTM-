@@ -15,6 +15,7 @@
 static int traffic_manager_init_lane_lists(TrafficManager* manager);
 static void traffic_manager_update_lane_lists(TrafficManager* manager);
 static void traffic_manager_restore_cars(TrafficManager* manager, const ConfigManager* config);
+static bool traffic_manager_intersection_on_road(const RoadSegment* road, const Intersection* intersection);
 static LaneCarList* traffic_manager_get_lane_list(TrafficManager* manager, int road_id, int lane);
 
 static void traffic_manager_load_car_textures(TrafficManager* manager);
@@ -265,6 +266,30 @@ static bool traffic_manager_spawn_area_clear(TrafficManager* manager, int road_i
             return false;
         }
     }
+
+    // Переводим процент пути в реальную координату
+    float spawn_pos = traffic_manager_travel_fraction_to_position(road, direction, spawn_fraction);
+    for (int i = 0; i < manager->graph->intersection_count; i++) {
+        const Intersection *inter = &manager->graph->intersections[i];
+
+        if (!traffic_manager_intersection_on_road(road, inter)) {
+            continue;
+        }
+
+        float safe_padding = 2.0f;
+
+        if (road->type == ROAD_HORIZONTAL) {
+            if (spawn_pos >= (float)inter->left_edge - safe_padding && 
+                spawn_pos <= (float)inter->right_edge + safe_padding) {
+                return false; 
+            }
+        } else if (road->type == ROAD_VERTICAL) {
+            if (spawn_pos >= (float)inter->top_edge - safe_padding && 
+                spawn_pos <= (float)inter->bottom_edge + safe_padding) {
+                return false; 
+            }
+        }
+    }        
 
     return true;
 }
