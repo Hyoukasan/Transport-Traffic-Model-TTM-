@@ -662,6 +662,11 @@ void car_update(Car *car, const Graph *graph, float dt) {
         return;
     }
 
+    if(car->state == CAR_STATE_INTERSECTION_WAIT) {
+        car->speed = 0.0f;
+        return;
+    }
+
     const RoadSegment *road = &graph->roads[car->road_id];
     RoadDirection current_direction = graph_get_lane_direction(road, car->lane);
 
@@ -690,8 +695,16 @@ void car_update(Car *car, const Graph *graph, float dt) {
         return;
     }
 
-    CrossedIntersection crossed = car_find_crossed_intersection(car, graph, road, current_direction, old_coord, current_coord);
+    float look_ahead_dist = 3.0f; // 3 метра вперед
+    float look_ahead_coord = current_coord;
 
+    if (current_direction == ROAD_DIR_EAST || current_direction == ROAD_DIR_SOUTH) {
+        look_ahead_coord += look_ahead_dist;
+    } else if (current_direction == ROAD_DIR_WEST || current_direction == ROAD_DIR_NORTH) {
+        look_ahead_coord -= look_ahead_dist;
+    }    
+    
+    CrossedIntersection crossed = car_find_crossed_intersection(car, graph, road, current_direction, old_coord, look_ahead_coord);
     if (crossed.idx < 0) {
         car->last_turn_x = -1;
         car->last_turn_y = -1;

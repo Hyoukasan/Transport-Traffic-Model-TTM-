@@ -227,6 +227,8 @@ void application_update(void){
                 config.max_cars = 100;
             }
 
+            config.max_cars = 1;
+
             if(config.lane_count < 2) {
                 config.lane_count = 2;
             } else if(config.lane_count > 8) {

@@ -10,6 +10,7 @@
 #include "geometry.h"
 #include "graph.h"
 #include "road_generator.h"
+#include "renderer.h"
 
 
 static int traffic_manager_init_lane_lists(TrafficManager* manager);
@@ -352,7 +353,7 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
         return;
     }
 
-    if (car->state == CAR_STATE_ACCIDENT || car->state == CAR_STATE_BRAKING || car->state == CAR_STATE_TURNING ||
+    if (car->state == CAR_STATE_ACCIDENT || car->state == CAR_STATE_BRAKING || car->state == CAR_STATE_INTERSECTION_WAIT || car->state == CAR_STATE_TURNING ||
         car->road_id < 0 || car->road_id >= manager->graph->road_count) {
         return;
     }
@@ -408,21 +409,24 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
 
     const float slow_distance = 4.0f;
     float stop_distance = 0.20f + car->speed * 0.20f;
-    if (nearest_distance <= stop_distance) {
-        car->position = traffic_manager_travel_fraction_to_position(road, direction, nearest_stop_travel);
-        car->speed = 0.0f;
-        car->state = CAR_STATE_TRAFFIC_LIGHT;
-    } else if (nearest_distance <= slow_distance) {
-        float speed_factor = nearest_distance / slow_distance;
-        float max_speed = road->speed_limit * traffic_manager_clampf(speed_factor, 0.15f, 1.0f);
-        if (car->speed > max_speed) {
-            car->speed = max_speed;
+
+    if(light_state == LIGHT_RED) {
+        if (nearest_distance <= stop_distance) {
+            car->position = traffic_manager_travel_fraction_to_position(road, direction, nearest_stop_travel);
+            car->speed = 0.0f;
+            car->state = (car->turn_decided && car->turn_made) ? CAR_STATE_INTERSECTION_WAIT : CAR_STATE_TRAFFIC_LIGHT;
+        } else if (nearest_distance <= slow_distance) {
+            float speed_factor = nearest_distance / slow_distance;
+            float max_speed = road->speed_limit * traffic_manager_clampf(speed_factor, 0.15f, 1.0f);
+            if (car->speed > max_speed) {
+                car->speed = max_speed;
+            }
+            if (car->state == CAR_STATE_NORMAL || car->state == CAR_STATE_OVERTAKING) {
+                car->state = CAR_STATE_SLOWING;
+            }
+        } else if (car->state == CAR_STATE_TRAFFIC_LIGHT) {
+            car->state = CAR_STATE_NORMAL;
         }
-        if (car->state == CAR_STATE_NORMAL || car->state == CAR_STATE_OVERTAKING) {
-            car->state = CAR_STATE_SLOWING;
-        }
-    } else if (car->state == CAR_STATE_TRAFFIC_LIGHT) {
-        car->state = CAR_STATE_NORMAL;
     }
 }
 
@@ -1352,6 +1356,21 @@ bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager) {
     return true;
 }
 
+const char* get_state_name(CarState state) {
+    switch (state) {
+        case CAR_STATE_NORMAL:          return "NORMAL";
+        case CAR_STATE_BRAKING:         return "BRAKING";
+        case CAR_STATE_SLOWING:         return "SLOWING";
+        case CAR_STATE_OVERTAKING:      return "OVERTAKING";
+        case CAR_STATE_ACCIDENT:        return "ACCIDENT";
+        case CAR_STATE_LANE_CHANGE:     return "LANE_CHANGE";
+        case CAR_STATE_TURNING:         return "TURNING";
+        case CAR_STATE_TRAFFIC_LIGHT:   return "TRAFFIC_LIGHT";
+        case CAR_STATE_INTERSECTION_WAIT: return "WAITING";
+        default:                        return "UNKNOWN";
+    }
+}
+
 int traffic_manager_update(TrafficManager *manager, float dt) {
     if (manager == NULL || manager->graph == NULL) {
         return -1;
@@ -1370,6 +1389,30 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
 
     for (int i = 0; i < manager->car_count; i++) {
         Car* car = &manager->cars[i];
+
+
+        char line[256];
+        float x_offset = 400.0f;
+        float y_offset = 50.0f;
+        float step = 35.0f;
+
+        snprintf(line, sizeof(line), "State: %s | Pos: %.2f", 
+                 get_state_name(car->state), car->position);
+
+        renderer_draw_text(x_offset + 2, y_offset + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, 1920, 1080);
+        renderer_draw_text(x_offset, y_offset, line, 2.0f, 1.0f, 1.0f, 1.0f, 1920, 1080);
+            
+        snprintf(line, sizeof(line), "Speed: %.2f | Turn: %d", 
+             car->speed, car->turn_decided);
+
+        renderer_draw_text(x_offset + 2, y_offset + step + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, 1920, 1080);
+        renderer_draw_text(x_offset, y_offset + step, line, 2.0f, 1.0f, 1.0f, 1.0f, 1920, 1080);
+
+        snprintf(line, sizeof(line), "CrossedIdx: %d | TargetRoad: %d", 
+                    car->last_turn_x, car->turn_target_road_id); // Используй свои переменные для crossed.idx
+
+        renderer_draw_text(x_offset + 2, y_offset + (step * 2) + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, 1920, 1080);
+        renderer_draw_text(x_offset, y_offset + (step * 2), line, 2.0f, 1.0f, 1.0f, 1.0f, 1920, 1080);
 
         if (car->state != CAR_STATE_TRAFFIC_LIGHT) {
             if(!traffic_manager_update_overtake_return(manager, car)) {
