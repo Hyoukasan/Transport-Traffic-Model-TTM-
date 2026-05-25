@@ -31,6 +31,10 @@ static void application_update_settings_text(void) {
     snprintf(menu.buttons[1].profile_text, sizeof(menu.buttons[1].profile_text), "CARS: %d", config.max_cars);
 }
 
+static int round_to_5(int n) {
+    return ((n + 2) / 5) * 5;
+}
+
 static int slot_from_button_id(ButtonId button_id) {
     switch (button_id) {
         case BUTTON_ID_SLOT_1:
@@ -221,36 +225,40 @@ void application_update(void){
                     break;
             }
 
-            switch (config.scenario)
-            {
-            case SCENARIO_HIGHWAY:
-                if(config.lane_count < 2) {
-                    config.lane_count = 2;
-                } else if(config.lane_count > 8) {
-                    config.lane_count = 8;
-                }
-                break;
-            
-            case SCENARIO_SINGLE_INTERSECTION:
-                if(config.lane_count < 2) {
-                    config.lane_count = 2;
-                } else if(config.lane_count > 8) {
-                    config.lane_count = 8;
-                }
-                break;
-            
-            case SCENARIO_MULTI_INTERSECTION:
-                if(config.lane_count < 2) {
-                    config.lane_count = 2;
-                } else if(config.lane_count > 6) {
-                    config.lane_count = 6;
-                }
-                break;
-                            
-            default:
-                break;
-            }
+            switch (config.scenario) {
+                case SCENARIO_HIGHWAY:
+                    if (config.lane_count < 2) config.lane_count = 2;
+                    else if (config.lane_count > 8) config.lane_count = 8;
+                    
+                    // Хайвей: 2 полосы -> 25 машин (12.5*2), 8 полос -> 100 машин (12.5*8=100)
+                    int hw_limit = round_to_5(config.lane_count * 12); 
+                    if (config.max_cars > hw_limit) config.max_cars = hw_limit;
+                    if (config.max_cars < 10) config.max_cars = 10;
+                    break;
+                
+                case SCENARIO_SINGLE_INTERSECTION:
+                    if (config.lane_count < 2) config.lane_count = 2;
+                    else if (config.lane_count > 8) config.lane_count = 8;
 
+                    // Перекресток: 2 полосы -> 20 машин, 8 полос -> 80 машин
+                    int si_limit = round_to_5(config.lane_count * 10);
+                    if (config.max_cars > si_limit) config.max_cars = si_limit;
+                    if (config.max_cars < 10) config.max_cars = 10;
+                    break;
+                
+                case SCENARIO_MULTI_INTERSECTION:
+                    if (config.lane_count < 2) config.lane_count = 2;
+                    else if (config.lane_count > 6) config.lane_count = 6;
+
+                    // Мульти: 2 полосы -> 25 машин, 6 полос -> 100 машин (6*16)
+                    int mi_limit = round_to_5(config.lane_count * 17);
+                    if (config.max_cars > mi_limit) config.max_cars = mi_limit;
+                    if (config.max_cars < 10) config.max_cars = 10;
+                    break;
+                                
+                default:
+                    break;
+            }
             application_update_settings_text();
             menu_render(&menu, app.screen_width, app.screen_height);
             break;
