@@ -231,6 +231,8 @@ void application_update(void){
                 config.lane_count = 2;
             } else if(config.lane_count > 8) {
                 config.lane_count = 8;
+            } else if(config.lane_count > 6 && config.scenario == SCENARIO_MULTI_INTERSECTION) {
+                config.lane_count = 6;
             }
 
             application_update_settings_text();
