@@ -524,11 +524,35 @@ static void traffic_manager_spawn_cars(TrafficManager* manager, const ConfigMana
         return;
     }
 
+    int max_initial_cars = 0;
+    switch (config->scenario)
+    {
+    case SCENARIO_HIGHWAY:
+        max_initial_cars = 8 * config->lane_count;
+        break;
+
+    case SCENARIO_SINGLE_INTERSECTION:
+        max_initial_cars = 4 * config->lane_count;
+        break;
+        
+    case SCENARIO_MULTI_INTERSECTION:
+        max_initial_cars = 12 * config->lane_count;
+        break;
+
+    default:
+        max_initial_cars = 5;
+        break;
+    }
+
     int total_cars = config->max_cars > 0 ? config->max_cars : 0;
     if (total_cars > manager->max_cars) {
         total_cars = manager->max_cars;
     }
+
     total_cars = (total_cars + 1) / 2;
+    if(total_cars > max_initial_cars) {
+        total_cars = max_initial_cars;
+    }
 
     for (int i = 0; i < total_cars; i++) {
         traffic_manager_spawn_car(manager, i);
