@@ -221,20 +221,34 @@ void application_update(void){
                     break;
             }
 
-            if(config.max_cars < 10) {
-                config.max_cars = 10;
-            } else if(config.max_cars > 100) {
-                config.max_cars = 100;
-            }
-
-            config.max_cars = 10;
-
-            if(config.lane_count < 2) {
-                config.lane_count = 2;
-            } else if(config.lane_count > 8) {
-                config.lane_count = 8;
-            } else if(config.lane_count > 6 && config.scenario == SCENARIO_MULTI_INTERSECTION) {
-                config.lane_count = 6;
+            switch (config.scenario)
+            {
+            case SCENARIO_HIGHWAY:
+                if(config.lane_count < 2) {
+                    config.lane_count = 2;
+                } else if(config.lane_count > 8) {
+                    config.lane_count = 8;
+                }
+                break;
+            
+            case SCENARIO_SINGLE_INTERSECTION:
+                if(config.lane_count < 2) {
+                    config.lane_count = 2;
+                } else if(config.lane_count > 8) {
+                    config.lane_count = 8;
+                }
+                break;
+            
+            case SCENARIO_MULTI_INTERSECTION:
+                if(config.lane_count < 2) {
+                    config.lane_count = 2;
+                } else if(config.lane_count > 6) {
+                    config.lane_count = 6;
+                }
+                break;
+                            
+            default:
+                break;
             }
 
             application_update_settings_text();
