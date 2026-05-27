@@ -3,7 +3,6 @@
 #include <stdio.h>
 
 #include "car.h"
-
 #include "config_manager.h"
 
 static void config_manager_get_slot_path(int slot, char* buffer, int buffer_size) {

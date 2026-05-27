@@ -43,6 +43,8 @@ typedef struct {
 
     int road_count;
     int roads[8];
+
+    bool is_occupied;
 } Intersection;
 
 typedef struct Graph {

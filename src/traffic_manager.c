@@ -31,6 +31,7 @@ static bool traffic_manager_update_overtake_return(TrafficManager* manager, Car*
 static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car, float dt);
 static void traffic_manager_update_accidents(TrafficManager* manager, float dt);
 static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, Car* car);
+static Intersection* find_intersection_for_car(TrafficManager* manager, Car* car);
 
 static int traffic_manager_init_lights(TrafficManager *manager);
 static void traffic_manager_update_lights(TrafficManager *manager, float dt);
@@ -85,6 +86,8 @@ static int traffic_manager_max_roads_for_scenario(ScenarioType scenario) {
             return 1;
     }
 }
+
+
 
 static int traffic_manager_init_lights(TrafficManager *manager) {
     if(manager->lights == NULL) {
@@ -728,6 +731,10 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
         }
     }
 
+    for (int i = 0; i < manager->graph->intersection_count; i++) {
+        manager->graph->intersections[i].is_occupied = false;
+    }
+
     manager->selected_lane    = -1;
     manager->selected_road_id = -1;
     manager->car_count = 0;
@@ -1362,6 +1369,47 @@ bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager) {
     return true;
 }
 
+static void traffic_manager_print_car_state(const Car* car) {
+    if (car == NULL) return;
+
+    // Определяем строку состояния прямо здесь
+    const char* state_str;
+    switch (car->state) {
+        case CAR_STATE_NORMAL:            state_str = "NORMAL"; break;
+        case CAR_STATE_SLOWING:           state_str = "SLOWING"; break;
+        case CAR_STATE_BRAKING:           state_str = "BRAKING"; break;
+        case CAR_STATE_TRAFFIC_LIGHT:     state_str = "TRAFFIC_LIGHT"; break;
+        case CAR_STATE_INTERSECTION_WAIT: state_str = "INTERSECTION_WAIT"; break;
+        case CAR_STATE_TURNING:           state_str = "TURNING"; break;
+        case CAR_STATE_ACCIDENT:          state_str = "ACCIDENT"; break;
+        case CAR_STATE_OVERTAKING:        state_str = "OVERTAKING"; break;
+        default:                          state_str = "UNKNOWN"; break;
+    }
+
+    char line[256];
+    float x_offset = 400.0f;
+    float y_offset = 50.0f;
+    float step = 35.0f;
+    float scale = 2.0f;
+
+    snprintf(line, sizeof(line), "State: %s | Pos: %.2f", state_str, car->position);
+    
+    renderer_draw_text(x_offset + 2, y_offset + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset, line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080);
+
+    snprintf(line, sizeof(line), "Speed: %.2f | Turn: %d | Made: %d", 
+             car->speed, car->turn_decided, car->turn_made);
+
+    renderer_draw_text(x_offset + 2, y_offset + step + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset + step, line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080);
+
+    snprintf(line, sizeof(line), "CrossedIdx: %d | TargetRoad: %d", 
+             car->last_turn_x, car->turn_target_road_id);
+
+    renderer_draw_text(x_offset + 2, y_offset + (step * 2) + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset + (step * 2), line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080);
+}
+
 int traffic_manager_update(TrafficManager *manager, float dt) {
     if (manager == NULL || manager->graph == NULL) {
         return -1;
@@ -1381,7 +1429,11 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     for (int i = 0; i < manager->car_count; i++) {
         Car* car = &manager->cars[i];
 
-        if (car->state != CAR_STATE_TRAFFIC_LIGHT) {
+        if(car->state == CAR_STATE_INTERSECTION_WAIT) {
+            traffic_manager_print_car_state(car);
+        }
+        
+        if (car->state != CAR_STATE_TRAFFIC_LIGHT && car->state != CAR_STATE_TURNING) {
             if(!traffic_manager_update_overtake_return(manager, car)) {
                 traffic_manager_update_lane_change(manager, car, dt);
             }
@@ -1419,6 +1471,16 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
             manager->spawn_timer = 0.25f;
         }
     }
+
+    for (int i = 0; i < manager->car_count; i++) {
+        Car* car = &manager->cars[i];
+        Intersection* target = find_intersection_for_car(manager, car);
+
+        // Если машина УЖЕ НЕ на перекрестке — освобождаем
+        if (target && target->is_occupied && !is_car_on_intersection(car, target)) {
+            target->is_occupied = false;
+        }
+    }    
 
     traffic_manager_update_lane_lists(manager);
 
