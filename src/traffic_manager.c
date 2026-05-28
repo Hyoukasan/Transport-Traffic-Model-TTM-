@@ -583,7 +583,7 @@ static void traffic_manager_spawn_cars(TrafficManager* manager, const ConfigMana
         total_cars = manager->max_cars;
     }
 
-    total_cars = (total_cars + 1) / 2;
+    total_cars = (total_cars + 4) / 4;
     if(total_cars > max_initial_cars) {
         total_cars = max_initial_cars;
     }
