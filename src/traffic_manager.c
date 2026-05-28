@@ -32,6 +32,11 @@ static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car
 static void traffic_manager_update_accidents(TrafficManager* manager, float dt);
 static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, Car* car);
 
+/* helper coordinate conversion prototypes - defined further below */
+static float traffic_manager_position_to_travel_fraction(const RoadSegment *road, RoadDirection direction, float position);
+static float traffic_manager_travel_fraction_to_position(const RoadSegment *road, RoadDirection direction, float travel_fraction);
+static float traffic_manager_coord_to_travel_fraction(const RoadSegment *road, RoadDirection direction, float coord);
+
 static int traffic_manager_init_lights(TrafficManager *manager);
 static void traffic_manager_update_lights(TrafficManager *manager, float dt);
 static void traffic_light_advance(TrafficLight *light);
@@ -131,6 +136,174 @@ static void traffic_light_advance(TrafficLight *light) {
     }
 
     light->timer = 0.0f;
+}
+
+// --- Intersection reservation helpers ---
+static float traffic_manager_road_lane_center(const RoadSegment *road, int lane) {
+    int lanes = road->lanes > 0 ? road->lanes : 1;
+    int half = lanes / 2;
+
+    if (road->type == ROAD_HORIZONTAL) {
+        return (float)(road->y1 - half + lane);
+    }
+
+    if (road->type == ROAD_VERTICAL) {
+        return (float)(road->x1 - half + lane);
+    }
+
+    return 0.0f;
+}
+
+static float traffic_manager_coordinate_at_travel_position(const RoadSegment *road, RoadDirection direction, float position) {
+    if (road == NULL) {
+        return 0.0f;
+    }
+
+    float travel_fraction = position;
+    if (road->direction != ROAD_DIR_NONE) {
+        // if road has fixed direction, align fraction
+    }
+
+    if (road->type == ROAD_HORIZONTAL) {
+        int min_x = road->x1 < road->x2 ? road->x1 : road->x2;
+        int max_x = road->x1 > road->x2 ? road->x1 : road->x2;
+        float span = (float)(max_x - min_x);
+        if (direction == ROAD_DIR_EAST) {
+            return min_x + span * travel_fraction;
+        }
+        return max_x - span * travel_fraction;
+    }
+
+    if (road->type == ROAD_VERTICAL) {
+        int min_y = road->y1 < road->y2 ? road->y1 : road->y2;
+        int max_y = road->y1 > road->y2 ? road->y1 : road->y2;
+        float span = (float)(max_y - min_y);
+        if (direction == ROAD_DIR_SOUTH) {
+            return min_y + span * travel_fraction;
+        }
+        return max_y - span * travel_fraction;
+    }
+
+    return 0.0f;
+}
+
+static void traffic_manager_point_for_road_lane(const RoadSegment *road, RoadDirection dir, float travel_fraction, int lane, float *out_x, float *out_y) {
+    if (out_x == NULL || out_y == NULL || road == NULL) return;
+
+    float coord = traffic_manager_travel_fraction_to_position(road, dir, travel_fraction);
+    if (road->type == ROAD_HORIZONTAL) {
+        *out_x = traffic_manager_coordinate_at_travel_position(road, dir, travel_fraction);
+        *out_y = traffic_manager_road_lane_center(road, lane);
+    } else {
+        *out_x = traffic_manager_road_lane_center(road, lane);
+        *out_y = traffic_manager_coordinate_at_travel_position(road, dir, travel_fraction);
+    }
+}
+
+static float fabsf_local(float v) { return v < 0.0f ? -v : v; }
+
+// check segment intersection (excluding colinear edge cases for simplicity)
+static int segments_intersect(float x1,float y1,float x2,float y2,float x3,float y3,float x4,float y4) {
+    float dx1 = x2 - x1; float dy1 = y2 - y1;
+    float dx2 = x4 - x3; float dy2 = y4 - y3;
+    float det = dx1 * dy2 - dy1 * dx2;
+    if (fabsf_local(det) < 1e-6f) {
+        return 0; // parallel or nearly
+    }
+    float t = ((x3 - x1) * dy2 - (y3 - y1) * dx2) / det;
+    float u = ((x3 - x1) * dy1 - (y3 - y1) * dx1) / det;
+    return (t >= 0.0f && t <= 1.0f && u >= 0.0f && u <= 1.0f);
+}
+
+static bool traffic_manager_reservation_conflicts(TrafficManager *manager, int intersection_idx, float ex1, float ey1, float ex2, float ey2) {
+    if (manager == NULL || manager->reservations == NULL) return false;
+    for (int i = 0; i < manager->reservation_count; i++) {
+        IntersectionReservation *r = &manager->reservations[i];
+        if (!r->active || r->intersection_idx != intersection_idx) continue;
+        float rx1, ry1, rx2, ry2;
+        // compute other reservation endpoints
+        RoadSegment *in_road = &manager->graph->roads[r->in_road];
+        RoadSegment *out_road = &manager->graph->roads[r->out_road];
+        RoadDirection in_dir = graph_get_lane_direction(in_road, r->in_lane);
+        RoadDirection out_dir = graph_get_lane_direction(out_road, r->out_lane);
+        traffic_manager_point_for_road_lane(in_road, in_dir, 0.5f, r->in_lane, &rx1, &ry1);
+        traffic_manager_point_for_road_lane(out_road, out_dir, 0.5f, r->out_lane, &rx2, &ry2);
+        if (segments_intersect(ex1, ey1, ex2, ey2, rx1, ry1, rx2, ry2)) return true;
+    }
+    return false;
+}
+
+static bool traffic_manager_reserve_route(TrafficManager *manager, int intersection_idx, int in_road, int in_lane, int out_road, int out_lane, int car_id) {
+    if (manager == NULL || manager->graph == NULL) return false;
+    if (intersection_idx < 0 || intersection_idx >= manager->graph->intersection_count) return false;
+    if (manager->reservation_count >= manager->max_reservations) return false;
+
+    RoadSegment *inRoad = &manager->graph->roads[in_road];
+    RoadSegment *outRoad = &manager->graph->roads[out_road];
+    RoadDirection in_dir = graph_get_lane_direction(inRoad, in_lane);
+    RoadDirection out_dir = graph_get_lane_direction(outRoad, out_lane);
+
+    float ex1, ey1, ex2, ey2;
+    // use middle of intersection path as approximate entry/exit
+    traffic_manager_point_for_road_lane(inRoad, in_dir, 0.5f, in_lane, &ex1, &ey1);
+    traffic_manager_point_for_road_lane(outRoad, out_dir, 0.5f, out_lane, &ex2, &ey2);
+
+    if (traffic_manager_reservation_conflicts(manager, intersection_idx, ex1, ey1, ex2, ey2)) {
+        return false;
+    }
+
+    IntersectionReservation *r = &manager->reservations[manager->reservation_count++];
+    r->intersection_idx = intersection_idx;
+    r->in_road = in_road;
+    r->in_lane = in_lane;
+    r->out_road = out_road;
+    r->out_lane = out_lane;
+    r->car_id = car_id;
+    r->active = true;
+    return true;
+}
+
+static void traffic_manager_release_reservations_for_car(TrafficManager *manager, int car_id) {
+    if (manager == NULL || manager->reservations == NULL) return;
+    for (int i = 0; i < manager->reservation_count; ) {
+        if (manager->reservations[i].active && manager->reservations[i].car_id == car_id) {
+            manager->reservations[i] = manager->reservations[manager->reservation_count - 1];
+            manager->reservation_count--;
+            continue;
+        }
+        i++;
+    }
+}
+
+static bool traffic_manager_has_reservation_for_car(TrafficManager *manager, int car_id) {
+    if (manager == NULL || manager->reservations == NULL) return false;
+    for (int i = 0; i < manager->reservation_count; i++) {
+        if (manager->reservations[i].active && manager->reservations[i].car_id == car_id) return true;
+    }
+    return false;
+}
+
+static int traffic_manager_find_intersection_for_turn_start(TrafficManager *manager, const Car *car) {
+    if (manager == NULL || manager->graph == NULL || car == NULL) return -1;
+    if (car->road_id < 0 || car->road_id >= manager->graph->road_count) return -1;
+
+    const RoadSegment *road = &manager->graph->roads[car->road_id];
+    RoadDirection dir = graph_get_lane_direction(road, car->lane);
+
+    for (int i = 0; i < manager->graph->intersection_count; i++) {
+        const Intersection *inter = &manager->graph->intersections[i];
+        if (!traffic_manager_intersection_on_road(road, inter)) continue;
+        float inter_frac;
+        if (road->type == ROAD_HORIZONTAL) {
+            inter_frac = traffic_manager_coord_to_travel_fraction(road, dir, (float)inter->x);
+        } else {
+            inter_frac = traffic_manager_coord_to_travel_fraction(road, dir, (float)inter->y);
+        }
+        if (fabsf_local(inter_frac - car->turn_start_fraction) < 0.02f) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 static float traffic_manager_clampf(float value, float min_value, float max_value) {
@@ -353,7 +526,7 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
         return;
     }
 
-    if (car->state == CAR_STATE_ACCIDENT || car->state == CAR_STATE_BRAKING || car->state == CAR_STATE_INTERSECTION_WAIT || car->state == CAR_STATE_TURNING ||
+    if (car->state == CAR_STATE_ACCIDENT || car->state == CAR_STATE_BRAKING || car->state == CAR_STATE_TURNING ||
         car->road_id < 0 || car->road_id >= manager->graph->road_count) {
         return;
     }
@@ -726,6 +899,18 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
             traffic_manager_clear(manager);
             return -1;
         }
+    }
+
+    // initialize reservation storage (allow a few reservations per intersection)
+    if (manager->graph != NULL) {
+        manager->max_reservations = manager->graph->intersection_count * 4 + 4;
+        manager->reservations = (IntersectionReservation*)calloc((size_t)manager->max_reservations, sizeof(IntersectionReservation));
+        if (manager->reservations == NULL) {
+            fprintf(stderr, "Reservations initialization failed!\n");
+            traffic_manager_clear(manager);
+            return -1;
+        }
+        manager->reservation_count = 0;
     }
 
     manager->selected_lane    = -1;
@@ -1390,7 +1575,47 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
         }
 
         traffic_manager_update_traffic_light_stop(manager, car);
+
+        // Try to reserve intersection route shortly before starting a turn
+        if (car->turn_decided && car->turn_made && car->state != CAR_STATE_TURNING) {
+            if (car->road_id >= 0 && car->road_id < manager->graph->road_count) {
+                RoadSegment* road = &manager->graph->roads[car->road_id];
+                RoadDirection dir = graph_get_lane_direction(road, car->lane);
+                float travel_fraction = traffic_manager_position_to_travel_fraction(road, dir, car->position);
+                if (travel_fraction >= car->turn_start_fraction - 0.03f) {
+                    int inter_idx = traffic_manager_find_intersection_for_turn_start(manager, car);
+                    if (inter_idx >= 0) {
+                        if (!traffic_manager_has_reservation_for_car(manager, car->id)) {
+                            bool granted = traffic_manager_reserve_route(manager, inter_idx, car->road_id, car->lane, car->turn_target_road_id, car->turn_target_lane, car->id);
+                            if (!granted) {
+                                // block before intersection
+                                car->state = CAR_STATE_INTERSECTION_WAIT;
+                                car->speed = 0.0f;
+                                float stop_frac = car->turn_start_fraction - 0.02f;
+                                if (stop_frac < 0.0f) stop_frac = 0.0f;
+                                car->position = traffic_manager_travel_fraction_to_position(road, dir, stop_frac);
+                            } else {
+                                if (car->state == CAR_STATE_INTERSECTION_WAIT) {
+                                    car->state = CAR_STATE_NORMAL;
+                                    car->speed = car->desired_speed;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         car_update(car, manager->graph, dt);
+
+        // Release reservation after car finished turning
+        if (!traffic_manager_has_reservation_for_car(manager, car->id)) {
+            /* nothing */
+        } else {
+            if (car->state != CAR_STATE_TURNING) {
+                traffic_manager_release_reservations_for_car(manager, car->id);
+            }
+        }
 
         if (car->state == CAR_STATE_ACCIDENT) {
             const Car* front_car = traffic_manager_find_front_car(manager, car, 1.0f);
@@ -1444,6 +1669,9 @@ void traffic_manager_clear(TrafficManager *manager) {
 
     free(manager->accidents);
     manager->accidents = NULL;
+
+    free(manager->reservations);
+    manager->reservations = NULL;
 
     manager->car_count = 0;
     manager->max_cars = 0;

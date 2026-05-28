@@ -43,6 +43,9 @@ void debug_overlay_draw(struct TrafficManager* manager, int screen_width, int sc
     renderer_draw_text(x + 2, y + step*6, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
 
     if(manager->selected_road_id != -1 && manager->selected_lane != -1) {
+        if (manager->graph == NULL || manager->selected_road_id < 0 || manager->selected_road_id >= manager->graph->road_count) {
+            return;
+        }
         bool selected_lane_accident_active = traffic_manager_selected_lane_has_accident(manager);
 
         snprintf(line, sizeof(line), "Selected road: %d", manager->selected_road_id);
@@ -54,6 +57,10 @@ void debug_overlay_draw(struct TrafficManager* manager, int screen_width, int sc
         renderer_draw_text(x + 2, y + step*9, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
 
         RoadSegment *road = &manager->graph->roads[manager->selected_road_id];
+        int lanes = road->lanes > 0 ? road->lanes : 1;
+        if (manager->selected_lane < 0 || manager->selected_lane >= lanes) {
+            return;
+        }
         RoadDirection dir = graph_get_lane_direction(road, manager->selected_lane);
         int lane_car_count = 0;
         int lane_list_index = manager->selected_road_id * road->lanes + manager->selected_lane;

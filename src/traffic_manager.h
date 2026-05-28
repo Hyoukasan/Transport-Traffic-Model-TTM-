@@ -37,6 +37,16 @@ typedef struct {
     int *car_indices;
 } LaneCarList;
 
+typedef struct IntersectionReservationStruct {
+    int intersection_idx;
+    int in_road;
+    int in_lane;
+    int out_road;
+    int out_lane;
+    int car_id;
+    bool active;
+} IntersectionReservation;
+
 typedef struct TrafficManager { 
     struct Car          *cars;
     unsigned int        car_textures[5];
@@ -53,6 +63,11 @@ typedef struct TrafficManager {
     AccidentDTP         *accidents;
     int                 accident_count;
     int                 max_accidents;
+
+    /* Intersection route reservations */
+    IntersectionReservation *reservations;
+    int                     reservation_count;
+    int                     max_reservations;
 
     struct Graph       *graph;
 

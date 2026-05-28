@@ -89,7 +89,16 @@ int application_init(const char *title){
     if (audio_init() != 0) {
         audio_start_menu_music();
     }      
-    
+    /* DEBUG: auto-start simulation to reproduce crash without UI interaction */
+#ifdef DEBUG_AUTO_START
+    config.scenario   = SCENARIO_MULTI_INTERSECTION;
+    config.lane_count = 4;
+    config.max_cars   = 30;
+    config.time = 0.0f;
+    config.car_count = 0;
+    menu_set_state(&menu, MENU_STATE_START_SIMULATION);
+#endif
+
     last_frame_time = glfwGetTime();
     return 0;
 }
