@@ -88,16 +88,6 @@ static int clamp_lane(const RoadSegment *road, int lane) {
     return lane;
 }
 
-static float normalize_angle(float angle) {
-    while (angle > 180.0f) {
-        angle -= 360.0f;
-    }
-    while (angle <= -180.0f) {
-        angle += 360.0f;
-    }
-    return angle;
-}
-
 static void road_vertex_counts(const Graph *graph, int *mainCount, int *helperCount) {
     if (graph == NULL || mainCount == NULL || helperCount == NULL) {
         return;

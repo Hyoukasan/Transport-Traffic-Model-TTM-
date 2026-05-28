@@ -133,16 +133,6 @@ static void traffic_light_advance(TrafficLight *light) {
     light->timer = 0.0f;
 }
 
-static float traffic_manager_clampf(float value, float min_value, float max_value) {
-    if (value < min_value) {
-        return min_value;
-    }
-    if (value > max_value) {
-        return max_value;
-    }
-    return value;
-}
-
 /*от 2.0 до 4.49 секунд~*/
 static float traffic_manager_random_spawn_delay(void) {
     return 2.0f + (float)(rand() % 250) / 100.0f;
@@ -218,10 +208,10 @@ static float traffic_manager_coord_to_travel_fraction(const RoadSegment *road, R
             return 0.0f;
         }
         if (direction == ROAD_DIR_EAST) {
-            return traffic_manager_clampf((coord - (float)min_x) / span, 0.0f, 1.0f);
+            return clampf((coord - (float)min_x) / span, 0.0f, 1.0f);
         }
         if (direction == ROAD_DIR_WEST) {
-            return traffic_manager_clampf(((float)max_x - coord) / span, 0.0f, 1.0f);
+            return clampf(((float)max_x - coord) / span, 0.0f, 1.0f);
         }
     }
 
@@ -233,10 +223,10 @@ static float traffic_manager_coord_to_travel_fraction(const RoadSegment *road, R
             return 0.0f;
         }
         if (direction == ROAD_DIR_SOUTH) {
-            return traffic_manager_clampf((coord - (float)min_y) / span, 0.0f, 1.0f);
+            return clampf((coord - (float)min_y) / span, 0.0f, 1.0f);
         }
         if (direction == ROAD_DIR_NORTH) {
-            return traffic_manager_clampf(((float)max_y - coord) / span, 0.0f, 1.0f);
+            return clampf(((float)max_y - coord) / span, 0.0f, 1.0f);
         }
     }
 
@@ -422,7 +412,7 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
             car->state = CAR_STATE_TRAFFIC_LIGHT;
         } else if (nearest_distance <= slow_distance) {
             float speed_factor = nearest_distance / slow_distance;
-            float max_speed = road->speed_limit * traffic_manager_clampf(speed_factor, 0.15f, 1.0f);
+            float max_speed = road->speed_limit * clampf(speed_factor, 0.15f, 1.0f);
             if (car->speed > max_speed) {
                 car->speed = max_speed;
             }
@@ -936,8 +926,8 @@ static bool traffic_manager_lane_change_clear(TrafficManager* manager, const Car
 }
 
 static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car) {
-    const float slow_radius = 1.4f;
-    const float stop_radius = 0.45f;
+    const float slow_radius = 1.0f;
+    const float stop_radius = 0.2f;
 
     if (manager == NULL || car == NULL) {
         return;
