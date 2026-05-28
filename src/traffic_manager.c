@@ -353,7 +353,7 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
         return;
     }
 
-    if (car->state == CAR_STATE_ACCIDENT || car->state == CAR_STATE_BRAKING || car->state == CAR_STATE_INTERSECTION_WAIT || car->state == CAR_STATE_TURNING ||
+    if (car->state == CAR_STATE_ACCIDENT || car->state == CAR_STATE_BRAKING || car->state == CAR_STATE_TURNING ||
         car->road_id < 0 || car->road_id >= manager->graph->road_count) {
         return;
     }
@@ -401,9 +401,8 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
 
     LightState light_state = traffic_manager_light_state_for_road(nearest_light, road);
     if (light_state == LIGHT_GREEN) {
-        if (car->state == CAR_STATE_TRAFFIC_LIGHT || car->state == CAR_STATE_INTERSECTION_WAIT) {
-
-            if (car->state == CAR_STATE_INTERSECTION_WAIT && car->turn_decided && car->turn_made) {
+        if (car->state == CAR_STATE_TRAFFIC_LIGHT) {
+            if (car->turn_decided && car->turn_made) {
                 car->state = CAR_STATE_TURNING;
                 car->turn_progress = 0.0f;
             } else {
@@ -420,7 +419,7 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
         if (nearest_distance <= stop_distance) {
             car->position = traffic_manager_travel_fraction_to_position(road, direction, nearest_stop_travel);
             car->speed = 0.0f;
-            car->state = (car->turn_decided && car->turn_made) ? CAR_STATE_INTERSECTION_WAIT : CAR_STATE_TRAFFIC_LIGHT;
+            car->state = CAR_STATE_TRAFFIC_LIGHT;
         } else if (nearest_distance <= slow_distance) {
             float speed_factor = nearest_distance / slow_distance;
             float max_speed = road->speed_limit * traffic_manager_clampf(speed_factor, 0.15f, 1.0f);
@@ -1381,7 +1380,7 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     for (int i = 0; i < manager->car_count; i++) {
         Car* car = &manager->cars[i];
 
-        if (car->state != CAR_STATE_TRAFFIC_LIGHT) {
+        if (car->state != CAR_STATE_TRAFFIC_LIGHT && car->state != CAR_STATE_TURNING) {
             if(!traffic_manager_update_overtake_return(manager, car)) {
                 traffic_manager_update_lane_change(manager, car, dt);
             }
