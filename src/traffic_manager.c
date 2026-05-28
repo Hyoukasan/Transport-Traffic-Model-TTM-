@@ -108,7 +108,7 @@ static int traffic_manager_init_lights(TrafficManager *manager) {
 }
 
 static void traffic_manager_update_lights(TrafficManager *manager, float dt) {
-    float switch_time = 5.0f + (float)manager->graph->roads[0].lanes * 0.8f;
+    float switch_time = manager->light_switch_interval;
 
     for(size_t i = 0; i < (size_t)(manager->light_count); i++) {
         TrafficLight *light = &manager->lights[i];
@@ -717,6 +717,24 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
     }
     
     manager->light_count = manager->graph->intersection_count;
+
+    switch (config->scenario)
+    {
+    case SCENARIO_HIGHWAY:
+        break;
+    
+    case SCENARIO_SINGLE_INTERSECTION:
+        manager->light_switch_interval = 15.0f;
+        break;
+    
+    case SCENARIO_MULTI_INTERSECTION:
+        manager->light_switch_interval = 25.0f;
+        break;
+            
+    default:
+        manager->light_switch_interval = 10.0f;
+        break;
+    }
 
     if(manager->light_count > 0) {
         manager->lights = (TrafficLight*)calloc((size_t)manager->light_count, sizeof(TrafficLight));
@@ -1447,6 +1465,7 @@ void traffic_manager_clear(TrafficManager *manager) {
     manager->car_count = 0;
     manager->max_cars = 0;
     manager->light_count = 0;
+    manager->light_switch_interval = 0.0f;
     manager->accident_count = 0;
     manager->max_accidents = 0;
     manager->time = 0.0f;

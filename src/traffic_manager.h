@@ -49,6 +49,7 @@ typedef struct TrafficManager {
 
     TrafficLight        *lights;
     int                 light_count;
+    float               light_switch_interval;
 
     AccidentDTP         *accidents;
     int                 accident_count;
