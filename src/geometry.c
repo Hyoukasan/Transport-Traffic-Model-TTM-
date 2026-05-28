@@ -55,6 +55,16 @@ float clampf(float value, float min_value, float max_value) {
     return value;
 }
 
+int clamp(int value, int min_value, int max_value) {
+    if (value < min_value) {
+        return min_value;
+    }
+    if (value > max_value) {
+        return max_value;
+    }
+    return value;    
+}
+
 float direction_to_angle(RoadDirection dir) {
     switch (dir) {
         case ROAD_DIR_EAST: return 90.0f;

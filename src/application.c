@@ -15,6 +15,7 @@
 #include "menu.h"
 #include "renderer.h"
 #include "input.h"
+#include "geometry.h"
 
 static AppManager app = {0};
 static GLFWwindow* window = NULL;
@@ -227,38 +228,29 @@ void application_update(void){
 
             switch (config.scenario) {
                 case SCENARIO_HIGHWAY:
-                    if (config.lane_count < 2) config.lane_count = 2;
-                    else if (config.lane_count > 8) config.lane_count = 8;
-                    
-                    // Хайвей: 2 полосы -> 25 машин (12.5*2), 8 полос -> 100 машин (12.5*8=100)
-                    int hw_limit = round_to_5(config.lane_count * 12); 
-                    if (config.max_cars > hw_limit) config.max_cars = hw_limit;
-                    if (config.max_cars < 10) config.max_cars = 10;
+                    config.lane_count = clamp(config.lane_count, 2, 8);
+
+                    int hw_limit = round_to_5(config.lane_count * 8); 
+                    config.max_cars = clamp(config.max_cars, 10, hw_limit);
                     break;
-                
+
                 case SCENARIO_SINGLE_INTERSECTION:
-                    if (config.lane_count < 2) config.lane_count = 2;
-                    else if (config.lane_count > 8) config.lane_count = 8;
-
-                    // Перекресток: 2 полосы -> 20 машин, 8 полос -> 80 машин
-                    int si_limit = round_to_5(config.lane_count * 10);
-                    if (config.max_cars > si_limit) config.max_cars = si_limit;
-                    if (config.max_cars < 10) config.max_cars = 10;
+                    config.lane_count = clamp(config.lane_count, 2, 8);
+                    int si_limit = round_to_5(config.lane_count * 5);
+                    config.max_cars = clamp(config.max_cars, 8, si_limit);
                     break;
-                
+
                 case SCENARIO_MULTI_INTERSECTION:
-                    if (config.lane_count < 2) config.lane_count = 2;
-                    else if (config.lane_count > 6) config.lane_count = 6;
-
-                    // Мульти: 2 полосы -> 25 машин, 6 полос -> 100 машин (6*16)
-                    int mi_limit = round_to_5(config.lane_count * 17);
-                    if (config.max_cars > mi_limit) config.max_cars = mi_limit;
-                    if (config.max_cars < 10) config.max_cars = 10;
+                    config.lane_count = clamp(config.lane_count, 2, 6);
+                    int mi_limit = round_to_5(config.lane_count * 8);
+                    config.max_cars = clamp(config.max_cars, 10, (mi_limit > 50 ? 50 : mi_limit));
                     break;
-                                
+
                 default:
+                    config.max_cars = 15;
                     break;
             }
+
             application_update_settings_text();
             menu_render(&menu, app.screen_width, app.screen_height);
             break;

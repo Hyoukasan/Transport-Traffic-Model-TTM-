@@ -15,6 +15,7 @@ int coord_min(int a, int b);
 int coord_max(int a, int b);
 bool point_in_range(int value, int a, int b);
 float clampf(float value, float min_value, float max_value);
+int clamp(int value, int min_value, int max_value);
 
 // Новые функции для манёвров
 float direction_to_angle(RoadDirection dir);
