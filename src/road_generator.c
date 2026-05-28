@@ -37,7 +37,7 @@ static void build_roads_range(RoadGenerator *gen, Graph *graph, int start_index,
             if (road_id >= 0) {
                 unsigned int texture = texture_load("data/textures/road132.png", NULL, NULL);
                 graph_set_road_texture(graph, road_id, texture);
-                printf("горизонтальная дорога %d: от (0, %d) до (%d, %d), скорость=%.1f, полос=%d\n",
+                printf("horizontal road %d: from (0, %d) to (%d, %d), speed = %.1f, lane = %d\n",
                        road_id, p->y, graph->grid_width - 1, p->y, speed_limit, total_lanes);
             }
         } else {
@@ -46,7 +46,7 @@ static void build_roads_range(RoadGenerator *gen, Graph *graph, int start_index,
             if (road_id >= 0) {
                 unsigned int texture = texture_load("data/textures/road132.png", NULL, NULL);
                 graph_set_road_texture(graph, road_id, texture);
-                printf("вертикальная дорога %d: от (%d, 0) до (%d, %d), скорость=%.1f, полос=%d\n",
+                printf("vertical road %d: from (0, %d) to (%d, %d), speed = %.1f, lane = %d\n",
                        road_id, p->x, p->x, graph->grid_height - 1, speed_limit, total_lanes);
             }
         }
@@ -55,13 +55,13 @@ static void build_roads_range(RoadGenerator *gen, Graph *graph, int start_index,
 
 static RoadGenerator* road_gen_create_internal(int num_roads, int lane_count) {
     if (num_roads <= 0) {
-        fprintf(stderr, "road_gen_create: неправильное количество дорог %d\n", num_roads);
+        fprintf(stderr, "road_gen_create: invalid count roads %d\n", num_roads);
         return NULL;
     }
 
     RoadGenerator *gen = malloc(sizeof(RoadGenerator));
     if (gen == NULL) {
-        fprintf(stderr, "road_gen_create: не удалось выделить память для RoadGenerator\n");
+        fprintf(stderr, "road_gen_create: allocated memory for RoadGenerator\n");
         return NULL;
     }
 
@@ -69,7 +69,7 @@ static RoadGenerator* road_gen_create_internal(int num_roads, int lane_count) {
     gen->max_points = num_roads;
     gen->points = malloc(sizeof(Point) * num_roads);
     if (gen->points == NULL) {
-        fprintf(stderr, "road_gen_create: не удалось выделить память для точек\n");
+        fprintf(stderr, "road_gen_create: allocated memory for points\n");
         free(gen);
         return NULL;
     }
@@ -142,12 +142,29 @@ void road_gen_generate_points(RoadGenerator *gen, Graph *graph) {
         gen->point_count = gen->max_points;
     }
 
-    printf("Сгенерировано %d точек дорог для сценария %d:\n", gen->point_count, gen->scenario);
-    printf("  Горизонтальные дороги: %d\n", gen->horizontal_roads);
-    printf("  вертикальные дороги: %d\n", gen->vertical_roads);
+    switch (gen->scenario)
+    {
+    case ROAD_SCENARIO_HIGHWAY:
+        printf("%d road points generated for scenario (HIGHWAY):\n", gen->point_count);
+        break;
+    
+    case ROAD_SCENARIO_SINGLE_INTERSECTION:
+        printf("%d road points generated for scenario (SINGLE_INTERSECTION):\n", gen->point_count);
+        break;
+    
+    case ROAD_SCENARIO_MULTI_INTERSECTION:
+        printf("%d road points generated for scenario (MULTI_INTERSECTION):\n", gen->point_count);
+        break;
+            
+    default:
+        break;
+    }
+
+    printf("  vertical roads: %d\n", gen->horizontal_roads);
+    printf("  horizontal roads: %d\n", gen->vertical_roads);
 
     for (int i = 0; i < gen->point_count; i++) {
-        printf("  точка %d: (%d, %d)\n", i, gen->points[i].x, gen->points[i].y);
+        printf("  point %d: (%d, %d)\n", i, gen->points[i].x, gen->points[i].y);
     }
 }
 
@@ -175,8 +192,8 @@ void road_gen_build_roads(RoadGenerator *gen, Graph *graph) {
         build_roads_range(gen, graph, gen->horizontal_roads, gen->vertical_roads, ROAD_VERTICAL);
     }
 
-    printf("\nсеть дорог создана:\n");
-    printf("  всего дорог: %d\n", graph->road_count);
+    printf("\nRoad network created:\n");
+    printf("  total roads: %d\n", graph->road_count);
 }
 
 void road_gen_destroy(RoadGenerator *gen) {

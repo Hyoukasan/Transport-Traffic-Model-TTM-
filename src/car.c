@@ -662,11 +662,6 @@ void car_update(Car *car, const Graph *graph, float dt) {
         return;
     }
 
-    if(car->state == CAR_STATE_INTERSECTION_WAIT) {
-        car->speed = 0.0f;
-        return;
-    }
-
     const RoadSegment *road = &graph->roads[car->road_id];
     RoadDirection current_direction = graph_get_lane_direction(road, car->lane);
 

@@ -1379,6 +1379,45 @@ bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager) {
     return true;
 }
 
+static void traffic_manager_print_car_state(const Car* car) {
+    if (car == NULL) return;
+
+    const char* state_str;
+    switch (car->state) {
+        case CAR_STATE_NORMAL:            state_str = "NORMAL"; break;
+        case CAR_STATE_SLOWING:           state_str = "SLOWING"; break;
+        case CAR_STATE_BRAKING:           state_str = "BRAKING"; break;
+        case CAR_STATE_TRAFFIC_LIGHT:     state_str = "TRAFFIC_LIGHT"; break;
+        case CAR_STATE_TURNING:           state_str = "TURNING"; break;
+        case CAR_STATE_ACCIDENT:          state_str = "ACCIDENT"; break;
+        case CAR_STATE_OVERTAKING:        state_str = "OVERTAKING"; break;
+        default:                          state_str = "UNKNOWN"; break;
+    }
+
+    char line[256];
+    float x_offset = 50.0f;
+    float y_offset = 50.0f;
+    float step = 35.0f;
+    float scale = 2.0f;
+
+    snprintf(line, sizeof(line), "State: %s | Pos: %.2f", state_str, car->position);
+    
+    renderer_draw_text(x_offset + 2, y_offset + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset, line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080);
+
+    snprintf(line, sizeof(line), "Speed: %.2f | Turn: %d | Made: %d", 
+             car->speed, car->turn_decided, car->turn_made);
+
+    renderer_draw_text(x_offset + 2, y_offset + step + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset + step, line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080);
+
+    snprintf(line, sizeof(line), "CrossedIdx: %d | TargetRoad: %d", 
+             car->last_turn_x, car->turn_target_road_id);
+
+    renderer_draw_text(x_offset + 2, y_offset + (step * 2) + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset + (step * 2), line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080);
+}
+
 int traffic_manager_update(TrafficManager *manager, float dt) {
     if (manager == NULL || manager->graph == NULL) {
         return -1;
@@ -1397,6 +1436,8 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
 
     for (int i = 0; i < manager->car_count; i++) {
         Car* car = &manager->cars[i];
+
+        //traffic_manager_print_car_state(car);
 
         if (car->state != CAR_STATE_TRAFFIC_LIGHT && car->state != CAR_STATE_TURNING) {
             if(!traffic_manager_update_overtake_return(manager, car)) {
