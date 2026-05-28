@@ -32,6 +32,72 @@ static void application_update_settings_text(void) {
     snprintf(menu.buttons[1].profile_text, sizeof(menu.buttons[1].profile_text), "CARS: %d", config.max_cars);
 }
 
+static void application_about_info_text(void) {
+    char line[256];
+
+    float text_width_approx = 375.0f; 
+    float text_height_approx = 380.0f; 
+
+    float x_offset = (1920.0f / 2.0f) - (text_width_approx / 2.0f);
+    float y_offset = (1080.0f / 2.0f) - (text_height_approx / 2.0f);
+
+    float step = 25.0f;
+    
+    snprintf(line, sizeof(line), "Transport Traffic Manager");
+    renderer_draw_text(x_offset + 2, y_offset + 2, line, 2.3f, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset, line, 2.3f, 1.0f, 1.0f, 1.0f, 1920, 1080);
+
+    snprintf(line, sizeof(line), "ver. 0.1.0-beta");
+    renderer_draw_text(x_offset + 2, y_offset + 2 + step, line, 2.0f, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset + step, line, 2.0f, 1.0f, 1.0f, 1.0f, 1920, 1080);
+
+
+    snprintf(line, sizeof(line), "Objective:");
+    renderer_draw_text(x_offset + 2, y_offset + 2 + step * 2.0f + 10.0f, line, 2.2f, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset + step * 2.0f + 10.0f, line, 2.2f, 1.0f, 1.0f, 1.0f, 1920, 1080);       
+    
+    
+    snprintf(line, sizeof(line), "A university-level simulation project");
+    renderer_draw_text(x_offset + 2, y_offset + 2 + step * 4.0f, line, 1.9f, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset + step * 4.0f, line, 1.9f, 1.0f, 1.0f, 1.0f, 1920, 1080);  
+
+    snprintf(line, sizeof(line), "focused on autonomous urban traffic");
+    renderer_draw_text(x_offset + 2, y_offset + 2 + step * 5.0f, line, 1.9f, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset + step * 5.0f, line, 1.9f, 1.0f, 1.0f, 1.0f, 1920, 1080);     
+    
+    snprintf(line, sizeof(line), "flow and intersection management.");
+    renderer_draw_text(x_offset + 2, y_offset + 2 + step * 6.0f, line, 1.9f, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset + step * 6.0f, line, 1.9f, 1.0f, 1.0f, 1.0f, 1920, 1080);      
+    
+    snprintf(line, sizeof(line), "Core Mechanics:");
+    renderer_draw_text(x_offset + 2, y_offset + 2 + step * 7.0f + 10.0f, line, 2.2f, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset + step * 7.0f + 10.0f, line, 2.2f, 1.0f, 1.0f, 1.0f, 1920, 1080);     
+
+
+    snprintf(line, sizeof(line), "  -Real-time Simulation");
+    renderer_draw_text(x_offset + 2, y_offset + 2 + step * 8.0f + 15.0f, line, 2.2f, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset + step * 8.0f + 15.0f, line, 2.2f, 1.0f, 1.0f, 1.0f, 1920, 1080);    
+    
+    snprintf(line, sizeof(line), "  -Intelligent Infrastructure");
+    renderer_draw_text(x_offset + 2, y_offset + 2 + step * 9.0f + 15.0f, line, 2.2f, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset + step * 9.0f + 15.0f, line, 2.2f, 1.0f, 1.0f, 1.0f, 1920, 1080);              
+
+
+    snprintf(line, sizeof(line), "  -Graph-Based Networks");
+    renderer_draw_text(x_offset + 2, y_offset + 2 + step * 10.0f + 15.0f, line, 2.2f, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset + step * 10.0f + 15.0f, line, 2.2f, 1.0f, 1.0f, 1.0f, 1920, 1080);   
+    
+    
+    snprintf(line, sizeof(line), "  -Incident Response");
+    renderer_draw_text(x_offset + 2, y_offset + 2 + step * 11.0f + 15.0f, line, 2.2f, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset + step * 11.0f + 15.0f, line, 2.2f, 1.0f, 1.0f, 1.0f, 1920, 1080);          
+    
+    snprintf(line, sizeof(line), "Tech Stack:C,OpenGL,Custom Graph Logic");
+    renderer_draw_text(x_offset + 2, y_offset + 2 + step * 12.0f + 30.0f, line, 1.8f, 0.0f, 0.0f, 0.0f, 1920, 1080);
+    renderer_draw_text(x_offset, y_offset + step * 12.0f + 30.0f, line, 1.8f, 1.0f, 1.0f, 1.0f, 1920, 1080);               
+
+}
+
 static int round_to_5(int n) {
     return ((n + 2) / 5) * 5;
 }
@@ -271,10 +337,11 @@ void application_update(void){
             if(input.key_esc_click) {
                 menu_set_state(&menu, MENU_STATE_MAIN_MENU);
                 break;
-            } else {
-                menu_render(&menu, app.screen_width, app.screen_height);
             }
-
+            
+            menu_render(&menu, app.screen_width, app.screen_height);
+            application_about_info_text();
+            
             break;
 
         case MENU_STATE_LOAD_PROFILE:
