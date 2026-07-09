@@ -352,7 +352,7 @@ void application_update(void){
             
             menu_update(&menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
             int slot = slot_from_button_id(menu.last_pressed_button);
-            if (slot > 0) {
+            if(slot > 0) {
                 if (config_manager_load_profile(&config, slot, NULL) == 0) {
                     menu_set_state(&menu, MENU_STATE_START_SIMULATION);
                 }
@@ -374,7 +374,7 @@ void application_update(void){
             break;
 
         case APP_STATE_RUNNING_SIMULATION:
-            if (input.key_esc_click) {
+            if(input.key_esc_click) {
                 menu_set_state(&menu, MENU_STATE_SIMULATION_PAUSE);
                 app.current_state = APP_STATE_SIMULATION_PAUSE;
                 break;
@@ -383,18 +383,18 @@ void application_update(void){
             traffic_manager_update(&manager, frame);
 
             bool lane_selected = manager.selected_road_id >= 0 && manager.selected_lane >= 0;
-            if (lane_selected) {
+            if(lane_selected) {
                 menu_update(&tools_menu, (int)input.mouse_x, (int)input.mouse_y, input.lmb_click);
             } else {
                 tools_menu.last_pressed_button = BUTTON_ID_NONE;
             }
 
-            if (input.lmb_click) {
-                if (lane_selected && tools_menu.last_pressed_button == BUTTON_ID_SPAWN_CAR) {
+            if(input.lmb_click) {
+                if(lane_selected && tools_menu.last_pressed_button == BUTTON_ID_SPAWN_CAR) {
                     traffic_manager_spawn_car_on_selected_lane(&manager);
-                } else if (lane_selected && tools_menu.last_pressed_button == BUTTON_ID_DTP) {
+                } else if(lane_selected && tools_menu.last_pressed_button == BUTTON_ID_DTP) {
                     traffic_manager_add_accident_on_selected_lane(&manager);
-                } else if (tools_menu.last_pressed_button == BUTTON_ID_NONE) {
+                } else if(tools_menu.last_pressed_button == BUTTON_ID_NONE) {
                     traffic_manager_select_lane_at_pixel(&manager, (int)input.mouse_x, (int)input.mouse_y);
                 }
             }
@@ -409,7 +409,7 @@ void application_update(void){
             renderer_draw_traffic_lights(manager.graph, manager.lights, manager.light_count, manager.light_textures);
 
             debug_overlay_draw(&manager, app.screen_width, app.screen_height);
-            if (manager.selected_road_id >= 0 && manager.selected_lane >= 0) {
+            if(manager.selected_road_id >= 0 && manager.selected_lane >= 0) {
                 menu_render(&tools_menu, app.screen_width, app.screen_height);
             }
 
