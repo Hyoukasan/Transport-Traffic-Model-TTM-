@@ -4,7 +4,7 @@
 
 CC = gcc
 OPT = -O2
-CFLAGS = -Wall -Wextra -DGLEW_NO_GLU -DGLFW_INCLUDE_NONE -Ithird_party/include -Ithird_party/include/Other -g $(OPT)
+CFLAGS = -Wall -Wextra -DGLEW_NO_GLU -DGLFW_INCLUDE_NONE -Ithird_party/include -Ithird_party/include/Other -g 
 LDFLAGS = -Lthird_party/lib
 LIBS = -lglfw3 -lglew32 -lopengl32
 PREPARE_LIBS =
@@ -22,13 +22,6 @@ ifeq ($(UNAME_S),Linux)
     PREPARE_LIBS = prepare-linux-libs
     LIBS = -lglfw -lGLEW -l:libGL.so.1 -lm
     LDFLAGS = -Lthird_party/lib/linux -Wl,-rpath,'$$ORIGIN/third_party/lib/linux'
-    MKDIR_BUILD = mkdir -p "$(BUILD_DIR)"
-    CLEAN_CMD = rm -f "$(TARGET)"
-    CLEAN_BUILD = rm -rf "$(BUILD_DIR)"
-endif
-ifeq ($(UNAME_S),Darwin)
-    LIBS = -lglfw -lGLEW -framework OpenGL
-    LDFLAGS =
     MKDIR_BUILD = mkdir -p "$(BUILD_DIR)"
     CLEAN_CMD = rm -f "$(TARGET)"
     CLEAN_BUILD = rm -rf "$(BUILD_DIR)"
@@ -54,7 +47,7 @@ $(BUILD_DIR):
 	$(MKDIR_BUILD)
 
 $(TARGET): $(OBJECTS)
-	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
+	$(CC) $(OPT) -g -o $@ $^ $(LDFLAGS) $(LIBS)
 
 $(BUILD_DIR)/%.o: src/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<

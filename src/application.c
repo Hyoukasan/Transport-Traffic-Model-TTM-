@@ -140,7 +140,7 @@ int application_init(const char *title){
     }
 
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
 
     if(glewInit() != GLEW_OK){
         fprintf(stderr, "GLEW initialization failed!\n");
