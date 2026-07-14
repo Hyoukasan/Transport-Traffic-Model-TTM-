@@ -30,7 +30,7 @@ static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car
 static bool traffic_manager_update_overtake_return(TrafficManager* manager, Car* car);
 static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car, float dt);
 static void traffic_manager_update_accidents(TrafficManager* manager, float dt);
-static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, Car* car);
+static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, Car* car, float dt);
 
 static int traffic_manager_init_lights(TrafficManager *manager);
 static void traffic_manager_update_lights(TrafficManager *manager, float dt);
@@ -338,7 +338,7 @@ static LightState traffic_manager_light_state_for_road(const TrafficLight* light
     return light->vertical_state_light;
 }
 
-static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, Car* car) {
+static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, Car* car, float dt) {
     if (manager == NULL || manager->graph == NULL || car == NULL) {
         return;
     }
@@ -407,7 +407,16 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
         const float slow_distance = 3.0f;
         float stop_distance = 0.20f + car->speed * 0.20f;
         if (nearest_distance <= stop_distance) {
-            car->position = traffic_manager_travel_fraction_to_position(road, direction, nearest_stop_travel);
+            float target_position = traffic_manager_travel_fraction_to_position(road, direction, nearest_stop_travel);
+            float smoothing = clampf(dt > 0.0f ? dt * 12.0f : 1.0f, 0.0f, 1.0f);
+            float new_position = car->position + (target_position - car->position) * smoothing;
+
+            if ((target_position > car->position && new_position > target_position) ||
+                (target_position < car->position && new_position < target_position)) {
+                new_position = target_position;
+            }
+
+            car->position = new_position;
             car->speed = 0.0f;
             car->state = CAR_STATE_TRAFFIC_LIGHT;
         } else if (nearest_distance <= slow_distance) {
@@ -1437,7 +1446,7 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
             traffic_manager_keep_safe_distance(manager, car);
         }
 
-        traffic_manager_update_traffic_light_stop(manager, car);
+        traffic_manager_update_traffic_light_stop(manager, car, dt);
         car_update(car, manager->graph, dt);
 
         if (car->state == CAR_STATE_ACCIDENT) {
