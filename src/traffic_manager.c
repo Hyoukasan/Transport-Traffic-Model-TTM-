@@ -950,6 +950,39 @@ static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car
         return;
     }
 
+    const float intersection_hold_radius = 4.0f;
+    const Car* intersection_block_car = traffic_manager_find_front_car(manager, car, intersection_hold_radius);
+    if (intersection_block_car != NULL && 
+        (intersection_block_car->state == CAR_STATE_TURNING ||
+         (intersection_block_car->turn_decided && intersection_block_car->turn_made))) {
+        RoadSegment* road = &manager->graph->roads[car->road_id];
+        RoadDirection dir = graph_get_lane_direction(road, car->lane);
+        float car_travel = traffic_manager_position_to_travel_fraction(road, dir, car->position);
+        float block_travel = traffic_manager_position_to_travel_fraction(road, dir, intersection_block_car->position);
+        float road_length = (float)road->length;
+        if (road_length <= 0.0f) {
+            road_length = 1.0f;
+        }
+        float distance = (block_travel - car_travel) * road_length;
+        if (distance < 0.0f) {
+            distance = 0.0f;
+        }
+        float min_speed = car->desired_speed * 0.15f;
+        float max_speed = car->desired_speed * 0.80f;
+        float target_speed = min_speed;
+        if (distance > 0.0f) {
+            target_speed = clampf((distance / intersection_hold_radius) * car->desired_speed, min_speed, max_speed);
+        }
+        if (car->speed > target_speed) {
+            car->speed = target_speed;
+        }
+        if (car->speed < target_speed && car->state != CAR_STATE_SLOWING) {
+            // Позволяем машине плавно набрать скорость, если впереди есть место.
+            car->state = CAR_STATE_SLOWING;
+        }
+        return;
+    }
+
     const Car* front_car = traffic_manager_find_front_car(manager, car, slow_radius);
     if (front_car == NULL) {
         if (car->state == CAR_STATE_SLOWING) {

@@ -716,8 +716,18 @@ void car_update(Car *car, const Graph *graph, float dt) {
     const Intersection *intersection = &graph->intersections[crossed.idx];
     car_find_turn_roads(car, graph, road, intersection, &left_road_id, &right_road_id);
 
+    float intersection_coord = (road->type == ROAD_HORIZONTAL) ? (float)crossed.x : (float)crossed.y;
+    float distance_to_intersection = 0.0f;
+    if (current_direction == ROAD_DIR_EAST || current_direction == ROAD_DIR_SOUTH) {
+        distance_to_intersection = intersection_coord - current_coord;
+    } else {
+        distance_to_intersection = current_coord - intersection_coord;
+    }
+    const float turn_decision_distance = 4.0f;
+
     // Решение о повороте при подъезде к пересечению
-    if (!car->turn_decided && new_travel_fraction >= crossed.fraction - 0.1f) {
+    if (!car->turn_decided && distance_to_intersection >= 0.0f &&
+        (new_travel_fraction >= crossed.fraction - 0.2f || distance_to_intersection <= turn_decision_distance)) {
         car->turn_decided = true;
 
         chosen_target = car_choose_turn(car, left_road_id, right_road_id, current_direction);
@@ -729,8 +739,8 @@ void car_update(Car *car, const Graph *graph, float dt) {
 
     // Начало поворота при достижении края
     if (car->turn_decided && car->turn_made && new_travel_fraction >= car->turn_start_fraction && car->state != CAR_STATE_TURNING) {
-        //Запускаем поворот по заранее рассчитанной дуге
-        car->position = travel_fraction_to_position(road, current_direction, car->turn_start_fraction);
+        // Запускаем поворот по заранее рассчитанной дуге
+        // Не принудительно возвращаем машину назад на точку старта дуги — иначе происходит рывок.
         car->turn_progress = 0.0f;
         car->state = CAR_STATE_TURNING;
     }
