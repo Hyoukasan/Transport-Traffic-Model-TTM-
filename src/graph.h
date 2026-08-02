@@ -41,6 +41,9 @@ typedef struct {
     int top_edge;
     int bottom_edge;
 
+    int count_car;
+    int id_car_at_intersecction[2];
+
     int road_count;
     int roads[8];
 } Intersection;

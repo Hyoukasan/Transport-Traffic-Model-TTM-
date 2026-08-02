@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "graph.h"
 #include "texture.h"
@@ -66,6 +67,7 @@ Graph* graph_create(int window_width, int window_height, int chunk_size, int pad
 
     return g;
 }
+
 // текстурка
 void graph_set_road_texture(Graph *g, int road_id, unsigned int texture) {
     if (g == NULL || road_id < 0 || road_id >= g->road_count) {
@@ -73,6 +75,7 @@ void graph_set_road_texture(Graph *g, int road_id, unsigned int texture) {
     }
     g->roads[road_id].texture = texture;
 }
+
 //направление
 // скорость на дороге 
 static bool point_in_range(int value, int a, int b) {
@@ -81,6 +84,7 @@ static bool point_in_range(int value, int a, int b) {
     }
     return value >= b && value <= a;
 }
+
 // перекресток
 static int coord_min(int a, int b) {
     return a < b ? a : b;
@@ -209,15 +213,24 @@ static bool graph_add_intersection(Graph *g, int x, int y, int road_id) {
     Intersection *intersection = &g->intersections[g->intersection_count];
     intersection->x = x;
     intersection->y = y;
+
     intersection->left_edge = x;
     intersection->right_edge = x + 1;
     intersection->top_edge = y;
     intersection->bottom_edge = y + 1;
+
+    intersection->count_car = 0;
+//    memset(intersection->id_car_at_intersecction, 0x80, 2); ОШИБКА: Я одним байтом пытался инт заполнить (4 абйт) и он мне их дозаполнял и числа разные получились
+
+    intersection->id_car_at_intersecction[0] = -1;
+    intersection->id_car_at_intersecction[1] = -1;
+
     intersection->road_count = 0;
     intersection->roads[intersection->road_count++] = road_id;
     g->intersection_count++;
     return true;
 }
+
 // дорога
 int graph_add_road(Graph *g, int x1, int y1, int x2, int y2, RoadType type, RoadDirection direction, float speed_limit, int lanes) {
     if (g == NULL) {

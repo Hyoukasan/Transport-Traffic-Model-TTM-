@@ -681,7 +681,6 @@ void car_update(Car *car, const Graph *graph, float dt) {
 
     float current_coord = coordinate_at_travel_position(road, current_direction, new_position);
     float old_coord = coordinate_at_travel_position(road, current_direction, old_position);
-    car->at_intersection = false;
 
     car_angle_update(car, current_direction);
 
