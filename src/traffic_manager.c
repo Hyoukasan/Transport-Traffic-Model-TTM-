@@ -1457,7 +1457,6 @@ static int cars_at_intersactions(TrafficManager* manager) {
 
         // Переводим процент пути в координаты (начальная точка + текущий % от длины дороги)
         float car_ndc_pos = 0.0f;
-
         if(road.type == ROAD_HORIZONTAL) {
             float car_grid_x = road.x1 + car->position * road.length;
             car_ndc_pos = grid_center_to_normalized_x(car_grid_x, manager->graph->chunk_size, 
