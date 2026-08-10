@@ -296,7 +296,7 @@ void application_update(void){
                 case SCENARIO_HIGHWAY:
                     config.lane_count = clamp(config.lane_count, 2, 8);
 
-                    int hw_limit = round_to_5(config.lane_count * 8); 
+                    int hw_limit = round_to_5(config.lane_count * 5); 
                     config.max_cars = clamp(config.max_cars, 10, hw_limit);
                     break;
 
