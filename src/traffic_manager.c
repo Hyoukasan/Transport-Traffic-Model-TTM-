@@ -1556,12 +1556,18 @@ static void traffic_manager_print_car_state(const Car* car, const TrafficManager
     renderer_draw_text(x_offset + (step * 4), y_offset + (step * 2), line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080);
 */
 
-    snprintf(line, sizeof(line), "Count cars at intersaction: %d | Id car: %d, %d", manager->graph->intersections->count_car, 
-                                                                manager->graph->intersections->id_car_at_intersecction[0], 
-                                                                manager->graph->intersections->id_car_at_intersecction[1]);
-
-    renderer_draw_text(x_offset + (step * 4) + 2, y_offset + (step * 4) + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
-    renderer_draw_text(x_offset + (step * 4), y_offset + (step * 4), line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080);                                                                    
+    for(size_t i = 0; i < (size_t)manager->graph->intersection_count; i++) {
+        snprintf(line, sizeof(line), "Count cars at intersaction %zu: %d | Id car: %d, %d", i, manager->graph->intersections->count_car, 
+                                                                    manager->graph->intersections->id_car_at_intersecction[0], 
+                                                                    manager->graph->intersections->id_car_at_intersecction[1]);
+        if(manager->graph->intersection_count > 1) {
+            renderer_draw_text(x_offset + (step * 37) + 2, y_offset + (step * 4 * (i + 1)) + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
+            renderer_draw_text(x_offset + (step * 37), y_offset + (step * 4 * (i + 1)), line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080); 
+        } else {
+            renderer_draw_text(x_offset + (step * 4) + 2, y_offset + (step * 4 * (i + 1)) + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
+            renderer_draw_text(x_offset + (step * 4), y_offset + (step * 4 * (i + 1)), line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080); 
+        }
+    }                                             
 
 }
 
