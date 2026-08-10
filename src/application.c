@@ -302,13 +302,13 @@ void application_update(void){
 
                 case SCENARIO_SINGLE_INTERSECTION:
                     config.lane_count = clamp(config.lane_count, 2, 8);
-                    int si_limit = round_to_5(config.lane_count * 5);
+                    int si_limit = round_to_5(config.lane_count * 4);
                     config.max_cars = clamp(config.max_cars, 8, si_limit);
                     break;
 
                 case SCENARIO_MULTI_INTERSECTION:
                     config.lane_count = clamp(config.lane_count, 2, 6);
-                    int mi_limit = round_to_5(config.lane_count * 8);
+                    int mi_limit = round_to_5(config.lane_count * 6);
                     config.max_cars = clamp(config.max_cars, 10, (mi_limit > 50 ? 50 : mi_limit));
                     break;
 
@@ -316,8 +316,6 @@ void application_update(void){
                     config.max_cars = 15;
                     break;
             }
-
-            config.max_cars = 10;
 
             application_update_settings_text();
             menu_render(&menu, app.screen_width, app.screen_height);

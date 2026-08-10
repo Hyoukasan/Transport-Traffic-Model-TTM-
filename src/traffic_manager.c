@@ -338,12 +338,24 @@ static LightState traffic_manager_light_state_for_road(const TrafficLight* light
     return light->vertical_state_light;
 }
 
+static bool traffic_manager_car_at_intersaction(const Intersection* intescection, Car* car ) {
+    if(intescection == NULL || car == NULL) return false;
+
+    for(size_t i = 0; i < (size_t)intescection->count_car; i++) {
+        if(car->id == intescection->id_car_at_intersecction[i]) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, Car* car, float dt) {
-    if (manager == NULL || manager->graph == NULL || car == NULL) {
+    if(manager == NULL || manager->graph == NULL || car == NULL) {
         return;
     }
 
-    if (car->state == CAR_STATE_ACCIDENT || car->state == CAR_STATE_BRAKING || car->state == CAR_STATE_TURNING ||
+    if(car->state == CAR_STATE_ACCIDENT || car->state == CAR_STATE_BRAKING || car->state == CAR_STATE_TURNING ||
         car->road_id < 0 || car->road_id >= manager->graph->road_count) {
         return;
     }
@@ -352,7 +364,7 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
     RoadDirection direction = graph_get_lane_direction(road, car->lane);
     float car_travel = traffic_manager_position_to_travel_fraction(road, direction, car->position);
     float road_length = (float)road->length;
-    if (road_length <= 0.0f) {
+    if(road_length <= 0.0f) {
         road_length = 1.0f;
     }
 
@@ -361,20 +373,20 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
     float nearest_stop_travel = 0.0f;
     float nearest_distance = 9999.0f;
 
-    for (int i = 0; i < manager->graph->intersection_count; i++) {
+    for(int i = 0; i < manager->graph->intersection_count; i++) {
         const Intersection* intersection = &manager->graph->intersections[i];
-        if (!traffic_manager_intersection_on_road(road, intersection)) {
+        if(!traffic_manager_intersection_on_road(road, intersection)) {
             continue;
         }
 
         const TrafficLight* light = traffic_manager_find_light_at(manager, intersection->x, intersection->y);
-        if (light == NULL) {
+        if(light == NULL) {
             continue;
         }
 
         float stop_travel = traffic_manager_stop_travel_fraction(road, direction, intersection);
         float distance = (stop_travel - car_travel) * road_length;
-        if (distance >= -0.05f && distance < nearest_distance) {
+        if(distance >= -0.05f && distance < nearest_distance) {
             nearest_distance = distance;
             nearest_stop_travel = stop_travel;
             nearest_intersection = intersection;
@@ -382,7 +394,7 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
         }
     }
 
-    if (nearest_intersection == NULL || nearest_light == NULL) {
+    if(nearest_intersection == NULL || nearest_light == NULL) {
         if (car->state == CAR_STATE_TRAFFIC_LIGHT) {
             car->state = CAR_STATE_NORMAL;
         }
@@ -390,17 +402,21 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
     }
 
     LightState light_state = traffic_manager_light_state_for_road(nearest_light, road);
-    if (light_state == LIGHT_GREEN) {
-        if (car->state == CAR_STATE_TRAFFIC_LIGHT) {
-            if (car->turn_decided && car->turn_made) {
-                car->state = CAR_STATE_TURNING;
-                car->turn_progress = 0.0f;
-            } else {
-                car->state = CAR_STATE_NORMAL;
-                car->speed = car->desired_speed;
-            }
-        }    
-        return;
+    if(light_state == LIGHT_GREEN) {
+        if(nearest_intersection->count_car < 2 && !traffic_manager_car_at_intersaction(nearest_intersection, car)) {
+            if (car->state == CAR_STATE_TRAFFIC_LIGHT) {
+                if (car->turn_decided && car->turn_made) {
+                    car->state = CAR_STATE_TURNING;
+                    car->turn_progress = 0.0f;
+                } else {
+                    car->state = CAR_STATE_NORMAL;
+                    car->speed = car->desired_speed;
+                }
+            }    
+            
+            return;
+        }
+
     }
 
     if(light_state == LIGHT_RED) {
@@ -411,7 +427,7 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
             float smoothing = clampf(dt > 0.0f ? dt * 12.0f : 1.0f, 0.0f, 1.0f);
             float new_position = car->position + (target_position - car->position) * smoothing;
 
-            if ((target_position > car->position && new_position > target_position) ||
+            if((target_position > car->position && new_position > target_position) ||
                 (target_position < car->position && new_position < target_position)) {
                 new_position = target_position;
             }
@@ -419,16 +435,16 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
             car->position = new_position;
             car->speed = 0.0f;
             car->state = CAR_STATE_TRAFFIC_LIGHT;
-        } else if (nearest_distance <= slow_distance) {
+        } else if(nearest_distance <= slow_distance) {
             float speed_factor = nearest_distance / slow_distance;
             float max_speed = road->speed_limit * clampf(speed_factor, 0.15f, 1.0f);
-            if (car->speed > max_speed) {
+            if(car->speed > max_speed) {
                 car->speed = max_speed;
             }
-            if (car->state == CAR_STATE_NORMAL || car->state == CAR_STATE_OVERTAKING) {
+            if(car->state == CAR_STATE_NORMAL || car->state == CAR_STATE_OVERTAKING) {
                 car->state = CAR_STATE_SLOWING;
             }
-        } else if (car->state == CAR_STATE_TRAFFIC_LIGHT) {
+        } else if(car->state == CAR_STATE_TRAFFIC_LIGHT) {
             car->state = CAR_STATE_NORMAL;
         }
     }
@@ -437,10 +453,10 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
 static int traffic_manager_road_start_edge(const RoadSegment *road) {
     int lanes = road->lanes > 0 ? road->lanes : 1;
 
-    if (road->type == ROAD_HORIZONTAL) {
-        if (road->direction == ROAD_DIR_EAST) {
+    if(road->type == ROAD_HORIZONTAL) {
+        if(road->direction == ROAD_DIR_EAST) {
             return road->y1;
-        } else if (road->direction == ROAD_DIR_WEST) {
+        } else if(road->direction == ROAD_DIR_WEST) {
             return road->y1 - (lanes - 1);
         }
         return road->y1 - (lanes / 2);
@@ -1411,7 +1427,17 @@ bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager) {
     return true;
 }
 
-static int cars_at_intersactions(TrafficManager* manager) {
+static bool traffic_manager_car_has_right_turn_intent(const Car* car) {
+    if(car == NULL) return false;
+
+    if(car->turn_decided && car->state == car->turn_made) {
+        return car->turn_type == CAR_TURN_RIGHT;
+    }
+
+    return false;
+}
+
+static int traffic_manager_find_cars_at_intersactions(TrafficManager* manager) {
     if (manager == NULL) return 0;
 
     // Проходимся по каждой машине и проверяем внутри ли она перекрестка
@@ -1588,6 +1614,7 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     }
     
     traffic_manager_update_lane_lists(manager);
+    traffic_manager_find_cars_at_intersactions(manager);
     
     for (int i = 0; i < manager->car_count; i++) {
         Car* car = &manager->cars[i];
@@ -1606,7 +1633,6 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
             traffic_manager_update_traffic_light_stop(manager, car, dt);
         }
 
-        cars_at_intersactions(manager);
         car_update(car, manager->graph, dt);
 
         if (car->state == CAR_STATE_ACCIDENT) {
