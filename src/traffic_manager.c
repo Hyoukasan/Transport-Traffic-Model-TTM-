@@ -1455,18 +1455,29 @@ static int cars_at_intersactions(TrafficManager* manager) {
             continue;
         }
 
+        // Обнавление: учитываем, что в центре 0.0, значит из-за знака можем ломать логику 
+        if(coord_start_point > coord_end_point) {
+            float tmp = coord_start_point;
+            coord_start_point = coord_end_point;
+            coord_end_point = tmp;
+        }
+
         // Переводим процент пути в координаты (начальная точка + текущий % от длины дороги)
         float car_ndc_pos = 0.0f;
         if(road.type == ROAD_HORIZONTAL) {
-            float car_grid_x = road.x1 + car->position * road.length;
+            float car_grid_x = road.x1 + car->position * (float)road.length;
             car_ndc_pos = grid_center_to_normalized_x(car_grid_x, manager->graph->chunk_size, 
                     manager->graph->padding, manager->graph->window_width);
         } else {
-            float car_grid_y = road.y1 + car->position * road.length;
+            float car_grid_y = road.y1 + car->position * (float)road.length;
             car_ndc_pos = grid_center_to_normalized_y(car_grid_y, manager->graph->chunk_size, 
                     manager->graph->padding, manager->graph->window_height);
         }
 
+/*      if(car->state == CAR_STATE_TURNING) {
+            printf("Car NDC: %.2f | Start: %.2f | End: %.2f\n", car_ndc_pos, coord_start_point, coord_end_point);
+        }
+*/
         // Проверка находится ли авто на участке
         if(car_ndc_pos >= coord_start_point && car_ndc_pos <= coord_end_point) {
             if(car->id == manager->graph->intersections[id_intersaction].id_car_at_intersecction[0] || 
@@ -1485,6 +1496,7 @@ static int cars_at_intersactions(TrafficManager* manager) {
 
             car->at_intersection = true;
             manager->graph->intersections[id_intersaction].count_car++;
+            //printf("Car at intesraction\n");
         } else {
 
             // Если машина не внутри, проверяем есть ли она в массиве, чтобы удалить
@@ -1497,6 +1509,8 @@ static int cars_at_intersactions(TrafficManager* manager) {
             }
 
             car->at_intersection = false;
+
+            //printf("Car not at intesraction\n");
         }
     }       
 
