@@ -31,7 +31,8 @@ TARGET = TTM
 BUILD_DIR = build
 SRCS = src/application.c src/car.c src/graph.c src/main.c \
        src/menu.c src/renderer.c src/road_generator.c \
-       src/texture.c src/geometry.c src/traffic_manager.c \
+    src/texture.c src/geometry.c src/traffic_manager.c \
+    src/test_IM.c \
        src/audio_manager.c src/input.c src/debug_overlay.c \
        src/config_manager.c
 

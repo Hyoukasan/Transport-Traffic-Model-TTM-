@@ -11,6 +11,7 @@
 #include "graph.h"
 #include "road_generator.h"
 #include "renderer.h"
+#include "test_IM.h"
 
 
 static int traffic_manager_init_lane_lists(TrafficManager* manager);
@@ -1615,6 +1616,8 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     
     traffic_manager_update_lane_lists(manager);
     traffic_manager_find_cars_at_intersactions(manager);
+    // обновляем резервы перекрёстков (уменьшаем количество наездов)
+    testIM_update(manager, dt);
     
     for (int i = 0; i < manager->car_count; i++) {
         Car* car = &manager->cars[i];
