@@ -69,6 +69,10 @@ typedef struct Car{
     float turn_start_fraction;  // позиция начала поворота
     bool turn_decided;          // решено ли поворачивать
     bool turn_made;             // решено ли делать поворот
+
+    // Система блокировки решения на перекрёстке (FIFO)
+    bool intersection_locked;   // решение на перекрёстке принято и заблокировано?
+    int locked_intersection_id; // ID перекрёстка, для которого принято решение (-1 = нет)
 } Car;
 
 void car_init(Car *car, int id, int road_id, float desired_speed, int lane);

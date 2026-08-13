@@ -31,6 +31,7 @@ static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car
 static bool traffic_manager_update_overtake_return(TrafficManager* manager, Car* car);
 static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car, float dt);
 static void traffic_manager_update_accidents(TrafficManager* manager, float dt);
+static void traffic_manager_check_intersection_queue(TrafficManager* manager, Car* car, float dt);
 static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, Car* car, float dt);
 
 static int traffic_manager_init_lights(TrafficManager *manager);
@@ -448,6 +449,83 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
         } else if(car->state == CAR_STATE_TRAFFIC_LIGHT) {
             car->state = CAR_STATE_NORMAL;
         }
+    }
+}
+
+// Проверка очереди на перекрёстке: если нет свободного слота, машина плавно замедляется перед входом
+static void traffic_manager_check_intersection_queue(TrafficManager* manager, Car* car, float dt) {
+    if(manager == NULL || manager->graph == NULL || car == NULL) {
+        return;
+    }
+
+    if(car->state == CAR_STATE_ACCIDENT || car->state == CAR_STATE_TURNING ||
+        car->road_id < 0 || car->road_id >= manager->graph->road_count) {
+        return;
+    }
+
+    // Если машина уже решила повернуть - не замедляем её перед перекрёстком
+    // Она должна въехать с полной скоростью для корректного поворота
+    if(car->turn_made && car->turn_decided) {
+        if(car->state == CAR_STATE_SLOWING) {
+            car->state = CAR_STATE_NORMAL;
+            car->speed = car->desired_speed;
+        }
+        return;
+    }
+
+    RoadSegment* road = &manager->graph->roads[car->road_id];
+    RoadDirection direction = graph_get_lane_direction(road, car->lane);
+    float car_travel = traffic_manager_position_to_travel_fraction(road, direction, car->position);
+    float road_length = (float)road->length;
+    if(road_length <= 0.0f) {
+        road_length = 1.0f;
+    }
+
+    // Ищем ближайший перекрёсток впереди
+    for(int i = 0; i < manager->graph->intersection_count; i++) {
+        const Intersection* intersection = &manager->graph->intersections[i];
+        if(!traffic_manager_intersection_on_road(road, intersection)) {
+            continue;
+        }
+
+        float stop_travel = traffic_manager_stop_travel_fraction(road, direction, intersection);
+        float distance = (stop_travel - car_travel) * road_length;
+        
+        // Если перекрёсток позади или слишком далеко - пропускаем
+        if(distance < -0.05f || distance > 8.0f) {
+            continue;
+        }
+
+        // Проверяем, есть ли свободный слот на перекрёстке
+        // Если count_car >= 2, то свободного слота нет
+        if(intersection->count_car >= 2) {
+            // Нет свободного слота - машина должна замедляться
+            const float brake_distance = 3.0f;
+            
+            if(distance <= brake_distance) {
+                // Плавное замедление на подъезде
+                float speed_factor = distance / brake_distance;
+                float max_speed = road->speed_limit * clampf(speed_factor, 0.1f, 1.0f);
+                if(car->speed > max_speed) {
+                    car->speed = max_speed;
+                }
+                if(car->state == CAR_STATE_NORMAL) {
+                    car->state = CAR_STATE_SLOWING;
+                }
+            } else if(car->state == CAR_STATE_SLOWING) {
+                // Вышли из зоны торможения - возвращаемся в нормальное состояние
+                car->state = CAR_STATE_NORMAL;
+                car->speed = car->desired_speed;
+            }
+        } else {
+            // Есть свободный слот - машина может проезжать
+            if(car->state == CAR_STATE_SLOWING) {
+                car->state = CAR_STATE_NORMAL;
+                car->speed = car->desired_speed;
+            }
+        }
+
+        break;  // Нашли ближайший перекрёсток - выходим
     }
 }
 
@@ -1512,7 +1590,7 @@ static int traffic_manager_find_cars_at_intersactions(TrafficManager* manager) {
                 continue;
             }
 
-            // Записываем в свободный слот
+            // Записываем в свободный слот и принимаем решение для машины (один раз!)
             if(manager->graph->intersections[id_intersaction].id_car_at_intersecction[0] == -1) {
                 manager->graph->intersections[id_intersaction].id_car_at_intersecction[0] = car->id;
             } else if(manager->graph->intersections[id_intersaction].id_car_at_intersecction[1] == -1) {
@@ -1521,6 +1599,9 @@ static int traffic_manager_find_cars_at_intersactions(TrafficManager* manager) {
                 continue;
             }
 
+            // ВЫЗЫВАЕМ РЕШЕНИЕ МАШИНЫ ОДИН РАЗ при её входе на перекрёсток
+            testIM_on_car_enter_intersection(manager, car, id_intersaction);
+
             car->at_intersection = true;
             manager->graph->intersections[id_intersaction].count_car++;
             //printf("Car at intesraction\n");
@@ -1528,9 +1609,13 @@ static int traffic_manager_find_cars_at_intersactions(TrafficManager* manager) {
 
             // Если машина не внутри, проверяем есть ли она в массиве, чтобы удалить
             if(manager->graph->intersections[id_intersaction].id_car_at_intersecction[0] == car->id) {
+                // РАЗБЛОКИРУЕМ решение машины при выходе с перекрёстка
+                testIM_on_car_exit_intersection(car, id_intersaction);
                 manager->graph->intersections[id_intersaction].id_car_at_intersecction[0] = -1;
                 manager->graph->intersections[id_intersaction].count_car--;
             } else if(manager->graph->intersections[id_intersaction].id_car_at_intersecction[1] == car->id) {
+                // РАЗБЛОКИРУЕМ решение машины при выходе с перекрёстка
+                testIM_on_car_exit_intersection(car, id_intersaction);
                 manager->graph->intersections[id_intersaction].id_car_at_intersecction[1] = -1;
                 manager->graph->intersections[id_intersaction].count_car--;
             }
@@ -1616,8 +1701,6 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     
     traffic_manager_update_lane_lists(manager);
     traffic_manager_find_cars_at_intersactions(manager);
-    // обновляем резервы перекрёстков (уменьшаем количество наездов)
-    testIM_update(manager, dt);
     
     for (int i = 0; i < manager->car_count; i++) {
         Car* car = &manager->cars[i];
@@ -1631,6 +1714,9 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
 
             traffic_manager_keep_safe_distance(manager, car);
         }
+
+        // Проверка очереди на перекрёстке — машина замедляется если нет свободного слота
+        traffic_manager_check_intersection_queue(manager, car, dt);
 
         if(manager->light_count > 0) {
             traffic_manager_update_traffic_light_stop(manager, car, dt);

@@ -238,6 +238,10 @@ void car_init(Car *car, int id, int road_id, float desired_speed, int lane) {
     car->turn_start_fraction = 0.0f;
     car->turn_decided = false;
     car->turn_made = false;
+
+    // Инициализация блокировки решения на перекрёстке
+    car->intersection_locked = false;
+    car->locked_intersection_id = -1;
 }
 
 void car_set_texture(Car *car, unsigned int texture) {
@@ -263,6 +267,10 @@ void car_destroy(Car *car) {
     car->turn_type = CAR_TURN_NONE;
     car->last_turn_x = -1;
     car->last_turn_y = -1;
+
+    // Очистка блокировки решения
+    car->intersection_locked = false;
+    car->locked_intersection_id = -1;
 }
 
 /*Функция car_speed_update изменяет текущую скорость для текущего автомобиля в зависимости от его состояния
@@ -275,6 +283,7 @@ static void car_speed_update(Car* car, const RoadSegment* road, float dt) {
     target_speed = speed_control(speed_limit, target_speed);
 
     CarState cur_state = car->state;
+    float accel = 2.5f;  // коэффициент ускорения по умолчанию
 
     switch (cur_state)
     {
@@ -284,10 +293,12 @@ static void car_speed_update(Car* car, const RoadSegment* road, float dt) {
 
     case CAR_STATE_BRAKING:
         target_speed = 0.0f;
+        accel = 5.0f;  // агрессивное торможение при столкновении
         break;
 
     case CAR_STATE_TRAFFIC_LIGHT:
         target_speed = 0.0f;
+        accel = 3.5f;  // мягкое торможение перед светофором
         break;
 
     case CAR_STATE_OVERTAKING:
@@ -296,7 +307,9 @@ static void car_speed_update(Car* car, const RoadSegment* road, float dt) {
         break;
         
     case CAR_STATE_SLOWING:
-        target_speed *= 0.5f;
+        // Плавное замедление для ожидания на перекрёстке или перед машиной
+        target_speed *= 0.3f;  // Целевая скорость 30% от желаемой
+        accel = 1.5f;  // Мягкое замедление (не резкое!)
         break;
     
     default:
@@ -307,7 +320,6 @@ static void car_speed_update(Car* car, const RoadSegment* road, float dt) {
         break;
     }
 
-    float accel = 2.5f;
     float k = accel * dt;
     if (k > 1.0f) {
         k = 1.0f;

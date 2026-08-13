@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "test_IM.h"
 #include "car.h"
@@ -44,12 +45,28 @@ static Car* find_car_by_id(TrafficManager* manager, int car_id) {
     return NULL;
 }
 
-// Простая приоритетная функция: прямо>право>лево
-static int car_priority(const Car* car) {
-    if (car == NULL) return 0;
-    if (car->turn_type == CAR_TURN_NONE) return 3;
-    if (car->turn_type == CAR_TURN_RIGHT) return 2;
-    return 1;
+// Расчет расстояния машины до центра перекрёстка
+static float car_distance_to_intersection_center(const Car* car, const Intersection* intersection, const Graph* graph) {
+    if (car == NULL || intersection == NULL || graph == NULL) return 9999.0f;
+    if (car->road_id < 0 || car->road_id >= graph->road_count) return 9999.0f;
+    
+    const RoadSegment* road = &graph->roads[car->road_id];
+    
+    // Вычислить текущую координату машины
+    float car_x, car_y;
+    if (road->type == ROAD_HORIZONTAL) {
+        car_x = (float)road->x1 + car->position * (float)road->length;
+        car_y = (float)road->y1;
+    } else {
+        car_x = (float)road->x1;
+        car_y = (float)road->y1 + car->position * (float)road->length;
+    }
+    
+    // Расстояние до центра перекрёстка
+    float dx = car_x - (float)intersection->x;
+    float dy = car_y - (float)intersection->y;
+    
+    return sqrtf(dx * dx + dy * dy);
 }
 
 void testIM_init(TrafficManager* manager) {
@@ -64,90 +81,97 @@ void testIM_destroy(void) {
     im_reserved_count = 0;
 }
 
-// Главная функция: проверяет 2 слота у каждого перекрёстка и ставит резервацию
-void testIM_update(TrafficManager* manager, float dt) {
-    if (manager == NULL || manager->graph == NULL) return;
+// Принять решение для машины ОДИН РАЗ при её входе на перекрёсток
+// Машина получает плана: проезжать (NORMAL) или ждать (SLOWING)
+static void testIM_decide_for_car(TrafficManager* manager, Car* car, int intersection_id) {
+    if (manager == NULL || car == NULL || intersection_id < 0) return;
+    if (intersection_id >= manager->graph->intersection_count) return;
 
-    ensure_capacity(manager);
-
-    int icount = manager->graph->intersection_count;
-    for (int ix = 0; ix < icount; ix++) {
-        const Intersection* inter = &manager->graph->intersections[ix];
-        if (inter == NULL) continue;
-
-        int id0 = inter->id_car_at_intersecction[0];
-        int id1 = inter->id_car_at_intersecction[1];
-
-        Car* c0 = find_car_by_id(manager, id0);
-        Car* c1 = find_car_by_id(manager, id1);
-
-        // Таймер резервации уменьшаем
-        if (im_reserved_timers && ix < im_reserved_count) {
-            if (im_reserved_timers[ix] > 0.0f) im_reserved_timers[ix] -= dt;
-            if (im_reserved_timers[ix] <= 0.0f) im_reserved_ids[ix] = -1;
-        }
-
-        // Нет машин — пропускаем
-        if (c0 == NULL && c1 == NULL) continue;
-
-        // Одна машина — разрешаем и резервируем
-        if (c0 != NULL && c1 == NULL) {
-            if (im_reserved_ids[ix] != c0->id) {
-                im_reserved_ids[ix] = c0->id;
-                if (im_reserved_timers) im_reserved_timers[ix] = 1.0f;
-            }
-            if (c0->state == CAR_STATE_SLOWING) c0->state = CAR_STATE_NORMAL;
-            continue;
-        }
-
-        if (c1 != NULL && c0 == NULL) {
-            if (im_reserved_ids[ix] != c1->id) {
-                im_reserved_ids[ix] = c1->id;
-                if (im_reserved_timers) im_reserved_timers[ix] = 1.0f;
-            }
-            if (c1->state == CAR_STATE_SLOWING) c1->state = CAR_STATE_NORMAL;
-            continue;
-        }
-
-        // Обе машины есть
-        if (c0 != NULL && c1 != NULL) {
-            int rid = (im_reserved_ids && ix < im_reserved_count) ? im_reserved_ids[ix] : -1;
-            Car* reserved_car = find_car_by_id(manager, rid);
-            if (reserved_car != NULL && (reserved_car == c0 || reserved_car == c1)) {
-                Car* other = (reserved_car == c0) ? c1 : c0;
-                if (reserved_car->state == CAR_STATE_SLOWING) reserved_car->state = CAR_STATE_NORMAL;
-                if (other->state != CAR_STATE_TURNING) {
-                    other->state = CAR_STATE_SLOWING;
-                    float cap = reserved_car->speed * 0.6f;
-                    if (other->speed > cap) other->speed = cap;
-                }
-                continue;
-            }
-
-            int p0 = car_priority(c0);
-            int p1 = car_priority(c1);
-            Car* winner = NULL;
-            Car* loser = NULL;
-            if (p0 != p1) {
-                winner = (p0 > p1) ? c0 : c1;
-            } else if (c0->speed != c1->speed) {
-                winner = (c0->speed > c1->speed) ? c0 : c1;
-            } else {
-                winner = (c0->position > c1->position) ? c0 : c1;
-            }
-            loser = (winner == c0) ? c1 : c0;
-
-            if (im_reserved_ids && ix < im_reserved_count) {
-                im_reserved_ids[ix] = winner->id;
-                im_reserved_timers[ix] = 1.0f;
-            }
-
-            if (winner->state == CAR_STATE_SLOWING) winner->state = CAR_STATE_NORMAL;
-            if (loser->state != CAR_STATE_TURNING) {
-                loser->state = CAR_STATE_SLOWING;
-                float cap = winner->speed * 0.5f;
-                if (loser->speed > cap) loser->speed = cap;
-            }
-        }
+    const Intersection* inter = &manager->graph->intersections[intersection_id];
+    
+    // Машина уже приняла решение на этом перекрёстке - не менять!
+    if (car->intersection_locked && car->locked_intersection_id == intersection_id) {
+        return;
     }
+
+    // Блокируем это решение
+    car->intersection_locked = true;
+    car->locked_intersection_id = intersection_id;
+
+    // Находим вторую машину на перекрёстке (если есть)
+    Car* other_car = NULL;
+    int other_id = (car->id == inter->id_car_at_intersecction[0]) 
+                   ? inter->id_car_at_intersecction[1] 
+                   : inter->id_car_at_intersecction[0];
+    
+    if (other_id >= 0) {
+        other_car = find_car_by_id(manager, other_id);
+    }
+
+    // ===== ОДНА МАШИНА =====
+    if (other_car == NULL) {
+        car->state = CAR_STATE_NORMAL;
+        return;
+    }
+
+    // ===== ДВЕ МАШИНЫ - ПРИНИМАЕМ РЕШЕНИЕ =====
+    
+    // Приоритет 1: Машина которая поворачивает
+    bool this_turning = (car->state == CAR_STATE_TURNING) || (car->turn_made && car->turn_decided);
+    bool other_turning = (other_car->state == CAR_STATE_TURNING) || (other_car->turn_made && other_car->turn_decided);
+
+    if (this_turning && !other_turning) {
+        // Мы поворачиваем - мы едим
+        car->state = CAR_STATE_NORMAL;
+        return;
+    }
+    if (!this_turning && other_turning) {
+        // Другая машина поворачивает - мы ждём
+        car->state = CAR_STATE_SLOWING;
+        return;
+    }
+
+    // Приоритет 2: Обе машины не поворачивают - по расстоянию до центра
+    float dist_this = car_distance_to_intersection_center(car, inter, manager->graph);
+    float dist_other = car_distance_to_intersection_center(other_car, inter, manager->graph);
+
+    if (dist_this < dist_other) {
+        // Мы ближе к центру - мы едим
+        car->state = CAR_STATE_NORMAL;
+    } else {
+        // Другая ближе - мы ждём
+        car->state = CAR_STATE_SLOWING;
+    }
+}
+
+// Очистить блокировку машины когда она выходит с перекрёстка
+static void testIM_unlock_car(Car* car, int intersection_id) {
+    if (car == NULL) return;
+    if (car->intersection_locked && car->locked_intersection_id == intersection_id) {
+        car->intersection_locked = false;
+        car->locked_intersection_id = -1;
+    }
+}
+
+// Вызывается когда машина добавляется на перекрёсток
+// Принимает решение один раз и блокирует его
+void testIM_on_car_enter_intersection(TrafficManager* manager, Car* car, int intersection_id) {
+    if (manager == NULL || car == NULL) return;
+    testIM_decide_for_car(manager, car, intersection_id);
+}
+
+// Вызывается когда машина покидает перекрёсток
+// Разблокирует решение
+void testIM_on_car_exit_intersection(Car* car, int intersection_id) {
+    if (car == NULL) return;
+    testIM_unlock_car(car, intersection_id);
+}
+
+// Старая главная функция (теперь не используется в цикле)
+// Оставляю на случай если нужна для совместимости
+void testIM_update(TrafficManager* manager, float dt) {
+    (void)manager;  // Параметр намеренно не используется
+    (void)dt;       // Параметр намеренно не используется
+    // Функция больше не вызывается каждый кадр
+    // Решения принимаются в traffic_manager_find_cars_at_intersactions()
 }
