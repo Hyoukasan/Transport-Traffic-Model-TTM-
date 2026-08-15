@@ -425,7 +425,39 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
         const float slow_distance = 3.0f;
         float stop_distance = 0.20f + car->speed * 0.20f;
         if (nearest_distance <= stop_distance) {
-            float target_position = traffic_manager_travel_fraction_to_position(road, direction, nearest_stop_travel);
+            /* Compute target travel fraction (stop line by default) and try to keep spacing
+               behind any stopped car ahead on the same lane. This prevents all cars
+               from snapping to the exact same stop position. */
+            float target_travel = nearest_stop_travel;
+            const float spacing_m = 1.5f; /* desired gap in world units (grid/meters) */
+            float car_travel = traffic_manager_position_to_travel_fraction(road, direction, car->position);
+            float road_length = (float)road->length;
+
+            /* Find the nearest car ahead on the same road & lane up to the stop line.
+               Consider any car ahead (not only already stopped) so followers don't aim at the stop line
+               if a leader is still approaching/slowly braking. */
+            float nearest_ahead_travel = 2.0f; /* sentinel > 1.0f */
+            for (int ci = 0; ci < manager->car_count; ++ci) {
+                Car* other = &manager->cars[ci];
+                if (other == car) continue;
+                if (other->road_id != car->road_id || other->lane != car->lane) continue;
+                float other_travel = traffic_manager_position_to_travel_fraction(road, direction, other->position);
+                if (other_travel <= car_travel) continue; /* not ahead */
+                /* ignore cars beyond the stop line */
+                if (other_travel > nearest_stop_travel + 0.001f) continue;
+                if (other_travel < nearest_ahead_travel) {
+                    nearest_ahead_travel = other_travel;
+                }
+            }
+
+            if (nearest_ahead_travel < 2.0f) {
+                /* place target a bit behind the car ahead using meters -> travel fraction */
+                float gap_frac = road_length > 0.0f ? (spacing_m / road_length) : 0.06f;
+                target_travel = nearest_ahead_travel - gap_frac;
+                if (target_travel < car_travel) target_travel = car_travel;
+            }
+
+            float target_position = traffic_manager_travel_fraction_to_position(road, direction, target_travel);
             float smoothing = clampf(dt > 0.0f ? dt * 12.0f : 1.0f, 0.0f, 1.0f);
             float new_position = car->position + (target_position - car->position) * smoothing;
 
@@ -1702,33 +1734,84 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     traffic_manager_update_lane_lists(manager);
     traffic_manager_find_cars_at_intersactions(manager);
     
-    for (int i = 0; i < manager->car_count; i++) {
-        Car* car = &manager->cars[i];
+    /* Process cars per-lane in front-to-back order so leading cars update before followers.
+       This prevents followers from not seeing the leader's stopped state and snapping to the same stop position. */
+    for (size_t li = 0; li < (size_t)manager->lane_list_count; ++li) {
+        LaneCarList *list = &manager->lane_lists[li];
+        if (list == NULL || list->car_count <= 0) continue;
 
-        traffic_manager_print_car_state(car, manager);
+        // Sort lane list by travel fraction descending (car closer to intersection first)
+        RoadSegment *road = &manager->graph->roads[list->road_id];
+        RoadDirection dir = graph_get_lane_direction(road, list->lane);
+        for (int a = 0; a < list->car_count - 1; ++a) {
+            for (int b = a + 1; b < list->car_count; ++b) {
+                int idx_a = list->car_indices[a];
+                int idx_b = list->car_indices[b];
+                Car *car_a = &manager->cars[idx_a];
+                Car *car_b = &manager->cars[idx_b];
+                float travel_a = traffic_manager_position_to_travel_fraction(road, dir, car_a->position);
+                float travel_b = traffic_manager_position_to_travel_fraction(road, dir, car_b->position);
+                if (travel_b > travel_a) {
+                    int tmp = list->car_indices[a];
+                    list->car_indices[a] = list->car_indices[b];
+                    list->car_indices[b] = tmp;
+                }
+            }
+        }
 
-        if (car->state != CAR_STATE_TRAFFIC_LIGHT && car->state != CAR_STATE_TURNING) {
-            if(!traffic_manager_update_overtake_return(manager, car)) {
-                traffic_manager_update_lane_change(manager, car, dt);
+        for (int ci = 0; ci < list->car_count; ++ci) {
+            Car* car = &manager->cars[list->car_indices[ci]];
+
+            traffic_manager_print_car_state(car, manager);
+
+            if (car->state != CAR_STATE_TRAFFIC_LIGHT && car->state != CAR_STATE_TURNING) {
+                if(!traffic_manager_update_overtake_return(manager, car)) {
+                    traffic_manager_update_lane_change(manager, car, dt);
+                }
+
+                traffic_manager_keep_safe_distance(manager, car);
             }
 
-            traffic_manager_keep_safe_distance(manager, car);
-        }
+            // Проверка очереди на перекрёстке — машина замедляется если нет свободного слота
+            traffic_manager_check_intersection_queue(manager, car, dt);
 
-        // Проверка очереди на перекрёстке — машина замедляется если нет свободного слота
-        traffic_manager_check_intersection_queue(manager, car, dt);
+            if(manager->light_count > 0) {
+                traffic_manager_update_traffic_light_stop(manager, car, dt);
+            }
 
-        if(manager->light_count > 0) {
-            traffic_manager_update_traffic_light_stop(manager, car, dt);
-        }
+            car_update(car, manager->graph, dt);
 
-        car_update(car, manager->graph, dt);
+            /* Post-update safety clamp: ensure car does not pass too close to the front car.
+               This is a last-resort hard guard to prevent overlap if other soft braking logic misses it. */
+            {
+                const float min_gap_m = 1.2f; /* meters */
+                const Car* front_car = traffic_manager_find_front_car(manager, car, 20.0f);
+                if (front_car != NULL) {
+                    RoadSegment* road = &manager->graph->roads[car->road_id];
+                    RoadDirection dir = graph_get_lane_direction(road, car->lane);
+                    float car_travel = traffic_manager_position_to_travel_fraction(road, dir, car->position);
+                    float front_travel = traffic_manager_position_to_travel_fraction(road, dir, front_car->position);
+                    float road_length_f = (float)road->length;
+                    if (road_length_f <= 0.0f) road_length_f = 1.0f;
+                    float distance = (front_travel - car_travel) * road_length_f;
+                    if (distance < 0.0f) distance = 0.0f;
+                    if (distance < min_gap_m) {
+                        float new_target_travel = front_travel - (min_gap_m / road_length_f);
+                        if (new_target_travel < car_travel) new_target_travel = car_travel;
+                        float new_pos = traffic_manager_travel_fraction_to_position(road, dir, new_target_travel);
+                        car->position = new_pos;
+                        car->speed = 0.0f;
+                        car->state = CAR_STATE_SLOWING;
+                    }
+                }
+            }
 
-        if (car->state == CAR_STATE_ACCIDENT) {
-            const Car* front_car = traffic_manager_find_front_car(manager, car, 1.0f);
-            if (front_car != NULL && front_car->state == CAR_STATE_BRAKING) {
-                car->speed = 0.0f;
-                car->state = CAR_STATE_BRAKING;
+            if (car->state == CAR_STATE_ACCIDENT) {
+                const Car* front_car = traffic_manager_find_front_car(manager, car, 1.0f);
+                if (front_car != NULL && front_car->state == CAR_STATE_BRAKING) {
+                    car->speed = 0.0f;
+                    car->state = CAR_STATE_BRAKING;
+                }
             }
         }
     }
