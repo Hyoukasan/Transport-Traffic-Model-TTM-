@@ -353,6 +353,21 @@ static bool traffic_manager_car_at_intersaction(const Intersection* intescection
     return false;
 }
 
+/*Находим точку остановки перед перекрестком, также расстояние между текущем положением авто*/
+static float traffic_manager_get_distance_to_intersection(const Intersection* intersection, const RoadSegment* road, const Car* car, RoadDirection* dir) {
+    if(intersection == NULL || road == NULL || car == NULL) {
+        return 9999.0f;
+    }
+    float car_travel   = traffic_manager_position_to_travel_fraction(road, dir, car->position);
+    float stop_travel = traffic_manager_stop_travel_fraction(road, dir, intersection);
+    float road_lenght  = (float)road->length;
+    if(road_lenght <= 0.0f) {
+        road_lenght = 1.0f;
+    }
+    
+    return (stop_travel - car_travel) * road_lenght;
+}
+
 static const Intersection* traffic_manager_find_nearest_intesrection(TrafficManager* manager, Car* car) {
     if(manager == NULL || manager->graph == NULL || car == NULL) {
         return; 
@@ -360,11 +375,6 @@ static const Intersection* traffic_manager_find_nearest_intesrection(TrafficMana
 
     // Находим дорогу, на которой находится авто
     RoadSegment* road = graph_get_road_by_id(manager->graph, car->road_id);
-    if(road == NULL) {
-        return NULL;
-    }
-
-    float distance = car->position * road->length;
     RoadDirection* dir = graph_get_lane_direction(road, car->lane);
 
     // Ближайший перекресток
@@ -376,8 +386,6 @@ static const Intersection* traffic_manager_find_nearest_intesrection(TrafficMana
             continue;
         }
 
-        // Находим точку остановки перед перекрестком
-        float stop_travel = traffic_manager_stop_travel_fraction(road, dir, current_intersection);
     }
 }
  
