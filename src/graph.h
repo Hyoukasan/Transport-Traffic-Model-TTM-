@@ -73,5 +73,6 @@ void graph_build_intersections(Graph *g);
 void graph_destroy(Graph *g);
 
 RoadDirection graph_get_lane_direction(const RoadSegment *road, int lane);
+RoadSegment* graph_get_road_by_id(Graph* g, int road_id);
 
 #endif

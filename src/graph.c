@@ -335,4 +335,12 @@ RoadDirection graph_get_lane_direction(const RoadSegment *road, int lane) {
     return ROAD_DIR_NONE;
 }
 
+RoadSegment* graph_get_road_by_id(Graph* g, int road_id) {
+    if(g == NULL || road_id < 0 || road_id >= g->road_count) {
+        return NULL;
+    }
+
+    return &g->roads[road_id];
+}
+
 

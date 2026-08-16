@@ -320,6 +320,7 @@ static bool traffic_manager_intersection_on_road(const RoadSegment* road, const 
     return false;
 }
 
+/*Находим координату стоп-линии перед перекрестком*/
 static float traffic_manager_stop_travel_fraction(const RoadSegment* road, RoadDirection direction, const Intersection* intersection) {
     const float stop_gap = 0.85f;
     float coord = 0.0f;
@@ -352,6 +353,34 @@ static bool traffic_manager_car_at_intersaction(const Intersection* intescection
     return false;
 }
 
+static const Intersection* traffic_manager_find_nearest_intesrection(TrafficManager* manager, Car* car) {
+    if(manager == NULL || manager->graph == NULL || car == NULL) {
+        return; 
+    }
+
+    // Находим дорогу, на которой находится авто
+    RoadSegment* road = graph_get_road_by_id(manager->graph, car->road_id);
+    if(road == NULL) {
+        return NULL;
+    }
+
+    float distance = car->position * road->length;
+    RoadDirection* dir = graph_get_lane_direction(road, car->lane);
+
+    // Ближайший перекресток
+    const Intersection* nearest_intersection = NULL;
+    float nearest_distance = 9999.0f;
+    for(size_t i = 0; i < manager->graph->intersection_count; i++) {
+        const Intersection* current_intersection = &manager->graph->intersections[i];
+        if(!traffic_manager_intersection_on_road(road, current_intersection)) {
+            continue;
+        }
+
+        // Находим точку остановки перед перекрестком
+        float stop_travel = traffic_manager_stop_travel_fraction(road, dir, current_intersection);
+    }
+}
+ 
 static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, Car* car, float dt) {
     if(manager == NULL || manager->graph == NULL || car == NULL) {
         return;
