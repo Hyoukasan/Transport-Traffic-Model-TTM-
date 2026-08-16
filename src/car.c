@@ -214,8 +214,10 @@ void car_init(Car *car, int id, int road_id, float desired_speed, int lane) {
     car->last_turn_y = -1;
     car->angle = 0.0f;
     car->state = CAR_STATE_NORMAL;
+    car->next_state = CAR_STATE_NONE;
     car->texture = 0;
     car->original_lane = -1;
+    car->blocked_by_car = false;
 
     // Инициализация новых полей
     car->lane_offset = 0.0f;

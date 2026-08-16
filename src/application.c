@@ -395,7 +395,9 @@ void application_update(void){
                 } else if(lane_selected && tools_menu.last_pressed_button == BUTTON_ID_DTP) {
                     traffic_manager_add_accident_on_selected_lane(&manager);
                 } else if(tools_menu.last_pressed_button == BUTTON_ID_NONE) {
-                    traffic_manager_select_lane_at_pixel(&manager, (int)input.mouse_x, (int)input.mouse_y);
+                    if(traffic_manager_select_lane_at_pixel(&manager, (int)input.mouse_x, (int)input.mouse_y)) {
+                        printf("Selected lane is %d on road %d\n", manager.selected_lane, manager.selected_road_id);
+                    }
                 }
             }
 

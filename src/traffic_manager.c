@@ -104,6 +104,8 @@ static int traffic_manager_init_lights(TrafficManager *manager) {
     
     }
 
+    printf("Lights initialized!\n");
+
     return 0;
 }
 
@@ -372,6 +374,8 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
     const TrafficLight* nearest_light = NULL;
     float nearest_stop_travel = 0.0f;
     float nearest_distance = 9999.0f;
+    
+    // Ищем ближайший светафор
 
     for(int i = 0; i < manager->graph->intersection_count; i++) {
         const Intersection* intersection = &manager->graph->intersections[i];
@@ -401,6 +405,15 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
         return;
     }
 
+    // Даем машине заранее принять решения направления пути на перекрестке
+
+    const float save_distance = 3.0f;
+    if(nearest_distance <= save_distance) {
+        car->next_state = CAR_STATE_TURNING;
+    }
+
+    // Блок принятия решения в зависимости от цвета на перекрестке
+
     LightState light_state = traffic_manager_light_state_for_road(nearest_light, road);
     if(light_state == LIGHT_GREEN) {
         if(nearest_intersection->count_car < 2 && !traffic_manager_car_at_intersaction(nearest_intersection, car)) {
@@ -420,7 +433,6 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
     }
 
     if(light_state == LIGHT_RED) {
-        const float slow_distance = 3.0f;
         float stop_distance = 0.20f + car->speed * 0.20f;
         if (nearest_distance <= stop_distance) {
             float target_position = traffic_manager_travel_fraction_to_position(road, direction, nearest_stop_travel);
@@ -435,8 +447,8 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
             car->position = new_position;
             car->speed = 0.0f;
             car->state = CAR_STATE_TRAFFIC_LIGHT;
-        } else if(nearest_distance <= slow_distance) {
-            float speed_factor = nearest_distance / slow_distance;
+        } else if(nearest_distance <= save_distance) {
+            float speed_factor = nearest_distance / save_distance;
             float max_speed = road->speed_limit * clampf(speed_factor, 0.15f, 1.0f);
             if(car->speed > max_speed) {
                 car->speed = max_speed;
@@ -951,6 +963,8 @@ static bool traffic_manager_lane_change_clear(TrafficManager* manager, const Car
 }
 
 static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car) {
+    car->blocked_by_car = false;
+
     const float slow_radius = 1.0f;
     const float stop_radius = 0.2f;
 
@@ -966,60 +980,57 @@ static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car
         return;
     }
 
-    const float intersection_hold_radius = 4.0f;
-    const Car* intersection_block_car = traffic_manager_find_front_car(manager, car, intersection_hold_radius);
-    if (intersection_block_car != NULL && 
-        (intersection_block_car->state == CAR_STATE_TURNING ||
-         (intersection_block_car->turn_decided && intersection_block_car->turn_made))) {
-        RoadSegment* road = &manager->graph->roads[car->road_id];
-        RoadDirection dir = graph_get_lane_direction(road, car->lane);
-        float car_travel = traffic_manager_position_to_travel_fraction(road, dir, car->position);
-        float block_travel = traffic_manager_position_to_travel_fraction(road, dir, intersection_block_car->position);
-        float road_length = (float)road->length;
-        if (road_length <= 0.0f) {
-            road_length = 1.0f;
-        }
-        float distance = (block_travel - car_travel) * road_length;
-        if (distance < 0.0f) {
-            distance = 0.0f;
-        }
-        float min_speed = car->desired_speed * 0.15f;
-        float max_speed = car->desired_speed * 0.80f;
-        float target_speed = min_speed;
-        if (distance > 0.0f) {
-            target_speed = clampf((distance / intersection_hold_radius) * car->desired_speed, min_speed, max_speed);
-        }
-        if (car->speed > target_speed) {
-            car->speed = target_speed;
-        }
-        if (car->speed < target_speed && car->state != CAR_STATE_SLOWING) {
-            // Позволяем машине плавно набрать скорость, если впереди есть место.
-            car->state = CAR_STATE_SLOWING;
-        }
-        return;
-    }
-
-    const Car* front_car = traffic_manager_find_front_car(manager, car, slow_radius);
-    if (front_car == NULL) {
-        if (car->state == CAR_STATE_SLOWING) {
+    const float intersection_hold_radius = 2.0f;
+    const Car* front_car = traffic_manager_find_front_car(manager, car, intersection_hold_radius);
+    if(front_car == NULL) {
+        if(car->state == CAR_STATE_SLOWING) {
             car->state = CAR_STATE_NORMAL;
         }
+
         return;
     }
 
-    if (car->speed > front_car->speed) {
-        car->speed = front_car->speed;
+    RoadSegment* road = &manager->graph->roads[car->road_id];
+    RoadDirection dir = graph_get_lane_direction(road, car->lane);
+    float car_travel = traffic_manager_position_to_travel_fraction(road, dir, car->position);
+    float block_travel = traffic_manager_position_to_travel_fraction(road, dir, front_car->position);
+    float road_length = (float)road->length;
+    if (road_length <= 0.0f) {
+        road_length = 1.0f;
+    }
+    float distance = (block_travel - car_travel) * road_length;
+    if (distance < 0.0f) {
+        distance = 0.0f;
     }
 
-    if (front_car->speed <= 0.01f) {
+    if(front_car->speed <= 0.1f && distance < 1.0f) {
+        car->speed = 0.0f;
+        car->state = CAR_STATE_BRAKING;
+        car->blocked_by_car = true;
+        return;
+    }
+
+    float min_speed = car->desired_speed * 0.15f;
+    float max_speed = car->desired_speed * 0.80f;
+    float target_speed = min_speed;
+    if (distance > 0.0f) {
+        target_speed = clampf((distance / intersection_hold_radius) * car->desired_speed, min_speed, max_speed);
+    }
+    if (car->speed > target_speed) {
+        car->speed = target_speed;
+    }
+    if (car->speed < target_speed && car->state != CAR_STATE_SLOWING) {
+        // Позволяем машине плавно набрать скорость, если впереди есть место.
         car->state = CAR_STATE_SLOWING;
     }
 
-    const Car* very_close_car = traffic_manager_find_front_car(manager, car, stop_radius);
-    if (very_close_car != NULL && very_close_car->speed <= 0.01f) {
+    if (distance <= stop_radius && front_car->speed <= 0.01f) {
         car->speed = 0.0f;
         car->state = CAR_STATE_SLOWING;
-    }
+        car->blocked_by_car = true;
+    }    
+
+    return;
 }
 
 static bool traffic_manager_update_overtake_return(TrafficManager* manager, Car* car) {
@@ -1543,20 +1554,32 @@ static int traffic_manager_find_cars_at_intersactions(TrafficManager* manager) {
     return 0;
 }
 
-static void traffic_manager_print_car_state(const Car* car, const TrafficManager *manager) {
-    if (car == NULL) return;
-
-    const char* state_str;
-    switch (car->state) {
-        case CAR_STATE_NORMAL:            state_str = "NORMAL"; break;
-        case CAR_STATE_SLOWING:           state_str = "SLOWING"; break;
-        case CAR_STATE_BRAKING:           state_str = "BRAKING"; break;
-        case CAR_STATE_TRAFFIC_LIGHT:     state_str = "TRAFFIC_LIGHT"; break;
-        case CAR_STATE_TURNING:           state_str = "TURNING"; break;
-        case CAR_STATE_ACCIDENT:          state_str = "ACCIDENT"; break;
-        case CAR_STATE_OVERTAKING:        state_str = "OVERTAKING"; break;
-        default:                          state_str = "UNKNOWN"; break;
+/*
+Car* traffic_manager_debug_cars_on_line(TrafficManager* manager) {
+    if(manager == NULL || manager->graph == NULL) {
+        return false;
     }
+
+
+    return NULL;
+}
+*/
+
+static const char* check_state_car(CarState state) {
+    switch (state) {
+        case CAR_STATE_NORMAL:            return "NORMAL";
+        case CAR_STATE_SLOWING:           return "SLOWING";
+        case CAR_STATE_BRAKING:           return "BRAKING";
+        case CAR_STATE_TRAFFIC_LIGHT:     return "TRAFFIC_LIGHT";
+        case CAR_STATE_TURNING:           return "TURNING";
+        case CAR_STATE_ACCIDENT:          return "ACCIDENT";
+        case CAR_STATE_OVERTAKING:        return "OVERTAKING";
+        default:                          return "UNKNOWN";
+    }
+}
+
+static void traffic_manager_print_car_state(const TrafficManager *manager) {
+    if (manager == NULL) return;
 
     char line[256];
     float x_offset = 100.0f;
@@ -1564,34 +1587,66 @@ static void traffic_manager_print_car_state(const Car* car, const TrafficManager
     float step = 35.0f;
     float scale = 2.0f;
 
-/*  snprintf(line, sizeof(line), "State: %s | Pos: %.2f", state_str, car->position);
-    
-    renderer_draw_text(x_offset + (step * 4) + 2, y_offset + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
-    renderer_draw_text(x_offset + (step * 4), y_offset, line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080);
 
-    snprintf(line, sizeof(line), "Speed: %.2f | Turn: %d | Made: %d", 
-             car->speed, car->turn_decided, car->turn_made);
+    if(manager->selected_road_id != -1 && manager->selected_lane != -1) {
+        LaneCarList* lane = traffic_manager_get_lane_list(manager, manager->selected_road_id, 
+                                                                        manager->selected_lane);
 
-    renderer_draw_text(x_offset + (step * 4) + 2, y_offset + step + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
-    renderer_draw_text(x_offset + (step * 4), y_offset + step, line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080);
+        //printf("Cars on the lane: %d\n", lane->car_count);
+        if(lane != NULL){
+            int rendered_count = 0;
 
-    snprintf(line, sizeof(line), "CrossedIdx: %d | TargetRoad: %d", 
-             car->last_turn_x, car->turn_target_road_id);
+            for(size_t i = 0; i < (size_t)lane->car_count; i++) {
+                int car_idx = lane->car_indices[i];
+                Car* car = &manager->cars[car_idx];
+                if(car != NULL && car->state != CAR_STATE_TURNING) {
+                    const char* state_str = "UNKNOWN";
+                    const char* next_state_str = "UNKNOWN"; 
 
-    renderer_draw_text(x_offset + (step * 4) + 2, y_offset + (step * 2) + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
-    renderer_draw_text(x_offset + (step * 4), y_offset + (step * 2), line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080);
-*/
+                    float current_y = y_offset + ((step * 2) * rendered_count);
+
+                    state_str = check_state_car(car->state);
+                    snprintf(line, sizeof(line), "State: %s | Pos: %.2f", state_str, car->position);
+
+                    renderer_draw_text(x_offset + (step * 4) + 2, current_y + 2, line, 
+                                                            scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
+                    renderer_draw_text(x_offset + (step * 4), current_y, line, 
+                                                            scale, 1.0f, 1.0f, 1.0f, 1920, 1080);
+                    
+                    next_state_str = check_state_car(car->next_state);
+                    snprintf(line, sizeof(line), "Next state: %s | Speed: %.2f", next_state_str, car->speed);
+
+                    renderer_draw_text(x_offset + (step * 4) + 2, current_y + step + 2, line, 
+                                                            scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
+                    renderer_draw_text(x_offset + (step * 4), current_y + step, line, 
+                                                            scale, 1.0f, 1.0f, 1.0f, 1920, 1080);
+                    /*
+                    snprintf(line, sizeof(line), "CrossedIdx: %d | TargetRoad: %d", 
+                                car->last_turn_x, car->turn_target_road_id);
+
+                    renderer_draw_text(x_offset + (step * 4) + 2, (y_offset * (i + 1)) + (step * 2) + 2, line, 
+                                                            scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
+                    renderer_draw_text(x_offset + (step * 4), (y_offset * (i + 1)) + (step * 2), line, 
+                                                            scale, 1.0f, 1.0f, 1.0f, 1920, 1080);
+                    */
+
+                    rendered_count++;
+                }
+            }
+        }
+    }
+
 
     for(size_t i = 0; i < (size_t)manager->graph->intersection_count; i++) {
         snprintf(line, sizeof(line), "Count cars at intersaction %zu: %d | Id car: %d, %d", i, manager->graph->intersections->count_car, 
                                                                     manager->graph->intersections->id_car_at_intersecction[0], 
                                                                     manager->graph->intersections->id_car_at_intersecction[1]);
         if(manager->graph->intersection_count > 1) {
-            renderer_draw_text(x_offset + (step * 37) + 2, y_offset + (step * 4 * (i + 1)) + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
-            renderer_draw_text(x_offset + (step * 37), y_offset + (step * 4 * (i + 1)), line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080); 
+            renderer_draw_text(x_offset + (step * 37) + 2, y_offset + (step * 8 * (i + 1)) + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
+            renderer_draw_text(x_offset + (step * 37), y_offset + (step * 8 * (i + 1)), line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080); 
         } else {
-            renderer_draw_text(x_offset + (step * 4) + 2, y_offset + (step * 4 * (i + 1)) + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
-            renderer_draw_text(x_offset + (step * 4), y_offset + (step * 4 * (i + 1)), line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080); 
+            renderer_draw_text(x_offset + (step * 4) + 2, y_offset + (step * 8 * (i + 1)) + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
+            renderer_draw_text(x_offset + (step * 4), y_offset + (step * 8 * (i + 1)), line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080); 
         }
     }                                             
 
@@ -1615,21 +1670,25 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     
     traffic_manager_update_lane_lists(manager);
     traffic_manager_find_cars_at_intersactions(manager);
+
+    traffic_manager_print_car_state(manager);
     
     for (int i = 0; i < manager->car_count; i++) {
         Car* car = &manager->cars[i];
 
-        traffic_manager_print_car_state(car, manager);
+        // Вызов полей для отладки
+
+
+        traffic_manager_keep_safe_distance(manager, car);
 
         if (car->state != CAR_STATE_TRAFFIC_LIGHT && car->state != CAR_STATE_TURNING) {
             if(!traffic_manager_update_overtake_return(manager, car)) {
                 traffic_manager_update_lane_change(manager, car, dt);
             }
 
-            traffic_manager_keep_safe_distance(manager, car);
         }
 
-        if(manager->light_count > 0) {
+        if(manager->light_count > 0 && car->blocked_by_car == false) {
             traffic_manager_update_traffic_light_stop(manager, car, dt);
         }
 

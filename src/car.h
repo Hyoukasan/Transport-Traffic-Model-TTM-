@@ -6,6 +6,7 @@
 struct Graph;
 
 typedef enum {
+    CAR_STATE_NONE,
     CAR_STATE_NORMAL,
     CAR_STATE_BRAKING,
     CAR_STATE_SLOWING,
@@ -42,9 +43,11 @@ typedef struct Car{
     int last_turn_y;
     float angle;          // угол поворота для рендера
     CarState state;
+    CarState next_state;
     CarColor color;
     unsigned int texture; // OpenGL texture id
     int original_lane;
+    bool blocked_by_car; // Для логики остановки перед машинами
 
     // Новые поля для плавных манёвров
     float lane_offset;    // d: боковое смещение (0.0 = центр полосы)
