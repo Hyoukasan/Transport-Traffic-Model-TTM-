@@ -73,6 +73,4 @@ bool traffic_manager_spawn_car_on_selected_lane(TrafficManager* manager);
 bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager);
 bool traffic_manager_selected_lane_has_accident(const TrafficManager* manager);
 
-
-
 #endif
