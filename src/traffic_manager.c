@@ -370,12 +370,12 @@ static float traffic_manager_get_distance_to_intersection(const Intersection* in
 
 static Intersection* traffic_manager_find_nearest_intesrection(TrafficManager* manager, Car* car, RoadSegment* road, RoadDirection dir) {
     if(manager == NULL || manager->graph == NULL || manager->graph->intersection_count < 1 || car == NULL) {
-        return;
+        return NULL;
     }
     // Ближайший перекресток
     Intersection* nearest_intersection = NULL;
     float nearest_distance = 9999.0f;
-    for(size_t i = 0; i < manager->graph->intersection_count; i++) {
+    for(size_t i = 0; i < (size_t)manager->graph->intersection_count; i++) {
         const Intersection* current_intersection = &manager->graph->intersections[i];
         if(!traffic_manager_intersection_on_road(road, current_intersection)) {
             continue;
@@ -389,6 +389,41 @@ static Intersection* traffic_manager_find_nearest_intesrection(TrafficManager* m
     }
 
     return nearest_intersection;
+}
+
+static void traffic_manager_execute_stop(Car* car, const RoadSegment* road, RoadDirection dir, const Intersection* nearest_intersection, float nearest_distance, float save_distance, float dt) {
+    float stop_distance = 0.20f + car->speed * 0.20f;
+    
+    if (nearest_distance <= stop_distance) {
+        // Точная остановка у стоп-линии
+        float nearest_stop_travel = traffic_manager_stop_travel_fraction(road, dir, nearest_intersection);
+        float target_position = traffic_manager_travel_fraction_to_position(road, dir, nearest_stop_travel);
+        
+        float smoothing = clampf(dt > 0.0f ? dt * 12.0f : 1.0f, 0.0f, 1.0f);
+        float new_position = car->position + (target_position - car->position) * smoothing;
+
+        if((target_position > car->position && new_position > target_position) ||
+            (target_position < car->position && new_position < target_position)) {
+            new_position = target_position;
+        }
+
+        car->position = new_position;
+        car->speed = 0.0f;
+        car->state = CAR_STATE_TRAFFIC_LIGHT;
+        
+    } else if(nearest_distance <= save_distance) {
+        // Замедление на подходе к перекрестку
+        float speed_factor = nearest_distance / save_distance;
+        float max_speed = road->speed_limit * clampf(speed_factor, 0.15f, 1.0f);
+        if(car->speed > max_speed) {
+            car->speed = max_speed;
+        }
+        if(car->state == CAR_STATE_NORMAL || car->state == CAR_STATE_OVERTAKING) {
+            car->state = CAR_STATE_SLOWING;
+        }
+    } else if(car->state == CAR_STATE_TRAFFIC_LIGHT) {
+        car->state = CAR_STATE_NORMAL;
+    }
 }
  
 static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, Car* car, float dt) {
@@ -419,59 +454,33 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
 
     float nearest_distance = traffic_manager_get_distance_to_intersection(nearest_intersection, road, car, dir);
 
-    const float save_distance = 3.0f;
+    const float save_distance = 5.0f;
     if(nearest_distance <= save_distance) {
         car->next_state = CAR_STATE_TURNING;
     }
 
     LightState light_state = traffic_manager_light_state_for_road(nearest_light, road);
-    
-    if(light_state == LIGHT_GREEN) {
-        if(nearest_intersection->count_car < 2 && !traffic_manager_car_at_intersaction(nearest_intersection, car)) {
-            if (car->state == CAR_STATE_TRAFFIC_LIGHT) {
-                if (car->turn_decided && car->turn_made) {
-                    car->state = CAR_STATE_TURNING;
-                    car->turn_progress = 0.0f;
-                } else {
-                    car->state = CAR_STATE_NORMAL;
-                    car->speed = car->desired_speed;
-                }
-            }    
+
+    /// ТУТ 
+    if(!(nearest_intersection->count_car < 2 || traffic_manager_car_at_intersaction(nearest_intersection, car))) {
+        if(nearest_distance <= 2.0) {
+            car->speed = 0.0f;
             return;
         }
     }
+    
+    if (light_state == LIGHT_RED) {
+        traffic_manager_execute_stop(car, road, dir, nearest_intersection, nearest_distance, save_distance, dt);
+        return;
+    }
 
-    if(light_state == LIGHT_RED) {
-        float stop_distance = 0.20f + car->speed * 0.20f;
-        
-        if (nearest_distance <= stop_distance) {
-            float nearest_stop_travel = traffic_manager_stop_travel_fraction(road, dir, nearest_intersection);
-            float target_position = traffic_manager_travel_fraction_to_position(road, dir, nearest_stop_travel);
-            
-            float smoothing = clampf(dt > 0.0f ? dt * 12.0f : 1.0f, 0.0f, 1.0f);
-            float new_position = car->position + (target_position - car->position) * smoothing;
-
-            if((target_position > car->position && new_position > target_position) ||
-                (target_position < car->position && new_position < target_position)) {
-                new_position = target_position;
-            }
-
-            car->position = new_position;
-            car->speed = 0.0f;
-            car->state = CAR_STATE_TRAFFIC_LIGHT;            
-        
-        } else if(nearest_distance <= save_distance) {
-            float speed_factor = nearest_distance / save_distance;
-            float max_speed = road->speed_limit * clampf(speed_factor, 0.15f, 1.0f);
-            if(car->speed > max_speed) {
-                car->speed = max_speed;
-            }
-            if(car->state == CAR_STATE_NORMAL || car->state == CAR_STATE_OVERTAKING) {
-                car->state = CAR_STATE_SLOWING;
-            }
-            
-        } else if(car->state == CAR_STATE_TRAFFIC_LIGHT) {
+    if (car->state == CAR_STATE_TRAFFIC_LIGHT) {
+        if (car->turn_decided && car->turn_made) {
+            car->state = CAR_STATE_TURNING;
+            car->turn_progress = 0.0f;
+        } else {
             car->state = CAR_STATE_NORMAL;
+            car->speed = car->desired_speed;
         }
     }
 }
@@ -986,16 +995,15 @@ static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car
         return;
     }
 
-    if (car->state == CAR_STATE_BRAKING ||
-        car->state == CAR_STATE_ACCIDENT ||
+    if (car->state == CAR_STATE_ACCIDENT ||
         car->state == CAR_STATE_TRAFFIC_LIGHT ||
         car->state == CAR_STATE_TURNING ||
         car->target_lane != -1) {
         return;
     }
 
-    const float intersection_hold_radius = 2.0f;
-    const Car* front_car = traffic_manager_find_front_car(manager, car, intersection_hold_radius);
+    const float look_ahead = 5.0f;
+    const Car* front_car = traffic_manager_find_front_car(manager, car, look_ahead);
     if(front_car == NULL) {
         if(car->state == CAR_STATE_SLOWING) {
             car->state = CAR_STATE_NORMAL;
@@ -1026,9 +1034,9 @@ static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car
 
     float min_speed = car->desired_speed * 0.15f;
     float max_speed = car->desired_speed * 0.80f;
-    float target_speed = min_speed;
+    float target_speed = min_speed; 
     if (distance > 0.0f) {
-        target_speed = clampf((distance / intersection_hold_radius) * car->desired_speed, min_speed, max_speed);
+        target_speed = clampf((distance / look_ahead) * car->desired_speed, min_speed, max_speed);
     }
     if (car->speed > target_speed) {
         car->speed = target_speed;
@@ -1678,9 +1686,6 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     
     for (int i = 0; i < manager->car_count; i++) {
         Car* car = &manager->cars[i];
-
-        // Вызов полей для отладки
-
 
         traffic_manager_keep_safe_distance(manager, car);
 
