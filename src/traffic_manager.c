@@ -26,7 +26,7 @@ static bool traffic_manager_spawn_car_on_lane(TrafficManager* manager, int road_
 
 static const Car* traffic_manager_find_front_car(TrafficManager* manager, const Car* car, float search_radius);
 static bool traffic_manager_lane_change_clear(TrafficManager* manager, const Car* car, int target_lane);
-static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car);
+static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car, float dt);
 static bool traffic_manager_update_overtake_return(TrafficManager* manager, Car* car);
 static bool traffic_manager_update_lane_change(TrafficManager* manager, Car* car, float dt);
 static void traffic_manager_update_accidents(TrafficManager* manager, float dt);
@@ -994,15 +994,12 @@ static bool traffic_manager_lane_change_clear(TrafficManager* manager, const Car
     return true;
 }
 
-static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car) {
-    car->blocked_by_car = false;
-
-    const float slow_radius = 1.0f;
-    const float stop_radius = 0.2f;
-
+static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car, float dt) {
     if (manager == NULL || car == NULL) {
         return;
     }
+
+    car->blocked_by_car = false;
 
     if (car->state == CAR_STATE_ACCIDENT ||
         car->state == CAR_STATE_TRAFFIC_LIGHT ||
@@ -1011,7 +1008,7 @@ static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car
         return;
     }
 
-    const float look_ahead = 5.0f;
+    const float look_ahead = 2.5f;
     const Car* front_car = traffic_manager_find_front_car(manager, car, look_ahead);
     if(front_car == NULL) {
         if(car->state == CAR_STATE_SLOWING) {
@@ -1029,12 +1026,41 @@ static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car
     if (road_length <= 0.0f) {
         road_length = 1.0f;
     }
+
     float distance = (block_travel - car_travel) * road_length;
     if (distance < 0.0f) {
         distance = 0.0f;
+    }   
+
+    float safe_gap = 0.8f;
+
+    float target_speed = car->desired_speed;
+    if(distance <= 1.0f) {
+        target_speed = 0.0f;
+        car->blocked_by_car = true;
+    } else if(distance <= 1.5f) {
+        if(!traffic_manager_update_overtake_return(manager, car)) {
+            traffic_manager_update_lane_change(manager, car, dt);
+        }
+
+        float factor = (distance - safe_gap) / (look_ahead - safe_gap);
+
+        target_speed = car->desired_speed * factor;
+        car->blocked_by_car = true;
+        car->state = CAR_STATE_NORMAL;
     }
 
+    if(car->speed > target_speed) {
+        car->speed = target_speed; // Тормозим
+    }
+
+    if(car->speed < target_speed && car->state != CAR_STATE_SLOWING) {
+        car->state = CAR_STATE_SLOWING; // Разгоняемся
+    }
+
+    /*
     if(front_car->speed <= 0.1f && distance < 1.0f) {
+        printf("Oops! car %d breaking\n", car->id);
         car->speed = 0.0f;
         car->state = CAR_STATE_BRAKING;
         car->blocked_by_car = true;
@@ -1044,7 +1070,7 @@ static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car
     float min_speed = car->desired_speed * 0.15f;
     float max_speed = car->desired_speed * 0.80f;
     float target_speed = min_speed; 
-    if (distance > 0.0f) {
+    if(distance >= 2.5f && distance <= 5.0f) {
         target_speed = clampf((distance / look_ahead) * car->desired_speed, min_speed, max_speed);
     }
     if (car->speed > target_speed) {
@@ -1053,13 +1079,9 @@ static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car
     if (car->speed < target_speed && car->state != CAR_STATE_SLOWING) {
         // Позволяем машине плавно набрать скорость, если впереди есть место.
         car->state = CAR_STATE_SLOWING;
-    }
-
-    if (distance <= stop_radius && front_car->speed <= 0.01f) {
-        car->speed = 0.0f;
-        car->state = CAR_STATE_SLOWING;
-        car->blocked_by_car = true;
     }    
+    */
+
 
     return;
 }
@@ -1696,14 +1718,16 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     for (int i = 0; i < manager->car_count; i++) {
         Car* car = &manager->cars[i];
 
-        traffic_manager_keep_safe_distance(manager, car);
-
+        traffic_manager_keep_safe_distance(manager, car, dt);
+        
+        /*
         if (car->state != CAR_STATE_TRAFFIC_LIGHT && car->state != CAR_STATE_TURNING) {
             if(!traffic_manager_update_overtake_return(manager, car)) {
                 traffic_manager_update_lane_change(manager, car, dt);
             }
 
         }
+        */
 
         if(manager->light_count > 0 && car->blocked_by_car == false) {
             traffic_manager_update_traffic_light_stop(manager, car, dt);
