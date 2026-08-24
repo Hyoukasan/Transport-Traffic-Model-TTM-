@@ -1032,7 +1032,7 @@ static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car
         distance = 0.0f;
     }   
 
-    float safe_gap = 0.8f;
+    float safe_gap = 2.0f;
 
     float target_speed = car->desired_speed;
     if(distance <= 1.0f) {
