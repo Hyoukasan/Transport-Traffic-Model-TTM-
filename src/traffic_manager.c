@@ -1035,12 +1035,19 @@ static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car
     float safe_gap = 2.0f;
 
     float target_speed = car->desired_speed;
-    if(distance <= 1.0f) {
+    if(distance <= safe_gap) {
         target_speed = 0.0f;
         car->blocked_by_car = true;
-    } else if(distance <= 1.5f) {
-        if(!traffic_manager_update_overtake_return(manager, car)) {
-            traffic_manager_update_lane_change(manager, car, dt);
+    } else if(distance <= look_ahead) {
+        if (car->state != CAR_STATE_TRAFFIC_LIGHT && car->state != CAR_STATE_TURNING) {
+            if(!traffic_manager_update_overtake_return(manager, car)) {
+                traffic_manager_update_lane_change(manager, car, dt);
+            }
+        }
+
+
+        if(car->target_lane != -1) {
+            return;
         }
 
         float factor = (distance - safe_gap) / (look_ahead - safe_gap);
@@ -1052,10 +1059,6 @@ static void traffic_manager_keep_safe_distance(TrafficManager* manager, Car* car
 
     if(car->speed > target_speed) {
         car->speed = target_speed; // Тормозим
-    }
-
-    if(car->speed < target_speed && car->state != CAR_STATE_SLOWING) {
-        car->state = CAR_STATE_SLOWING; // Разгоняемся
     }
 
     /*
