@@ -1504,19 +1504,96 @@ static bool traffic_manager_car_has_right_turn_intent(const Car* car) {
     return false;
 }
 
-static int traffic_manager_find_cars_at_intersactions(TrafficManager* manager) {
-    if (manager == NULL) return 0;
+static int traffic_manager_find_cars_at_intersections(TrafficManager* manager) {
+    if (manager == NULL || manager->graph == NULL) return 0;
 
     // Проходимся по каждой машине и проверяем внутри ли она перекрестка
     for(size_t i = 0; i < (size_t)manager->car_count; i++) {
         Car* car = &manager->cars[i];
         RoadSegment road = manager->graph->roads[car->road_id];
 
-        // Участок перекрестка - отрезок на дороге (нужно только 2 точки)
-        float coord_start_point = 0.0f;
-        float coord_end_point   = 0.0f;
+        if (car->state == CAR_STATE_TURNING && car->at_intersection) {
+            continue;
+        }
 
-        int id_intersaction = -1;
+        // Сбрасываем состояние, перед проверкой    
+        if (car->at_intersection) {
+            for(size_t j = 0; j < (size_t)manager->graph->intersection_count; j++) {
+                if(manager->graph->intersections[j].id_car_at_intersecction[0] == car->id) {
+                    manager->graph->intersections[j].id_car_at_intersecction[0] = -1;
+                    manager->graph->intersections[j].count_car--;
+                } else if(manager->graph->intersections[j].id_car_at_intersecction[1] == car->id) {
+                    manager->graph->intersections[j].id_car_at_intersecction[1] = -1;
+                    manager->graph->intersections[j].count_car--;
+                }
+            }
+            
+            car->at_intersection = false;
+        }
+
+        // Переводим позицию машины в координаты с учетом направления движения.
+        RoadDirection direction = graph_get_lane_direction(&road, car->lane);
+        float travel_fraction = traffic_manager_position_to_travel_fraction(
+            &road, direction, car->position);
+        float car_grid_pos = 0.0f;
+        float car_ndc_pos = 0.0f;
+
+        switch (road.type) {
+            case ROAD_HORIZONTAL: {
+                int min_x = coord_min(road.x1, road.x2);
+                int max_x = coord_max(road.x1, road.x2);
+
+                switch (direction) {
+                    case ROAD_DIR_EAST:
+                        car_grid_pos = (float)min_x +
+                            travel_fraction * (float)(max_x - min_x);
+                        break;
+                    case ROAD_DIR_WEST:
+                        car_grid_pos = (float)max_x -
+                            travel_fraction * (float)(max_x - min_x);
+                        break;
+                    default:
+                        break;
+                }
+
+                car_ndc_pos = grid_center_to_normalized_x(
+                    car_grid_pos,
+                    manager->graph->chunk_size,
+                    manager->graph->padding,
+                    manager->graph->window_width
+                );
+                break;
+            }
+
+            case ROAD_VERTICAL: {
+                int min_y = coord_min(road.y1, road.y2);
+                int max_y = coord_max(road.y1, road.y2);
+
+                switch (direction) {
+                    case ROAD_DIR_SOUTH:
+                        car_grid_pos = (float)min_y +
+                            travel_fraction * (float)(max_y - min_y);
+                        break;
+                    case ROAD_DIR_NORTH:
+                        car_grid_pos = (float)max_y -
+                            travel_fraction * (float)(max_y - min_y);
+                        break;
+                    default:
+                        break;
+                }
+
+                car_ndc_pos = grid_center_to_normalized_y(
+                    car_grid_pos,
+                    manager->graph->chunk_size,
+                    manager->graph->padding,
+                    manager->graph->window_height
+                );
+                break;
+            }
+
+            default:
+                break;
+        }
 
         for(size_t j = 0; j < (size_t)manager->graph->intersection_count; j++) {
             const Intersection intersection = manager->graph->intersections[j];
@@ -1525,6 +1602,10 @@ static int traffic_manager_find_cars_at_intersactions(TrafficManager* manager) {
             if(!traffic_manager_intersection_on_road(&road, &intersection)) {
                 continue;
             }
+
+            // Участок перекрестка - отрезок на дороге (нужно только 2 точки)
+            float coord_start_point = 0.0f;
+            float coord_end_point   = 0.0f;
 
             // Определяем тип дороги, чтобы правильно расчитать координаты
             if(road.type == ROAD_VERTICAL) {
@@ -1539,72 +1620,36 @@ static int traffic_manager_find_cars_at_intersactions(TrafficManager* manager) {
                     manager->graph->padding, manager->graph->window_width);
             }
 
-            // Сохраняем айди перекрестка, чтобы учитывать при нескольких
-            id_intersaction = j;
-        }
-
-        // Не помню
-        if(coord_start_point == coord_end_point) {
-            continue;
-        }
-
-        // Обнавление: учитываем, что в центре 0.0, значит из-за знака можем ломать логику 
-        if(coord_start_point > coord_end_point) {
-            float tmp = coord_start_point;
-            coord_start_point = coord_end_point;
-            coord_end_point = tmp;
-        }
-
-        // Переводим процент пути в координаты (начальная точка + текущий % от длины дороги)
-        float car_ndc_pos = 0.0f;
-        if(road.type == ROAD_HORIZONTAL) {
-            float car_grid_x = road.x1 + car->position * (float)road.length;
-            car_ndc_pos = grid_center_to_normalized_x(car_grid_x, manager->graph->chunk_size, 
-                    manager->graph->padding, manager->graph->window_width);
-        } else {
-            float car_grid_y = road.y1 + car->position * (float)road.length;
-            car_ndc_pos = grid_center_to_normalized_y(car_grid_y, manager->graph->chunk_size, 
-                    manager->graph->padding, manager->graph->window_height);
-        }
-
-/*      if(car->state == CAR_STATE_TURNING) {
-            printf("Car NDC: %.2f | Start: %.2f | End: %.2f\n", car_ndc_pos, coord_start_point, coord_end_point);
-        }
-*/
-        // Проверка находится ли авто на участке
-        if(car_ndc_pos >= coord_start_point && car_ndc_pos <= coord_end_point) {
-            if(car->id == manager->graph->intersections[id_intersaction].id_car_at_intersecction[0] || 
-                car->id == manager->graph->intersections[id_intersaction].id_car_at_intersecction[1]) {
-                continue;
+            // Обнавление: учитываем, что в центре 0.0, значит из-за знака можем ломать логику 
+            if(coord_start_point > coord_end_point) {
+                float tmp = coord_start_point;
+                coord_start_point = coord_end_point;
+                coord_end_point = tmp;
             }
 
-            // Записываем в свободный слот
-            if(manager->graph->intersections[id_intersaction].id_car_at_intersecction[0] == -1) {
-                manager->graph->intersections[id_intersaction].id_car_at_intersecction[0] = car->id;
-            } else if(manager->graph->intersections[id_intersaction].id_car_at_intersecction[1] == -1) {
-                manager->graph->intersections[id_intersaction].id_car_at_intersecction[1] = car->id;
-            } else {
-                continue;
+    /*      if(car->state == CAR_STATE_TURNING) {
+                printf("Car NDC: %.2f | Start: %.2f | End: %.2f\n", car_ndc_pos, coord_start_point, coord_end_point);
             }
+    */
+            // Проверка находится ли авто на участке
+            if(car_ndc_pos >= coord_start_point && car_ndc_pos <= coord_end_point) {
 
-            car->at_intersection = true;
-            manager->graph->intersections[id_intersaction].count_car++;
-            //printf("Car at intesraction\n");
-        } else {
+                // Записываем в свободный слот  
+                if(manager->graph->intersections[j].id_car_at_intersecction[0] == -1) {
+                    manager->graph->intersections[j].id_car_at_intersecction[0] = car->id;
+                } else if(manager->graph->intersections[j].id_car_at_intersecction[1] == -1) {
+                    manager->graph->intersections[j].id_car_at_intersecction[1] = car->id;
+                } else {
+                    break;
+                }
 
-            // Если машина не внутри, проверяем есть ли она в массиве, чтобы удалить
-            if(manager->graph->intersections[id_intersaction].id_car_at_intersecction[0] == car->id) {
-                manager->graph->intersections[id_intersaction].id_car_at_intersecction[0] = -1;
-                manager->graph->intersections[id_intersaction].count_car--;
-            } else if(manager->graph->intersections[id_intersaction].id_car_at_intersecction[1] == car->id) {
-                manager->graph->intersections[id_intersaction].id_car_at_intersecction[1] = -1;
-                manager->graph->intersections[id_intersaction].count_car--;
+                car->at_intersection = true;
+                manager->graph->intersections[j].count_car++;
+                printf("Car %d at intesraction %d\n", car->id, j);
+                break;
             }
-
-            car->at_intersection = false;
-
-            //printf("Car not at intesraction\n");
         }
+
     }
 
     return 0;
@@ -1683,9 +1728,10 @@ static void traffic_manager_print_car_state(const TrafficManager *manager) {
 
 
     for(size_t i = 0; i < (size_t)manager->graph->intersection_count; i++) {
-        snprintf(line, sizeof(line), "Count cars at intersaction %zu: %d | Id car: %d, %d", i, manager->graph->intersections->count_car, 
-                                                                    manager->graph->intersections->id_car_at_intersecction[0], 
-                                                                    manager->graph->intersections->id_car_at_intersecction[1]);
+        const Intersection *intersection = &manager->graph->intersections[i];
+        snprintf(line, sizeof(line), "Count cars at intersaction %zu: %d | Id car: %d, %d", i, intersection->count_car,
+                                                                    intersection->id_car_at_intersecction[0],
+                                                                    intersection->id_car_at_intersecction[1]);
         if(manager->graph->intersection_count > 1) {
             renderer_draw_text(x_offset + (step * 37) + 2, y_offset + (step * 8 * (i + 1)) + 2, line, scale, 0.0f, 0.0f, 0.0f, 1920, 1080);
             renderer_draw_text(x_offset + (step * 37), y_offset + (step * 8 * (i + 1)), line, scale, 1.0f, 1.0f, 1.0f, 1920, 1080); 
@@ -1714,7 +1760,7 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     }
     
     traffic_manager_update_lane_lists(manager);
-    traffic_manager_find_cars_at_intersactions(manager);
+    traffic_manager_find_cars_at_intersections(manager);
 
     traffic_manager_print_car_state(manager);
     
