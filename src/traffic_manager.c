@@ -482,7 +482,7 @@ static void traffic_manager_update_traffic_light_stop(TrafficManager* manager, C
     if(can_go) {
         if(car->state == CAR_STATE_TRAFFIC_LIGHT) {
             if (car->turn_decided && car->turn_made) {
-                car->state = CAR_STATE_TURNING;
+                car->state = CAR_STATE_NORMAL;
                 car->turn_progress = 0.0f;
             } else {
                 car->state = CAR_STATE_NORMAL;
