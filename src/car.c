@@ -502,15 +502,26 @@ static void car_find_turn_roads(
 }
 */
 
-static RoadDirection car_choose_turn(Car* car, int left_road_id, int right_road_id, RoadDirection current_direction) {
+static RoadDirection car_choose_turn(Car* car, int left_road_id, int right_road_id, RoadDirection current_direction, int lanes) {
     int roll = rand() % 100;
 
-    if(left_road_id >= 0 && roll < 50 && car->lane == 2) {
+    int idx_right_edge_lane = -1;
+    int idx_left_edge_lane  = -1;
+
+    if(current_direction == ROAD_DIR_SOUTH || current_direction == ROAD_DIR_WEST) {
+        idx_right_edge_lane = 0;
+        idx_left_edge_lane  = (lanes / 2) - 1;
+    } else {
+        idx_right_edge_lane = lanes - 1;
+        idx_left_edge_lane  = lanes / 2;
+    }
+
+    if(left_road_id >= 0 && roll < 50 && car->lane == idx_left_edge_lane) {
         car->turn_made = true;
         car->turn_type = CAR_TURN_LEFT;
         car->turn_target_road_id = left_road_id;
         return car_turn_target_direction(current_direction, car->turn_type);
-    } else if(right_road_id >= 0 && roll < 50 && car->lane == 3) {
+    } else if(right_road_id >= 0 && roll < 50 && car->lane == idx_right_edge_lane) {
         car->turn_made = true;
         car->turn_type = CAR_TURN_RIGHT;
         car->turn_target_road_id = right_road_id;
@@ -754,7 +765,7 @@ void car_update(Car *car, const Graph *graph, float dt) {
         (new_travel_fraction >= crossed.fraction - 0.2f || distance_to_intersection <= turn_decision_distance)) {
         car->turn_decided = true;
 
-        chosen_target = car_choose_turn(car, left_road_id, right_road_id, current_direction);
+        chosen_target = car_choose_turn(car, left_road_id, right_road_id, current_direction, graph->roads[0].lanes);
         if(car->turn_made) {
             // Подготавливаем параметры дуги поворота до входа машины в перекресток
             car_prepare_turn(car, graph, road, current_direction, crossed, chosen_target, new_travel_fraction);
