@@ -1655,6 +1655,13 @@ static int traffic_manager_find_cars_at_intersections(TrafficManager* manager) {
     return 0;
 }
 
+void traffic_manager_resolve_intersection_for_car(TrafficManager* manager, Car* car)
+{
+    if(manager == NULL || car == NULL) {
+        return;
+    }
+}
+
 static const char* check_state_car(CarState state) {
     switch (state) {
         case CAR_STATE_NORMAL:            return "NORMAL";
@@ -1768,6 +1775,7 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
         Car* car = &manager->cars[i];
 
         traffic_manager_keep_safe_distance(manager, car, dt);
+        traffic_manager_resolve_intersection_for_car(manager, car);
         
         /*
         if (car->state != CAR_STATE_TRAFFIC_LIGHT && car->state != CAR_STATE_TURNING) {

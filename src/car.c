@@ -476,9 +476,11 @@ static void car_find_turn_roads(
     }
 }
 
+
+/*UPD: другая система выбора: */
 /*Функция car_choose_turn выбирает будет ли автомобиль поворачивать на перекрестке.*/
 /*Шансы: Прямо - 40%, налево - 30%, направо - 30%*/
-static RoadDirection car_choose_turn(Car* car, int left_road_id, int right_road_id, RoadDirection current_direction) {
+/*static RoadDirection car_choose_turn(Car* car, int left_road_id, int right_road_id, RoadDirection current_direction) {
     int roll = rand() % 100;
 
     if(left_road_id >= 0 && roll < 30) {
@@ -498,7 +500,28 @@ static RoadDirection car_choose_turn(Car* car, int left_road_id, int right_road_
         return car_turn_target_direction(current_direction, car->turn_type);
     }
 }
+*/
 
+static RoadDirection car_choose_turn(Car* car, int left_road_id, int right_road_id, RoadDirection current_direction) {
+    int roll = rand() % 100;
+
+    if(left_road_id >= 0 && roll < 50 && car->lane == 2) {
+        car->turn_made = true;
+        car->turn_type = CAR_TURN_LEFT;
+        car->turn_target_road_id = left_road_id;
+        return car_turn_target_direction(current_direction, car->turn_type);
+    } else if(right_road_id >= 0 && roll < 50 && car->lane == 3) {
+        car->turn_made = true;
+        car->turn_type = CAR_TURN_RIGHT;
+        car->turn_target_road_id = right_road_id;
+        return car_turn_target_direction(current_direction, car->turn_type);
+    } else{
+        car->turn_made = false;
+        car->turn_type = CAR_TURN_NONE;
+        car->turn_target_road_id = -1;
+        return car_turn_target_direction(current_direction, car->turn_type);
+    }
+}
 
 static void car_prepare_turn( 
     Car* car,
