@@ -406,6 +406,8 @@ static void traffic_manager_execute_stop(Car* car, const RoadSegment* road, Road
         float nearest_stop_travel = traffic_manager_stop_travel_fraction(road, dir, nearest_intersection);
         if(dir == ROAD_DIR_NORTH) {
             printf("nearest_stop_travel %f\n", nearest_stop_travel);
+            printf("STOP: %f | TURN_START: %f | DELTA (Start - Stop): %f\n", 
+       nearest_stop_travel, car->turn_start_fraction, car->turn_start_fraction - nearest_stop_travel);
         }
         float target_position = traffic_manager_travel_fraction_to_position(road, dir, nearest_stop_travel);
         
@@ -1645,7 +1647,7 @@ static int traffic_manager_find_cars_at_intersections(TrafficManager* manager) {
 
                 car->at_intersection = true;
                 manager->graph->intersections[j].count_car++;
-                printf("Car %d at intesraction %d\n", car->id, j);
+                //printf("Car %d at intesraction %d\n", car->id, j);
                 break;
             }
         }

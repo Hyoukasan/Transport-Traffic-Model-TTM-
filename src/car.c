@@ -620,6 +620,8 @@ if(!car->turn_made) {
     float end_x = intersect_x;
     float end_y = intersect_y;
 
+    printf("Stop/Start coord: X=%.1f, Y=%.1f\n", start_x, start_y);
+
     switch(current_direction) {
         case ROAD_DIR_EAST:  
             start_x -= radius; 
