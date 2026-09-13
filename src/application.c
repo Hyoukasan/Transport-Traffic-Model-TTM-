@@ -317,8 +317,6 @@ void application_update(void){
                     break;
             }
 
-            config.max_cars = 20;
-            
             application_update_settings_text();
             menu_render(&menu, app.screen_width, app.screen_height);
             break;

@@ -321,6 +321,8 @@ static bool traffic_manager_intersection_on_road(const RoadSegment* road, const 
 }
 
 /*Находим координату стоп-линии перед перекрестком*/
+/*UPD: Не хардим случайным значением, а расчитываем от центра перекрестка*/
+/*
 static float traffic_manager_stop_travel_fraction(const RoadSegment* road, RoadDirection direction, const Intersection* intersection) {
     const float stop_gap = 0.85f;
     float coord = 0.0f;
@@ -335,6 +337,31 @@ static float traffic_manager_stop_travel_fraction(const RoadSegment* road, RoadD
     }
 
     return traffic_manager_coord_to_travel_fraction(road, direction, coord);
+}
+*/
+
+static float traffic_manager_stop_travel_fraction(const RoadSegment* road, RoadDirection direction, const Intersection* intersection) {
+    float ix = (float)intersection->x;
+    float iy = (float)intersection->y;
+
+    float intersection_half = (float)(road->lanes > 0 ? road->lanes : 1) * 0.5f;
+    float edge_coord = 0.0f;
+
+    if (road->type == ROAD_HORIZONTAL) {
+        if (direction == ROAD_DIR_EAST) {
+            edge_coord = ix - intersection_half; // Левый край перекрестка для едущих на восток
+        } else {
+            edge_coord = ix + intersection_half; // Правый край 
+        }
+    } else if (road->type == ROAD_VERTICAL) {
+        if (direction == ROAD_DIR_SOUTH) {
+            edge_coord = iy - intersection_half; // Верхний край для едущих на юг
+        } else {
+            edge_coord = iy + intersection_half; // Нижний край
+        }
+    }
+
+    return traffic_manager_coord_to_travel_fraction(road, direction, edge_coord);
 }
 
 static LightState traffic_manager_light_state_for_road(const TrafficLight* light, const RoadSegment* road) {
@@ -407,7 +434,7 @@ static void traffic_manager_execute_stop(Car* car, const RoadSegment* road, Road
         if(dir == ROAD_DIR_NORTH) {
             printf("nearest_stop_travel %f\n", nearest_stop_travel);
             printf("STOP: %f | TURN_START: %f | DELTA (Start - Stop): %f\n", 
-       nearest_stop_travel, car->turn_start_fraction, car->turn_start_fraction - nearest_stop_travel);
+                    nearest_stop_travel, car->turn_start_fraction, car->turn_start_fraction - nearest_stop_travel);
         }
         float target_position = traffic_manager_travel_fraction_to_position(road, dir, nearest_stop_travel);
         
@@ -818,11 +845,13 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
     traffic_manager_load_car_textures(manager);
     traffic_manager_load_light_textures(manager);
 
+    /*
     if (config->car_count > 0) {
         traffic_manager_restore_cars(manager, config);
     } else {
-        //traffic_manager_spawn_cars(manager, config);
-    }
+        traffic_manager_spawn_cars(manager, config);
+    }    
+    */
 
     traffic_manager_update_lane_lists(manager);
 
@@ -1813,14 +1842,16 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
         }
     }
 
+    /*
     manager->spawn_timer -= dt;
-/*  if (manager->spawn_timer <= 0.0f) {
+    if (manager->spawn_timer <= 0.0f) {
         if (traffic_manager_spawn_car(manager, -1)) {
             manager->spawn_timer = traffic_manager_random_spawn_delay();
         } else {
             manager->spawn_timer = 0.25f;
         }
-    }*/
+    }    
+    */
 
     traffic_manager_update_lane_lists(manager);
 

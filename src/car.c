@@ -125,6 +125,7 @@ static float travel_fraction_to_position(const RoadSegment *road, RoadDirection 
     return 1.0f - travel_fraction;
 }
 
+/*
 static float coordinate_fraction_along_road(const RoadSegment *road, int x, int y) {
     if (road == NULL) {
         return 0.0f;
@@ -148,6 +149,29 @@ static float coordinate_fraction_along_road(const RoadSegment *road, int x, int 
 
     return 0.0f;
 }
+*/
+
+/*Перевод абсолютной координаты в % от пути*/
+static float coordinate_fraction_along_road(const RoadSegment *road, float x, float y) {
+    if (road == NULL) {
+        return 0.0f;
+    }
+
+    if (road->type == ROAD_HORIZONTAL) {
+        float span = (float)abs(road->x2 - road->x1);
+        if (span <= 0.0001f) return 0.0f;
+        return fabsf(x - (float)road->x1) / span;
+    }
+
+    if (road->type == ROAD_VERTICAL) {
+        float span = (float)abs(road->y2 - road->y1);
+        if (span <= 0.0001f) return 0.0f;
+        return fabsf(y - (float)road->y1) / span;
+    }
+
+    return 0.0f;
+}
+
 
 static float coordinate_at_travel_position(const RoadSegment *road, RoadDirection direction, float position) {
     if (road == NULL) {
@@ -177,7 +201,7 @@ static float coordinate_at_travel_position(const RoadSegment *road, RoadDirectio
     return 0.0f;
 }
 
-static float coordinate_fraction_for_direction(const RoadSegment *road, RoadDirection direction, int x, int y) {
+static float coordinate_fraction_for_direction(const RoadSegment *road, RoadDirection direction, float x, float y) {
     float frac = coordinate_fraction_along_road(road, x, y);
     return position_to_travel_fraction(road, direction, frac);
 }
@@ -417,7 +441,7 @@ static CrossedIntersection car_find_crossed_intersection(
             crossed.idx = (int)i;
             crossed.x = ix;
             crossed.y = iy;
-            crossed.fraction = coordinate_fraction_for_direction(road, direction, ix, iy);
+            crossed.fraction = coordinate_fraction_for_direction(road, direction, (float)ix, (float)iy);
         }
 
     }
@@ -543,7 +567,7 @@ static void car_prepare_turn(
     RoadDirection chosen_target,
     float start_fraction) 
 {
-if(!car->turn_made) {
+    if(!car->turn_made) {
         return;
     }
 
@@ -620,8 +644,6 @@ if(!car->turn_made) {
     float end_x = intersect_x;
     float end_y = intersect_y;
 
-    printf("Stop/Start coord: X=%.1f, Y=%.1f\n", start_x, start_y);
-
     switch(current_direction) {
         case ROAD_DIR_EAST:  
             start_x -= radius; 
@@ -671,9 +693,9 @@ if(!car->turn_made) {
     }
 
     //Обновление состояния автомобиля
-    car->turn_start_fraction = clampf(coordinate_fraction_for_direction(road, current_direction, (int)start_x, (int)start_y), 0.0f, 1.0f);
+    car->turn_start_fraction = clampf(coordinate_fraction_for_direction(road, current_direction, start_x, start_y), 0.0f, 1.0f);
     
-    float end_fraction = clampf(coordinate_fraction_for_direction(new_road, chosen_target, (int)end_x, (int)end_y), 0.0f, 1.0f);
+    float end_fraction = clampf(coordinate_fraction_for_direction(new_road, chosen_target, end_x, end_y), 0.0f, 1.0f);
     car->turn_target_position = clampf(travel_fraction_to_position(new_road, chosen_target, end_fraction), 0.0f, 1.0f);
 
     car->turn_target_lane = new_lane;
@@ -685,6 +707,12 @@ if(!car->turn_made) {
     car->turn_path_angle_to = end_angle;
     car->angle_from = direction_to_angle(current_direction);
     car->angle_to = direction_to_angle(chosen_target);
+
+    float current_travel = position_to_travel_fraction(road, current_direction, car->position);
+    printf("[TURN TRIGGER] TravelFrac: %f | StartFrac: %f | RealDelta: %f\n",
+       current_travel, 
+       car->turn_start_fraction, 
+       car->turn_start_fraction - current_travel);
 }
 
 void car_update(Car *car, const Graph *graph, float dt) {
@@ -728,6 +756,9 @@ void car_update(Car *car, const Graph *graph, float dt) {
     }
 
     float look_ahead_dist = 3.0f; // 3 метра вперед
+    if (road->lanes == 8) {
+        look_ahead_dist = 6.0f;
+    }
     float look_ahead_coord = current_coord;
 
     if (current_direction == ROAD_DIR_EAST || current_direction == ROAD_DIR_SOUTH) {
@@ -760,7 +791,18 @@ void car_update(Car *car, const Graph *graph, float dt) {
     } else {
         distance_to_intersection = current_coord - intersection_coord;
     }
-    const float turn_decision_distance = 4.0f;
+
+    /*
+    int lanes_count = road->lanes > 0 ? road->lanes : 1;
+    float intersection_half = (float)lanes_count * 0.5f;
+
+    float turn_decision_distance = intersection_half * 2.0f + 3.0f;
+    */
+
+    float turn_decision_distance = 4.0f;
+    if(road->lanes == 8) {
+        turn_decision_distance = 6.5f;
+    }
 
     // Решение о повороте при подъезде к пересечению
     if (!car->turn_decided && distance_to_intersection >= 0.0f &&
