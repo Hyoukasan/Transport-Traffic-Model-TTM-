@@ -61,7 +61,7 @@ static int direction_lane_count(const RoadSegment *road, RoadDirection direction
 }
 
 static int map_lane_to_direction(const RoadSegment *source_road, RoadDirection source_direction, int source_lane,
-                                 const RoadSegment *target_road, RoadDirection target_direction) {
+                                 const RoadSegment *target_road, RoadDirection target_direction, CarTurnType turn_type) {
     if (source_road == NULL || target_road == NULL) {
         return 0;
     }
@@ -73,6 +73,22 @@ static int map_lane_to_direction(const RoadSegment *source_road, RoadDirection s
 
     if (source_count <= 0 || target_count <= 0) {
         return target_start;
+    }
+
+    if(turn_type == CAR_TURN_RIGHT) {
+        if(target_direction == ROAD_DIR_NORTH || target_direction == ROAD_DIR_EAST) {
+            return target_start + target_count - 1;
+        } else {
+            return target_start;
+        }
+    }
+
+    if(turn_type == CAR_TURN_LEFT) {
+        if(target_direction == ROAD_DIR_NORTH || target_direction == ROAD_DIR_EAST) {
+            return target_start;
+        } else {
+            return target_start + target_count - 1;
+        }
     }
 
     int local_index = source_lane - source_start;
@@ -572,7 +588,7 @@ static void car_prepare_turn(
     }
 
     const RoadSegment* new_road = &graph->roads[car->turn_target_road_id];
-    int new_lane = map_lane_to_direction(road, current_direction, car->lane, new_road, chosen_target);
+    int new_lane = map_lane_to_direction(road, current_direction, car->lane, new_road, chosen_target, car->turn_type);
 
     if (car->turn_type == CAR_TURN_LEFT) {
         new_lane -= 1;
