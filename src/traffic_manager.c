@@ -341,23 +341,26 @@ static float traffic_manager_stop_travel_fraction(const RoadSegment* road, RoadD
 */
 
 static float traffic_manager_stop_travel_fraction(const RoadSegment* road, RoadDirection direction, const Intersection* intersection) {
-    float ix = (float)intersection->x;
-    float iy = (float)intersection->y;
-
-    float intersection_half = (float)(road->lanes > 0 ? road->lanes : 1) * 0.5f;
     float edge_coord = 0.0f;
+    
+    // Безопасный отступ: половина корпуса авто + линия разметки (обычно ~1.0 - 1.2 тайла)
+    const float stop_offset = 1.0f; 
 
     if (road->type == ROAD_HORIZONTAL) {
         if (direction == ROAD_DIR_EAST) {
-            edge_coord = ix - intersection_half; // Левый край перекрестка для едущих на восток
+            // Едем слева направо (координата растет) -> стоп-линия слева от перекрестка, отступаем назад (-)
+            edge_coord = (float)intersection->left_edge - stop_offset;
         } else {
-            edge_coord = ix + intersection_half; // Правый край 
+            // Едем справа налево (координата падает) -> стоп-линия справа от перекрестка, отступаем назад (+)
+            edge_coord = (float)intersection->right_edge;
         }
     } else if (road->type == ROAD_VERTICAL) {
         if (direction == ROAD_DIR_SOUTH) {
-            edge_coord = iy - intersection_half; // Верхний край для едущих на юг
+            // Едем сверху вниз (координата растет) -> стоп-линия сверху от перекрестка, отступаем назад (-)
+            edge_coord = (float)intersection->top_edge - stop_offset;
         } else {
-            edge_coord = iy + intersection_half; // Нижний край
+            // Едем снизу вверх (координата падает) -> стоп-линия снизу от перекрестка, отступаем назад (+)
+            edge_coord = (float)intersection->bottom_edge;
         }
     }
 
@@ -1452,7 +1455,7 @@ bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager) {
         int index_car_1 = list->car_indices[i];
         Car* car_1 = &manager->cars[index_car_1];
 
-        if(car_1->state == CAR_STATE_TURNING || car_1->state == CAR_STATE_TURNING) {
+        if(car_1->state == CAR_STATE_TURNING || car_1->state == CAR_STATE_TRAFFIC_LIGHT) {
             continue;
         }
 
@@ -1460,7 +1463,7 @@ bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager) {
             int index_car_2 = list->car_indices[j];
             Car* car_2 = &manager->cars[index_car_2];
 
-            if(car_2->state == CAR_STATE_TURNING || car_2->state == CAR_STATE_TURNING) {
+            if(car_2->state == CAR_STATE_TURNING || car_2->state == CAR_STATE_TRAFFIC_LIGHT) {
                 continue;
             }
             
