@@ -35,6 +35,7 @@ typedef struct {
     int lane;
     int car_count;
     int count_car_passed;
+    float capacity;
     int *car_indices;
 } LaneCarList;
 

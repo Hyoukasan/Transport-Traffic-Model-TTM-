@@ -707,6 +707,7 @@ static int traffic_manager_init_lane_lists(TrafficManager* manager) {
             list->lane = lane;
             list->car_count = 0;
             list->count_car_passed = 0;
+            list->capacity = 0.0f;
             list->car_indices = (int*)malloc(sizeof(int) * manager->max_cars);
 
             if (list->car_indices == NULL) {
@@ -742,6 +743,15 @@ static void traffic_manager_update_lane_lists(TrafficManager* manager) {
     }
 
     for (size_t i = 0; i < (size_t)manager->lane_list_count; i++) {
+        LaneCarList *list = &manager->lane_lists[i];
+        
+        int total_sec = (int)manager->time;
+        if(total_sec > 0) {
+            list->capacity = (float)list->count_car_passed / total_sec;
+        } else {
+            list->capacity = 0.0f;
+        }
+
         manager->lane_lists[i].car_count = 0;
     }
 
@@ -1844,11 +1854,15 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
 
     for (int i = manager->car_count - 1; i >= 0; i--) {
         if (traffic_manager_car_finished(manager, &manager->cars[i])) {
-            traffic_manager_remove_car(manager, i);
+            int road_id = manager->cars[i].road_id;
+            int lane = manager->cars[i].lane;
 
-            int lane_list_index = manager->selected_road_id * manager->graph->roads[manager->selected_road_id].lanes + manager->selected_lane;
-            manager->lane_lists[lane_list_index].count_car_passed++;
-            printf("Index list %d\n",lane_list_index);
+            LaneCarList* lane_list = traffic_manager_get_lane_list(manager, road_id, lane);
+            if (lane_list != NULL) {
+                lane_list->count_car_passed++;
+            }
+
+            traffic_manager_remove_car(manager, i);
         }
     }
 
