@@ -434,11 +434,13 @@ static void traffic_manager_execute_stop(Car* car, const RoadSegment* road, Road
     if (nearest_distance <= stop_distance) {
         // Высчитываем идеальную точку стоп-линии
         float nearest_stop_travel = traffic_manager_stop_travel_fraction(road, dir, nearest_intersection);
-        if(dir == ROAD_DIR_NORTH) {
-            printf("nearest_stop_travel %f\n", nearest_stop_travel);
-            printf("STOP: %f | TURN_START: %f | DELTA (Start - Stop): %f\n", 
-                    nearest_stop_travel, car->turn_start_fraction, car->turn_start_fraction - nearest_stop_travel);
-        }
+/*
+    if(dir == ROAD_DIR_NORTH) {
+        printf("nearest_stop_travel %f\n", nearest_stop_travel);
+        printf("STOP: %f | TURN_START: %f | DELTA (Start - Stop): %f\n", 
+                nearest_stop_travel, car->turn_start_fraction, car->turn_start_fraction - nearest_stop_travel);
+    }
+*/
         float target_position = traffic_manager_travel_fraction_to_position(road, dir, nearest_stop_travel);
         
         // Плавно останавливаем машину точно у линии
@@ -704,6 +706,7 @@ static int traffic_manager_init_lane_lists(TrafficManager* manager) {
             list->road_id = road->id;
             list->lane = lane;
             list->car_count = 0;
+            list->count_car_passed = 0;
             list->car_indices = (int*)malloc(sizeof(int) * manager->max_cars);
 
             if (list->car_indices == NULL) {
@@ -1803,7 +1806,7 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     traffic_manager_update_lane_lists(manager);
     traffic_manager_find_cars_at_intersections(manager);
 
-    traffic_manager_print_car_state(manager);
+    //traffic_manager_print_car_state(manager);
     
     for (int i = 0; i < manager->car_count; i++) {
         Car* car = &manager->cars[i];
@@ -1842,10 +1845,13 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     for (int i = manager->car_count - 1; i >= 0; i--) {
         if (traffic_manager_car_finished(manager, &manager->cars[i])) {
             traffic_manager_remove_car(manager, i);
+
+            int lane_list_index = manager->selected_road_id * manager->graph->roads[manager->selected_road_id].lanes + manager->selected_lane;
+            manager->lane_lists[lane_list_index].count_car_passed++;
+            printf("Index list %d\n",lane_list_index);
         }
     }
 
-    /*
     manager->spawn_timer -= dt;
     if (manager->spawn_timer <= 0.0f) {
         if (traffic_manager_spawn_car(manager, -1)) {
@@ -1854,7 +1860,7 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
             manager->spawn_timer = 0.25f;
         }
     }    
-    */
+
 
     traffic_manager_update_lane_lists(manager);
 

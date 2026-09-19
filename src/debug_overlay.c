@@ -91,7 +91,15 @@ void debug_overlay_draw(struct TrafficManager* manager, int screen_width, int sc
         renderer_draw_text(x + 4, y + step*12 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
         renderer_draw_text(x + 2, y + step*12, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
 
-        snprintf(line, sizeof(line), "Capacity: %.2f / %.2f", road->speed_limit, road->speed_limit * (float)road->lanes);
+
+        float cap;
+        int total_sec = (int)manager->time;
+
+        if(total_sec > 0) {
+            cap = (float)manager->lane_lists[lane_list_index].count_car_passed / total_sec;
+        } 
+
+        snprintf(line, sizeof(line), "Capacity: %.2f", cap);
         renderer_draw_text(x + 4, y + step*13 + 2, line, 2.0f, 0.0f, 0.0f, 0.0f, screen_width, screen_height);
         renderer_draw_text(x + 2, y + step*13, line, 2.0f, 1.0f, 1.0f, 1.0f, screen_width, screen_height);
     }
