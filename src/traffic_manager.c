@@ -861,13 +861,10 @@ int traffic_manager_init(TrafficManager* manager, const ConfigManager* config) {
     traffic_manager_load_car_textures(manager);
     traffic_manager_load_light_textures(manager);
 
-    /*
+
     if (config->car_count > 0) {
         traffic_manager_restore_cars(manager, config);
-    } else {
-        traffic_manager_spawn_cars(manager, config);
-    }    
-    */
+    }
 
     traffic_manager_update_lane_lists(manager);
 
