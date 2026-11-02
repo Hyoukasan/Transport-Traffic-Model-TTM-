@@ -11,6 +11,7 @@
 #include "graph.h"
 #include "road_generator.h"
 #include "renderer.h"
+#include "utils.h"
 
 
 static int traffic_manager_init_lane_lists(TrafficManager* manager);
@@ -1538,16 +1539,6 @@ bool traffic_manager_add_accident_on_selected_lane(TrafficManager* manager) {
     return true;
 }
 
-static bool traffic_manager_car_has_right_turn_intent(const Car* car) {
-    if(car == NULL) return false;
-
-    if(car->turn_decided && car->state == car->turn_made) {
-        return car->turn_type == CAR_TURN_RIGHT;
-    }
-
-    return false;
-}
-
 static int traffic_manager_find_cars_at_intersections(TrafficManager* manager) {
     if (manager == NULL || manager->graph == NULL) return 0;
 
@@ -1814,6 +1805,8 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
     traffic_manager_find_cars_at_intersections(manager);
 
     //traffic_manager_print_car_state(manager);
+
+    
     
     for (int i = 0; i < manager->car_count; i++) {
         Car* car = &manager->cars[i];
@@ -1836,12 +1829,29 @@ int traffic_manager_update(TrafficManager *manager, float dt) {
 
         car_update(car, manager->graph, dt);
 
+        uint64_t start = rdtsc ();
+
         if (car->state == CAR_STATE_ACCIDENT) {
             const Car* front_car = traffic_manager_find_front_car(manager, car, 1.0f);
             if (front_car != NULL && front_car->state == CAR_STATE_BRAKING) {
                 car->speed = 0.0f;
                 car->state = CAR_STATE_BRAKING;
             }
+        }
+
+        uint64_t end = rdtsc ();
+
+        static uint64_t count_cycle = 0;
+        static int total_frame = 0;
+
+        count_cycle += (end - start);
+
+        total_frame++;
+
+        if (total_frame >= 60) {
+            printf ("%d mid count cars: %llu ticks\n", manager->car_count, count_cycle / 60);
+            total_frame = 0;
+            count_cycle = 0;
         }
     }
 

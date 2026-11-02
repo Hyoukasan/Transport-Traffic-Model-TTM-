@@ -3,11 +3,10 @@
 # ===================================
 
 CC = gcc
-OPT = -O2
-CFLAGS = -Wall -Wextra -DGLEW_NO_GLU -DGLFW_INCLUDE_NONE -Ithird_party/include -Ithird_party/include/Other -g 
+OPT = -O3
+CFLAGS = -Wall -march=native -g -Wextra -DGLEW_NO_GLU -DGLFW_INCLUDE_NONE -Ithird_party/include -Ithird_party/include/Other 
 LDFLAGS = -Lthird_party/lib
 LIBS = -lglfw3dll -lglew32 -lopengl32
-PREPARE_LIBS =
 MKDIR_BUILD = @if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
 CLEAN_CMD = @if exist "$(TARGET)" del /q "$(TARGET)"
 CLEAN_BUILD = @if exist "$(BUILD_DIR)" rmdir /s /q "$(BUILD_DIR)"
